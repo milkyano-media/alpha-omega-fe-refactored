@@ -98,10 +98,7 @@ export function MainForm() {
               </FormItem>
             )}
           />
-          <Button
-            type="submit"
-            className="w-full bg-black text-white rounded-full py-3"
-          >
+          <Button type="submit" className="w-full rounded-full py-3">
             Continue
           </Button>
         </form>

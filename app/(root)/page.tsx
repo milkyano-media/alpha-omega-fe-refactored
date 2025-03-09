@@ -27,7 +27,7 @@ export default function Home() {
           EXPERIENCE THE ART OF ELEGANCE 
         </p>
 
-        <Button className="mt-8 bg-white text-black py-8 px-6 rounded-2xl text-2xl">
+        <Button variant={"negative"} className="mt-8">
           BOOK NOW
         </Button>
       </section>
@@ -153,11 +153,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="grid md:grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
+      <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>EXPERT BARBERS</h4>
           <p>
+            {`
             Our expert barbers are ready to give you recommendations considering
             your lifestyle, facial shape, hair type and hair density in order to
             ensure that you achieve a personalized and stylish look that
@@ -168,7 +169,7 @@ export default function Home() {
             you through the process, ensuring that you not only look great but
             also feel confident with your chosen aesthetic. Trust Alpha Omega
             Team to provide you with comprehensive options that align with your
-            style and enhance your overall appearance.
+            style and enhance your overall appearance.`}
           </p>
         </div>
 
@@ -176,12 +177,13 @@ export default function Home() {
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>CREATIVE AND MODERN</h4>
           <p>
+            {`
             Alpha Omega mens grooming stands as a beacon of innovation, ushering
             in a new era in mens grooming. With a seamless blend of technical
             expertise and creative vision, we redefine the boundaries of
             traditional barbering and modern hairdressing. Our dedication is
             unwavering—to unite the timeless charm of the classic barbershop
-            with the refined elegance of today's salons.
+            with the refined elegance of today's salons.`}
           </p>
         </div>
 
@@ -441,7 +443,7 @@ export default function Home() {
           disappoint!
         </p>
 
-        <Button className="bg-[#DCDCDC] text-black rounded-full px-8 py-6 w-max">
+        <Button variant={"secondary"} className="rounded-full">
           Book appointment
         </Button>
 

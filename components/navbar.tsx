@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import { Menu } from "./menu";
 
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
@@ -17,7 +18,7 @@ export function Navbar() {
     <nav
       style={{ marginBottom: -navHeight }}
       ref={navRef}
-      className="flex justify-between p-4 sticky top-0 bg-black/15 backdrop-blur-xs"
+      className="flex justify-between p-4 sticky top-0 bg-black/15 md:bg-[#F8F8F8] backdrop-blur-xs"
     >
       <div className="h-7">
         <Image
@@ -28,8 +29,9 @@ export function Navbar() {
           alt="Alpha Omega Text logo"
         />
       </div>
+
       <svg
-        className="w-7"
+        className="w-7 md:hidden"
         viewBox="0 0 32 28"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -42,6 +44,8 @@ export function Navbar() {
           strokeLinejoin="round"
         />
       </svg>
+
+      <Menu />
     </nav>
   );
 }

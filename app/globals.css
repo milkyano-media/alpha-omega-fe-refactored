@@ -139,4 +139,12 @@
   h4 {
     @apply text-2xl md:text-3xl font-bold;
   }
+
+  button {
+    @apply cursor-auto md:cursor-pointer;
+  }
+
+  a {
+    @apply cursor-auto md:cursor-pointer;
+  }
 }

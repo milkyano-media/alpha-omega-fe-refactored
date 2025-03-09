@@ -40,13 +40,11 @@ export function Footer() {
   return (
     <footer className="bg-[#0A0A0A] text-white text-sm">
       {/* Top Section */}
-      <div className="flex flex-col items-center justify-center text-center py-10 bg-[#272727]">
-        <p className="text-xl md:text-3xl font-medium mb-4">
+      <div className="flex flex-col md:flex-row items-center justify-center text-center gap-8 py-10 bg-[#272727]">
+        <p className="text-xl md:text-3xl font-medium mb-4 md:m-0">
           Redefining Haircuts, One Cut at a Time.
         </p>
-        <Button className="bg-white text-black px-6 py-3 rounded-lg text-lg font-semibold">
-          BOOK NOW
-        </Button>
+        <Button variant={"negative"}>BOOK NOW</Button>
       </div>
 
       {/* Main Footer Content */}
