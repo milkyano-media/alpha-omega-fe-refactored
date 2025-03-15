@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -18,14 +19,16 @@ export default function RootLayout({
         className="antialiased"
         style={{ fontFamily: "Helvetica Neue, sans-serif" }}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+            >
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

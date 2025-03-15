@@ -19,9 +19,9 @@ export function Menu() {
     <NavigationMenu className="w-full">
       <NavigationMenuList>
         <NavigationMenuItem className="ml-auto hidden md:block">
-          <Link href="/signup" legacyBehavior passHref>
+          <Link href="/login" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              SIGN UP
+              LOGIN
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
