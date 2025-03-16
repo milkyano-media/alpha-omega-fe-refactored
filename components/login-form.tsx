@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -58,9 +57,9 @@ export function LoginForm({
 
     try {
       await login(values.email, values.password);
-      
+
       // Redirect to homepage after successful login
-      router.push('/');
+      router.push("/");
     } catch (err) {
       console.error("Login error:", err);
       setError(err instanceof Error ? err.message : "Failed to login");
@@ -107,13 +106,13 @@ export function LoginForm({
                     Or continue with
                   </span>
                 </div>
-                
+
                 {error && (
                   <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
                     {error}
                   </div>
                 )}
-                
+
                 <div className="grid gap-6">
                   <FormField
                     control={form.control}
@@ -155,11 +154,7 @@ export function LoginForm({
                     )}
                   />
 
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>

@@ -11,29 +11,28 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
+  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export function VerificationForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(''));
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const phone = searchParams.get('phone');
+    const phone = searchParams.get("phone");
     if (phone) {
       setPhoneNumber(phone);
     } else {
       // If no phone number is provided, redirect back to signup
-      router.push('/signup');
+      router.push("/signup");
     }
   }, [searchParams, router]);
 
@@ -43,12 +42,12 @@ export function VerificationForm({
     if (value && !/^\d*$/.test(value)) return;
 
     const newOtpDigits = [...otpDigits];
-    
+
     // If backspace is pressed (indicated by an empty value)
-    if (value === '') {
-      newOtpDigits[index] = '';
+    if (value === "") {
+      newOtpDigits[index] = "";
       setOtpDigits(newOtpDigits);
-      
+
       // Focus previous input if available
       if (index > 0) {
         const prevInput = document.getElementById(`otp-${index - 1}`);
@@ -59,7 +58,7 @@ export function VerificationForm({
       const singleDigit = value.slice(-1);
       newOtpDigits[index] = singleDigit;
       setOtpDigits(newOtpDigits);
-      
+
       // Auto-focus next input if available
       if (index < 5 && singleDigit) {
         const nextInput = document.getElementById(`otp-${index + 1}`);
@@ -71,7 +70,7 @@ export function VerificationForm({
   // Handle key press (for backspace navigation)
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     // If backspace is pressed and current input is empty, focus previous input
-    if (e.key === 'Backspace' && otpDigits[index] === '' && index > 0) {
+    if (e.key === "Backspace" && otpDigits[index] === "" && index > 0) {
       const prevInput = document.getElementById(`otp-${index - 1}`);
       prevInput?.focus();
     }
@@ -81,21 +80,21 @@ export function VerificationForm({
   const { verify } = useAuth();
 
   const handleVerifyOtp = async () => {
-    const otpCode = otpDigits.join('');
-    
+    const otpCode = otpDigits.join("");
+
     if (otpCode.length !== 6) {
       setError("Please enter a complete 6-digit code");
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
       await verify(phoneNumber, otpCode);
-      
+
       // On successful verification, redirect to home or dashboard
-      router.push('/');
+      router.push("/");
     } catch (err) {
       console.error("Verification error:", err);
       setError(err instanceof Error ? err.message : "Failed to verify OTP");
@@ -126,7 +125,7 @@ export function VerificationForm({
               {error}
             </div>
           )}
-          
+
           <div className="flex justify-center mb-6">
             <div className="flex gap-2">
               {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -143,10 +142,10 @@ export function VerificationForm({
               ))}
             </div>
           </div>
-          
-          <Button 
-            onClick={handleVerifyOtp} 
-            className="w-full" 
+
+          <Button
+            onClick={handleVerifyOtp}
+            className="w-full"
             disabled={isLoading}
           >
             {isLoading ? "Verifying..." : "Verify Code"}
@@ -154,10 +153,10 @@ export function VerificationForm({
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-center">
-            Didn't receive the code?{" "}
-            <button 
+            {`Didn't receive the code?`}{" "}
+            <button
               onClick={handleResendOtp}
-              className="text-primary underline underline-offset-4" 
+              className="text-primary underline underline-offset-4"
               type="button"
             >
               Resend

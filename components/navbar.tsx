@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Menu } from "./menu";
+import Link from "next/link";
 
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
@@ -48,7 +49,7 @@ export function Navbar() {
       </div>
 
       <div className="flex justify-between items-center p-4">
-        <a href="/" className="w-40 md:w-60 text-white md:text-black">
+        <Link href="/" className="w-40 md:w-60 text-white md:text-black">
           <svg
             className="w-full"
             viewBox="0 0 967 97"
@@ -60,7 +61,7 @@ export function Navbar() {
               className="fill-current"
             />
           </svg>
-        </a>
+        </Link>
 
         <Menu />
       </div>

@@ -1,4 +1,3 @@
-import { MainForm } from "@/components/main-form";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
@@ -106,11 +105,12 @@ export default function Home() {
 
       <section className="flex flex-col gap-8 items-center px-4 mb-40">
         <p className="max-w-2xl">
+          {`
           A precision-crafted haircut tailored to your style, ensuring sharp
           lines, clean fades, or classic trims that leave you looking your best.
           Our haircuts are more than just a trim—they're crafted to match your
           unique style and personality. Whether it’s a classic cut or a modern
-          look, we deliver precision, detail, and confidence every time.
+          look, we deliver precision, detail, and confidence every time.`}
         </p>
 
         <b>Reviews Of The Service</b>
