@@ -47,12 +47,12 @@ export function Menu() {
             <ul className="grid gap-3 p-6">
               <ListItem href="/" title="HOME"></ListItem>
               <ListItem href="/about-us" title="ABOUT US"></ListItem>
-              <ListItem href="#" title="TESTIMONIALS"></ListItem>
-              <ListItem href="#" title="CONTACTS"></ListItem>
-              <ListItem href="#" title="GALLERY"></ListItem>
-              <ListItem href="#" title="BARBERS"></ListItem>
-              <ListItem href="#" title="SERVICES"></ListItem>
-              <ListItem href="#" title="CAREERS"></ListItem>
+              <ListItem href="/testimonials" title="TESTIMONIALS"></ListItem>
+              <ListItem href="/contacts" title="CONTACTS"></ListItem>
+              <ListItem href="/gallery" title="GALLERY"></ListItem>
+              <ListItem href="/barbers" title="BARBERS"></ListItem>
+              <ListItem href="/services" title="SERVICES"></ListItem>
+              <ListItem href="/careers" title="CAREERS"></ListItem>
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
