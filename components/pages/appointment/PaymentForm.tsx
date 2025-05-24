@@ -21,6 +21,7 @@ interface PaymentFormProps {
   selectedService: Service | null;
   selectedTime: TimeSlot | null;
   processingPayment: boolean;
+  creatingBooking?: boolean;
   paymentError: string | null;
   handlePayment: () => Promise<void>;
   onCancelPayment: () => void;
@@ -31,6 +32,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   selectedService,
   selectedTime,
   processingPayment,
+  creatingBooking = false,
   paymentError,
   handlePayment,
   onCancelPayment,
@@ -86,9 +88,9 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         <Button
           className="w-full py-3 text-base bg-blue-500 hover:bg-blue-600 text-white rounded-md font-normal mt-4"
           onClick={handlePayment}
-          disabled={processingPayment || !squareCard}
+          disabled={processingPayment || !squareCard || creatingBooking}
         >
-          {processingPayment ? "Processing..." : "Pay Deposit Now"}
+          {processingPayment ? "Processing Payment..." : creatingBooking ? "Creating Booking..." : "Pay Deposit Now"}
         </Button>
 
         <p className="text-xs text-gray-500 mt-2 text-center">
