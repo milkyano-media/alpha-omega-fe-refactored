@@ -20,19 +20,26 @@ export default function Home() {
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>HOW IT BEGINS</h4>
           <p>
-            {`
             Two years ago, I arrived in Australia from Greece with no money, a
-            dream in my heart and a determination to succeed. The journey was
-            far from easy — filled with challenges, long days of hard work, and
-            countless sacrifices. But through perseverance, dedication, and an
-            unwavering focus on my goals, I was able to turn my vision into
-            reality. None of this would have been possible without my
-            now-business partner. A Serbian native who grew up in Australia but
-            spent years living in Serbia, he brought a unique perspective to the
-            craft of barbering. When I first joined his barbershop, it was a
-            small operation with four barbers. Through endless discussions and a
+            dream in my heart and a determination to succeed.{" "}
+            <span className="bg-[#cccccc] text-black">
+              The journey was far from easy — filled with challenges, long days
+              of hard work, and countless sacrifices.
+            </span>{" "}
+            But through perseverance, dedication, and an unwavering focus on my
+            goals, I was able to turn my vision into reality.{" "}
+            <b>
+              <i>
+                None of this would have been possible without my now-business
+                partner
+              </i>
+            </b>
+            . A Serbian native who grew up in Australia but spent years living
+            in Serbia, he brought a unique perspective to the craft of
+            barbering. When I first joined his barbershop, it was a small
+            operation with four barbers. Through endless discussions and a
             shared passion for excellence, the business expanded and we grew
-            together. `}
+            together. 
           </p>
         </div>
 
@@ -40,13 +47,18 @@ export default function Home() {
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>WHY WE CREATES BARBERSHOP</h4>
           <p>
-            {`
             As our collaboration grew stronger, we decided it was time to create
             something new - something that wasn’t existing - a space that would
-            redefine men’s grooming. Inspired by the fusion of traditional
-            barbering and modern luxury, we created a one of a kind environment
-            that blends premium services, innovative technology, and a stunning
-            interior designed to make every visit unforgettable `}
+            redefine men’s grooming.{" "}
+            <b>
+              <i>
+                {" "}
+                Inspired by the fusion of traditional barbering and modern
+                luxury, we created a one of a kind environment that blends
+                premium services, innovative technology, and a stunning interior
+                designed to make every visit unforgettable 
+              </i>
+            </b>
           </p>
         </div>
 
