@@ -150,6 +150,10 @@
   a {
     @apply cursor-auto md:cursor-pointer;
   }
+
+  p {
+    @apply text-justify tracking-[-1px];
+  }
 }
 
 @layer utilities {

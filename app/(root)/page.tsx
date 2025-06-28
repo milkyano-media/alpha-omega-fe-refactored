@@ -201,9 +201,25 @@ export default function Home() {
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>EXPERT BARBERS</h4>
           <p>
-            {` Our expert barbers are ready to give you recommendations considering your lifestyle, facial shape, hair type and hair density in order to ensure that you achieve a personalized and stylish look that compliments your individual features. `}
+            Our <span className="bg-[#cccccc] text-black">expert barbers</span>{" "}
+            are ready to give you recommendations considering your lifestyle,
+            facial shape, hair type and hair density in order to ensure that you
+            achieve a personalized and stylish look that compliments your
+            individual features.
             <br /> <br />
-            {`Through consultation we are dedicated to understand your unique preferences and tailor our recommendations to suit your specific needs. Whether you're seeking a new haircut, beard trim or grooming routine, we're here to guide you through the process, ensuring that you not only look great but also feel confident with your chosen aesthetic. Trust Alpha Omega Team to provide you with comprehensive options that align with your style and enhance your overall appearance.`}
+            <b>
+              <i>
+                Through consultation we are dedicated to understand your unique
+                preferences and tailor our recommendations to suit your specific
+                needs.
+              </i>
+            </b>
+            Whether you're seeking a new haircut, beard trim or grooming
+            routine, we're here to guide you through the process, ensuring that
+            you not only look great but also feel confident with your chosen
+            aesthetic. Trust Alpha Omega Team to provide you with comprehensive
+            options that align with your style and enhance your overall
+            appearance.
           </p>
         </div>
 
@@ -211,13 +227,18 @@ export default function Home() {
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>CREATIVE AND MODERN</h4>
           <p>
-            {`
-            Alpha Omega mens grooming stands as a beacon of innovation, ushering
-            in a new era in mens grooming. With a seamless blend of technical
-            expertise and creative vision, we redefine the boundaries of
-            traditional barbering and modern hairdressing. Our dedication is
-            unwavering—to unite the timeless charm of the classic barbershop
-            with the refined elegance of today's salons.`}
+            <b>
+              <i>
+                Alpha Omega mens grooming stands as a beacon of innovation,
+                ushering in a new era in mens grooming. With a seamless blend of{" "}
+                <span className="bg-[#cccccc]">technical expertise</span> and{" "}
+                <span className="bg-[#cccccc]">creative vision</span> , we
+                redefine the boundaries of traditional barbering and modern
+                hairdressing.
+              </i>
+            </b>
+            Our dedication is unwavering—to unite the timeless charm of the
+            classic barbershop with the refined elegance of today's salons.
           </p>
         </div>
 
