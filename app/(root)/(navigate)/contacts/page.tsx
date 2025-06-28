@@ -1,8 +1,21 @@
-import { MainForm } from "@/components/main-form";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Home() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  const handleBookUs = () => {
+    if (isAuthenticated) {
+      router.push("/book/services");
+    } else {
+      router.push("/login?returnUrl=/book/services");
+    }
+  };
   return (
     <main className="flex flex-col gap-20">
       <section className="flex flex-col gap-8 px-4 mt-40 text-center container mx-auto">
@@ -115,8 +128,6 @@ export default function Home() {
             <p>Email@gmail.com</p>
           </div>
         </div>
-
-        <MainForm />
       </section>
 
       <section className="flex flex-col items-center gap-8 px-4 container max-w-2xl mx-auto mb-40">
@@ -144,7 +155,7 @@ export default function Home() {
           Sydney 2041
         </b>
 
-        <Button variant={"secondary"}>BOOK US</Button>
+        <Button variant={"secondary"} onClick={handleBookUs}>BOOK US</Button>
       </section>
     </main>
   );

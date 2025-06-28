@@ -1,4 +1,3 @@
-import { MainForm } from "@/components/main-form";
 import Image from "next/image";
 
 export default function Home() {
@@ -177,8 +176,6 @@ export default function Home() {
             <p>Email@gmail.com</p>
           </div>
         </div>
-
-        <MainForm />
       </section>
     </main>
   );

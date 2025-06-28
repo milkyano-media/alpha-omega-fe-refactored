@@ -1,4 +1,4 @@
-import { MainForm } from "@/components/main-form";
+import { BarberApplicationForm } from "@/components/barber-application-form";
 import Image from "next/image";
 
 export default function Home() {
@@ -136,7 +136,7 @@ export default function Home() {
           </div>
         </div>
 
-        <MainForm />
+        <BarberApplicationForm />
       </section>
     </main>
   );

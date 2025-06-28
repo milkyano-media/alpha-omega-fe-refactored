@@ -18,7 +18,7 @@ export function Navbar() {
     <nav
       style={{ marginBottom: -navHeight }}
       ref={navRef}
-      className="flex flex-col sticky top-0 bg-black/15 md:bg-[#F8F8F8] backdrop-blur-xs"
+      className="flex flex-col sticky top-0 bg-black/15 md:bg-[#F8F8F8] backdrop-blur-xs z-navbar"
     >
       <div className="hidden md:flex justify-between items-center p-4 border-b border-[#DCDCDC]">
         <div className="flex gap-8">

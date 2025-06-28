@@ -1,7 +1,6 @@
 "use client";
 
 import { FAQSection } from "@/components/faq";
-import { MainForm } from "@/components/main-form";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -131,55 +130,69 @@ export default function Home() {
             alt="Opening Time 3d"
           />
         </div>
-        
-        <div className="flex flex-col gap-6 container mx-auto max-w-2xl mt-6">
-        <p className="text-center">
-          At Alpha Omega, we value your time and convenience. Check out our
-          flexible opening hours designed to fit seamlessly into your schedule,
-          whether it’s a quick trim before work or a full grooming session on
-          the weekend.
-        </p>
 
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-6 font-medium text-gray-900">Day</th>
-                <th className="text-right py-3 px-6 font-medium text-gray-900">Hours</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Monday</td>
-                <td className="py-3 px-6 text-right text-gray-500">Closed</td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Tuesday</td>
-                <td className="py-3 px-6 text-right text-gray-500">Closed</td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Wednesday</td>
-                <td className="py-3 px-6 text-right text-gray-900">10:00 AM - 7:00 PM</td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Thursday</td>
-                <td className="py-3 px-6 text-right text-gray-900">10:00 AM - 7:00 PM</td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Friday</td>
-                <td className="py-3 px-6 text-right text-gray-900">10:00 AM - 7:00 PM</td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Saturday</td>
-                <td className="py-3 px-6 text-right text-gray-900">8:00 AM - 5:00 PM</td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-6 text-gray-700">Sunday</td>
-                <td className="py-3 px-6 text-right text-gray-900">8:00 AM - 5:00 PM</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div className="flex flex-col gap-6 container mx-auto max-w-2xl mt-6">
+          <p className="text-center">
+            At Alpha Omega, we value your time and convenience. Check out our
+            flexible opening hours designed to fit seamlessly into your
+            schedule, whether it’s a quick trim before work or a full grooming
+            session on the weekend.
+          </p>
+
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-6 font-medium text-gray-900">
+                    Day
+                  </th>
+                  <th className="text-right py-3 px-6 font-medium text-gray-900">
+                    Hours
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Monday</td>
+                  <td className="py-3 px-6 text-right text-gray-500">Closed</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Tuesday</td>
+                  <td className="py-3 px-6 text-right text-gray-500">Closed</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Wednesday</td>
+                  <td className="py-3 px-6 text-right text-gray-900">
+                    10:00 AM - 7:00 PM
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Thursday</td>
+                  <td className="py-3 px-6 text-right text-gray-900">
+                    10:00 AM - 7:00 PM
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Friday</td>
+                  <td className="py-3 px-6 text-right text-gray-900">
+                    10:00 AM - 7:00 PM
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Saturday</td>
+                  <td className="py-3 px-6 text-right text-gray-900">
+                    8:00 AM - 5:00 PM
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-6 text-gray-700">Sunday</td>
+                  <td className="py-3 px-6 text-right text-gray-900">
+                    8:00 AM - 5:00 PM
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -330,8 +343,6 @@ export default function Home() {
           />
         </div>
 
-        <MainForm />
-
         <p>OR REACH US THROUGH</p>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -466,20 +477,22 @@ export default function Home() {
 
         <Button
           variant={"secondary"}
-          className="rounded-full"
+          className="rounded-3xl"
           onClick={handleBookNow}
         >
           Book appointment
         </Button>
 
         <div className="w-full flex justify-center">
-          <Image
-            src={"/assets/main-8.png"}
-            width={500}
-            height={500}
-            alt="Gallery of successful haircuts showcase"
-            className="rounded-xl shadow-lg"
-          />
+          <div className="relative w-full max-w-[500px] aspect-square overflow-hidden rounded-4xl shadow-lg">
+            <Image
+              src="/assets/main-8.png"
+              fill
+              alt="Gallery of successful haircuts showcase"
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 500px"
+            />
+          </div>
         </div>
       </section>
     </main>
