@@ -214,8 +214,8 @@ export default function Home() {
                 needs.
               </i>
             </b>
-            Whether you're seeking a new haircut, beard trim or grooming
-            routine, we're here to guide you through the process, ensuring that
+            Whether you&apos;re seeking a new haircut, beard trim or grooming
+            routine, we&apos;re here to guide you through the process, ensuring that
             you not only look great but also feel confident with your chosen
             aesthetic. Trust Alpha Omega Team to provide you with comprehensive
             options that align with your style and enhance your overall
@@ -238,7 +238,7 @@ export default function Home() {
               </i>
             </b>
             Our dedication is unwavering—to unite the timeless charm of the
-            classic barbershop with the refined elegance of today's salons.
+            classic barbershop with the refined elegance of today&apos;s salons.
           </p>
         </div>
 

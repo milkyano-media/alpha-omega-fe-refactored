@@ -13,6 +13,13 @@ import {
   BookingSummary,
   PaymentForm
 } from "@/components/pages/appointment";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// Configure dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Square type definitions are added globally in types/square.d.ts
 
@@ -371,11 +378,8 @@ export default function AppointmentBooking() {
           id: squareResponse.booking?.id || "pending",
           square_booking_id: squareResponse.booking?.id,
           service: selectedService.name,
-          date: new Date(selectedTime.start_at).toLocaleDateString(),
-          time: new Date(selectedTime.start_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit"
-          }),
+          date: dayjs(selectedTime.start_at).tz("Australia/Melbourne").format("YYYY-MM-DD"),
+          time: dayjs(selectedTime.start_at).tz("Australia/Melbourne").format("h:mm A"),
           deposit: (selectedService.price_amount / 100).toFixed(2), // 50% of the price of double amount
           total: (selectedService.price_amount / 50).toFixed(2),
           status: squareResponse.booking?.status || "confirmed",
@@ -454,8 +458,9 @@ export default function AppointmentBooking() {
         setAvailableDates(dates);
 
         // Update time slots for selected date
-        const dateKey = selectedDate.toISOString().split("T")[0];
-        const availabilities = cachedData.availabilities_by_date[dateKey] || [];
+        // Convert selected date to Melbourne timezone to match API response keys
+        const melbourneDateKey = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
+        const availabilities = cachedData.availabilities_by_date[melbourneDateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
@@ -517,8 +522,9 @@ export default function AppointmentBooking() {
         setAvailableDates(dates);
 
         // If the selected date has available times, set them
-        const dateKey = selectedDate.toISOString().split("T")[0];
-        const availabilities = response.availabilities_by_date[dateKey] || [];
+        // Convert selected date to Melbourne timezone to match API response keys
+        const melbourneDateKey = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
+        const availabilities = response.availabilities_by_date[melbourneDateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
@@ -542,11 +548,13 @@ export default function AppointmentBooking() {
     selectedMonth,
     selectedYear,
     selectedService,
+    selectedDate,
     monthCache
   ]);
 
   // Extract date string to avoid complex expression in dependency array
-  const selectedDateString = selectedDate.toISOString().split("T")[0];
+  // Use Melbourne timezone for consistency with API response keys
+  const selectedDateString = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
 
   // Update available times when selected date changes
   useEffect(() => {
@@ -570,7 +578,6 @@ export default function AppointmentBooking() {
     setAvailableTimes(availabilities);
     setSelectedTime(null); // Reset selected time when date changes
     // Note: We use selectedDateString instead of selectedDate to avoid complex expression warning
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availabilityData, selectedDateString]);
 
   const handleDateChange = (date: Date) => {

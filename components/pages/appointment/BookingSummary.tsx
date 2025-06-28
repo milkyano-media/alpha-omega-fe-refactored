@@ -3,6 +3,13 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { TimeSlot } from "@/lib/booking-service";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// Configure dayjs with timezone support
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 interface Service {
   id: number;
@@ -38,24 +45,18 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   const totalAmount = servicePrice * 2; // Display double the price
   const depositAmount = servicePrice; // Deposit is the original price (50% of displayed doubled price)
 
-  // Format time for display
+  // Format time for display in Melbourne timezone
   const formatTime = (isoTime: string) => {
-    const time = new Date(isoTime);
-    return time.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    // Convert UTC time to Melbourne time
+    const melbourneTime = dayjs(isoTime).tz("Australia/Melbourne");
+    return melbourneTime.format("h:mm A");
   };
 
-  // Format date for display
+  // Format date for display in Melbourne timezone
   const formatDate = (isoTime: string) => {
-    const date = new Date(isoTime);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
+    // Convert UTC time to Melbourne time
+    const melbourneDate = dayjs(isoTime).tz("Australia/Melbourne");
+    return melbourneDate.format("dddd, MMM D");
   };
 
   return (
