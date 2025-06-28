@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import PhoneInput from "react-phone-number-input";
 import { isPossiblePhoneNumber } from "react-phone-number-input";
 import "@/styles/phone-input.css";
@@ -78,7 +77,6 @@ const formSchema = z.object({
 });
 
 export function BarberApplicationForm() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +107,7 @@ export function BarberApplicationForm() {
       
       // Reset form
       form.reset();
-    } catch (err) {
+    } catch {
       setError("Failed to submit application. Please try again.");
     } finally {
       setIsLoading(false);

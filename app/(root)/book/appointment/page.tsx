@@ -427,14 +427,18 @@ export default function AppointmentBooking() {
     }
   }, [bookingConfirmed, router]);
 
+  // Extract date parts to avoid complex expressions in dependency array
+  const selectedMonth = selectedDate.getMonth();
+  const selectedYear = selectedDate.getFullYear();
+
   // Fetch available times when date changes
   // Fetch availability data when month changes or service changes
   useEffect(() => {
     if (!selectedService) return;
 
     // Extract month and year for dependency tracking and caching
-    const currentMonth = selectedDate.getMonth();
-    const currentYear = selectedDate.getFullYear();
+    const currentMonth = selectedMonth;
+    const currentYear = selectedYear;
     const cacheKey = `${currentYear}-${currentMonth}`;
 
     const fetchAvailabilityData = async () => {
@@ -534,21 +538,22 @@ export default function AppointmentBooking() {
     };
 
     fetchAvailabilityData();
-    // We need to disable ESLint for this complex dependency because we're checking specific parts of selectedDate
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    selectedDate.getMonth(),
-    selectedDate.getFullYear(),
+    selectedMonth,
+    selectedYear,
     selectedService,
     monthCache
   ]);
+
+  // Extract date string to avoid complex expression in dependency array
+  const selectedDateString = selectedDate.toISOString().split("T")[0];
 
   // Update available times when selected date changes
   useEffect(() => {
     if (!availabilityData) return;
 
     // Get the key for the selected date
-    const dateKey = selectedDate.toISOString().split("T")[0];
+    const dateKey = selectedDateString;
 
     // Get available times for this date from the existing data
     const availabilities =
@@ -564,7 +569,9 @@ export default function AppointmentBooking() {
     );
     setAvailableTimes(availabilities);
     setSelectedTime(null); // Reset selected time when date changes
-  }, [availabilityData, selectedDate]);
+    // Note: We use selectedDateString instead of selectedDate to avoid complex expression warning
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availabilityData, selectedDateString]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
