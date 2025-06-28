@@ -166,6 +166,8 @@
   .z-popover { z-index: 1060; }
   .z-tooltip { z-index: 1070; }
   .z-navbar { z-index: 1080; }
+  .z-dialog-overlay { z-index: 1090; }
+  .z-dialog { z-index: 1100; }
 }
 
 @layer components {

@@ -126,12 +126,12 @@ export default function ServiceSelection() {
 
   return (
     <main className="container mx-auto px-4 py-10 mt-20 mb-20">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-bold mb-3">
           Choose Your Barber
         </h1>
-        <p className="text-lg text-gray-600">
-          Select a barber to view their available services
+        <p className="text-gray-600 text-base text-center">
+          Select your preferred barber and explore their services
         </p>
       </div>
 
