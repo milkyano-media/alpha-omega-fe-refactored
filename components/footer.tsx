@@ -5,13 +5,14 @@ import { Input } from "./ui/input";
 export function Footer() {
   const navLinks = [
     { label: "Home Page", href: "/" },
-    { label: "About Us", href: "/about" },
-    { label: "Testimonials", href: "/testimonials" },
     { label: "Services", href: "/services" },
-    { label: "Contact Us", href: "/contact" },
     { label: "Gallery", href: "/gallery" },
-    { label: "Barbers", href: "/barbers" },
-    { label: "Hiring", href: "/hiring" }
+    { label: "Our Story", href: "/about/our-story" },
+    { label: "Hiring", href: "/careers" },
+    { label: "Our Ethos", href: "/about/our-ethos" },
+    { label: "Testimonials", href: "/testimonials" },
+    { label: "Contact Us", href: "/contacts" },
+    { label: "Barbers", href: "/barbers" }
   ];
 
   const workingHours = [
