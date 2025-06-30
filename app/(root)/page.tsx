@@ -199,47 +199,73 @@ export default function Home() {
       <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
-          <h4>EXPERT BARBERS</h4>
-          <p>
-            Our <span className="bg-[#cccccc] text-black">expert barbers</span>{" "}
-            are ready to give you recommendations considering your lifestyle,
-            facial shape, hair type and hair density in order to ensure that you
-            achieve a personalized and stylish look that compliments your
-            individual features.
-            <br /> <br />
-            <b>
-              <i>
-                Through consultation we are dedicated to understand your unique
-                preferences and tailor our recommendations to suit your specific
-                needs.
-              </i>
-            </b>
-            Whether you&apos;re seeking a new haircut, beard trim or grooming
-            routine, we&apos;re here to guide you through the process, ensuring that
-            you not only look great but also feel confident with your chosen
-            aesthetic. Trust Alpha Omega Team to provide you with comprehensive
-            options that align with your style and enhance your overall
-            appearance.
+          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">EXPERT BARBERS</h4>
+          <div className="flex items-start gap-4">
+            <span className="text-6xl font-bold leading-none">A</span>
+            <p>
+              <b>Achieving your grooming goals by offering a personalized, stylish look that compliments your individual features.</b>
+            </p>
+          </div>
+          <p className="mt-4">
+            <b>Our expert barbers</b> are ready to give you recommendations considering your <b>lifestyle, facial shape, hair type, and hair density</b> in order to ensure that you achieve a <b>personalized and stylish look that compliments your individual features.</b>
           </p>
+          <p className="mt-4">
+            Through <i>consultation</i> we are dedicated to <i>understand your unique preferences</i> and <b>tailor our recommendations to suit your specific needs.</b> Whether you're seeking a <b>new haircut, beard trim,</b> or grooming routine, we're here to <b>guide you through the process,</b> ensuring that you not only look great but also <b>feel confident with your chosen aesthetic.</b> <i>Trust Alpha Omega Team</i> to provide you with <b>comprehensive options that align with your style and enhance your overall appearance.</b>
+          </p>
+          
+          <div className="mt-6 space-y-0">
+            <div className="pb-4 border-b border-gray-300">
+              <p className="font-bold">01</p>
+              <h5 className="font-bold">Personalized</h5>
+              <p>Recommendations considering your lifestyle, facial shape, hair type, and hair density to ensure a personalized and stylish look.</p>
+            </div>
+            
+            <div className="py-4 border-b border-gray-300">
+              <p className="font-bold">02</p>
+              <h5 className="font-bold">Consultation-Based</h5>
+              <p>Through consultation we are dedicated to understand your unique preferences and tailor recommendations to suit your specific needs.</p>
+            </div>
+            
+            <div className="pt-4">
+              <p className="font-bold">02</p>
+              <h5 className="font-bold">Comprehensive Guidance</h5>
+              <p>Whether you're seeking a haircut, beard trim, or a complete grooming routine, we're here to guide you, ensuring you look great and feel confident.</p>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
           <h4>CREATIVE AND MODERN</h4>
-          <p>
-            <b>
-              <i>
-                Alpha Omega mens grooming stands as a beacon of innovation,
-                ushering in a new era in mens grooming. With a seamless blend of{" "}
-                <span className="bg-[#cccccc]">technical expertise</span> and{" "}
-                <span className="bg-[#cccccc]">creative vision</span> , we
-                redefine the boundaries of traditional barbering and modern
-                hairdressing.
-              </i>
-            </b>
-            Our dedication is unwavering—to unite the timeless charm of the
-            classic barbershop with the refined elegance of today&apos;s salons.
+          <div className="flex items-start gap-4">
+            <span className="text-6xl font-bold leading-none">O</span>
+            <p>
+              <b>Opening new boundaries between traditional barbering and modern hairdressing.</b>
+            </p>
+          </div>
+          <p className="mt-4">
+            Alpha Omega mens grooming stands as a beacon of innovation, <i>ushering in a new era in mens grooming.</i> With a seamless blend of technical expertise and creative vision, we redefine the boundaries of traditional barbering and modern hairdressing. Our dedication is unwavering to unite the timeless charm of the classic barbershop with the refined elegance of <b>today's salons.</b>
           </p>
+          
+          <div className="mt-6 space-y-4">
+            <div>
+              <p className="font-bold">01</p>
+              <h5 className="font-bold">Innovative</h5>
+              <p>A beacon of innovation that brings a fresh approach to modern men's grooming.</p>
+            </div>
+            
+            <div>
+              <p className="font-bold">02</p>
+              <h5 className="font-bold">Creative Expertise</h5>
+              <p>Seamlessly blending technical expertise with creative vision to redefine grooming standards.</p>
+            </div>
+            
+            <div>
+              <p className="font-bold">03</p>
+              <h5 className="font-bold">Timeless Meets Modern</h5>
+              <p>Bridging the gap between the timeless charm of classic barbershops and the refined elegance of contemporary salons.</p>
+            </div>
+          </div>
         </div>
 
         <p className="col-span-2 text-center">
