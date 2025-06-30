@@ -225,8 +225,8 @@ export default function Home() {
             Through <i>consultation</i> we are dedicated to{" "}
             <i>understand your unique preferences</i> and{" "}
             <b>tailor our recommendations to suit your specific needs.</b>{" "}
-            Whether you're seeking a <b>new haircut, beard trim,</b> or grooming
-            routine, we're here to <b>guide you through the process,</b>{" "}
+            Whether you&apos;re seeking a <b>new haircut, beard trim,</b> or grooming
+            routine, we&apos;re here to <b>guide you through the process,</b>{" "}
             ensuring that you not only look great but also{" "}
             <b>feel confident with your chosen aesthetic.</b>{" "}
             <i>Trust Alpha Omega Team</i> to provide you with{" "}
@@ -261,8 +261,8 @@ export default function Home() {
               <p className="font-bold">03</p>
               <h5 className="font-bold">Comprehensive Guidance</h5>
               <p>
-                Whether you're seeking a haircut, beard trim, or a complete
-                grooming routine, we're here to guide you, ensuring you look
+                Whether you&apos;re seeking a haircut, beard trim, or a complete
+                grooming routine, we&apos;re here to guide you, ensuring you look
                 great and feel confident.
               </p>
             </div>
@@ -294,7 +294,7 @@ export default function Home() {
             </b>{" "}
             Our <b>dedication is unwavering to unite</b> the timeless charm of
             the classic barbershop with the refined elegance of{" "}
-            <b>today's salons.</b>
+            <b>today&apos;s salons.</b>
           </p>
 
           <div className="mt-6 space-y-0">
@@ -303,7 +303,7 @@ export default function Home() {
               <h5 className="font-bold">Innovative</h5>
               <p>
                 A beacon of innovation that brings a fresh approach to modern
-                men's grooming.
+                men&apos;s grooming.
               </p>
             </div>
 

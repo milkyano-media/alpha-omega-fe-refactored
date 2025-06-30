@@ -18,7 +18,7 @@ export default function Home() {
 
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
-          <h4>HOW IT BEGINS</h4>
+          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">HOW IT BEGINS</h4>
           <p>
             Two years ago, I arrived in Australia from Greece with no money, a
             dream in my heart and a determination to succeed.{" "}
@@ -45,7 +45,7 @@ export default function Home() {
 
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
-          <h4>WHY WE CREATES BARBERSHOP</h4>
+          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">WHY WE CREATES BARBERSHOP</h4>
           <p>
             As our collaboration grew stronger, we decided it was time to create
             something new - something that wasn’t existing - a space that would
