@@ -20,7 +20,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col gap-20">
-      <section className="bg-[url('/bg/main-1.png')] bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white">
+      <section className="bg-[url('/bg/main-1.png')] bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white md:pt-20">
         <div className="w-full md:w-max">
           <Image
             src={"/logo/main.png"}
@@ -44,6 +44,53 @@ export default function Home() {
         <Button variant={"negative"} className="mt-8" onClick={handleBookNow}>
           BOOK NOW
         </Button>
+
+        <div className="flex gap-8 p-8">
+          <button>
+            <svg
+              width="35"
+              height="35"
+              viewBox="0 0 35 35"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M17.4555 0C12.7153 0 12.1204 0.0207276 10.2586 0.105455C8.40047 0.190546 7.13215 0.484727 6.02236 0.916364C4.8744 1.36218 3.90061 1.95855 2.93046 2.92909C1.95958 3.89927 1.36323 4.87309 0.915972 6.02073C0.483258 7.13091 0.188721 8.39964 0.105088 10.2571C0.0218174 12.1189 0 12.7142 0 17.4545C0 22.1949 0.0210906 22.788 0.105452 24.6498C0.190904 26.508 0.485076 27.7764 0.916336 28.8862C1.3625 30.0342 1.95885 31.008 2.92937 31.9782C3.89915 32.9491 4.87294 33.5469 6.02018 33.9927C7.13069 34.4244 8.39938 34.7185 10.2571 34.8036C12.1189 34.8884 12.7134 34.9091 17.4533 34.9091C22.1939 34.9091 22.7869 34.8884 24.6487 34.8036C26.5068 34.7185 27.7766 34.4244 28.8871 33.9927C30.0347 33.5469 31.0071 32.9491 31.9769 31.9782C32.9477 31.008 33.5441 30.0342 33.9913 28.8865C34.4204 27.7764 34.7149 26.5076 34.8022 24.6502C34.8859 22.7884 34.9077 22.1949 34.9077 17.4545C34.9077 12.7142 34.8859 12.1193 34.8022 10.2575C34.7149 8.39927 34.4204 7.13091 33.9913 6.02109C33.5441 4.87309 32.9477 3.89927 31.9769 2.92909C31.006 1.95818 30.0351 1.36182 28.886 0.916364C27.7733 0.484727 26.5043 0.190546 24.6462 0.105455C22.7844 0.0207276 22.1917 0 17.45 0H17.4555ZM15.8897 3.14545C16.3544 3.14473 16.8729 3.14545 17.4555 3.14545C22.1157 3.14545 22.668 3.16218 24.5083 3.24582C26.2101 3.32364 27.1337 3.608 27.749 3.84691C28.5635 4.16327 29.1442 4.54145 29.7547 5.15236C30.3656 5.76327 30.7438 6.34509 31.0609 7.15964C31.2998 7.77418 31.5845 8.69782 31.6619 10.3996C31.7456 12.2396 31.7638 12.7924 31.7638 17.4505C31.7638 22.1087 31.7456 22.6615 31.6619 24.5015C31.5841 26.2033 31.2998 27.1269 31.0609 27.7415C30.7445 28.556 30.3656 29.136 29.7547 29.7465C29.1438 30.3575 28.5639 30.7356 27.749 31.052C27.1344 31.292 26.2101 31.5756 24.5083 31.6535C22.6684 31.7371 22.1157 31.7553 17.4555 31.7553C12.7949 31.7553 12.2425 31.7371 10.4026 31.6535C8.70083 31.5749 7.77722 31.2905 7.1616 31.0516C6.34708 30.7353 5.76528 30.3571 5.15439 29.7462C4.5435 29.1353 4.16533 28.5549 3.84825 27.74C3.60935 27.1255 3.32463 26.2018 3.24717 24.5C3.16354 22.66 3.14681 22.1073 3.14681 17.4462C3.14681 12.7851 3.16354 12.2353 3.24717 10.3953C3.32499 8.69345 3.60935 7.76982 3.84825 7.15454C4.1646 6.34 4.5435 5.75818 5.15439 5.14727C5.76528 4.53636 6.34708 4.15818 7.1616 3.84109C7.77686 3.60109 8.70083 3.31745 10.4026 3.23927C12.0127 3.16655 12.6367 3.14473 15.8897 3.14109V3.14545ZM26.7723 6.04364C25.616 6.04364 24.6778 6.98073 24.6778 8.13745C24.6778 9.29382 25.616 10.232 26.7723 10.232C27.9286 10.232 28.8668 9.29382 28.8668 8.13745C28.8668 6.98109 27.9286 6.04291 26.7723 6.04291V6.04364ZM17.4555 8.49091C12.5054 8.49091 8.49211 12.5044 8.49211 17.4545C8.49211 22.4047 12.5054 26.4164 17.4555 26.4164C22.4055 26.4164 26.4174 22.4047 26.4174 17.4545C26.4174 12.5044 22.4051 8.49091 17.4551 8.49091H17.4555ZM17.4555 11.6364C20.6685 11.6364 23.2735 14.2411 23.2735 17.4545C23.2735 20.6676 20.6685 23.2727 17.4555 23.2727C14.2421 23.2727 11.6375 20.6676 11.6375 17.4545C11.6375 14.2411 14.2421 11.6364 17.4555 11.6364V11.6364Z"
+                fill="white"
+              />
+            </svg>
+          </button>
+
+          <button>
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 0C27.9 0 36 8.1 36 18C36 26.9 29.5 34.2998 21 35.7998L20.8984 35.7188C20.9322 35.7122 20.9662 35.7069 21 35.7002V23H25L25.7998 18H21V14.5C21 13.1 21.5002 12 23.7002 12H26V7.40039C24.7 7.20039 23.3 7 22 7C17.9 7 15 9.5 15 14V18H10.5V23H15V35.7002C15.0335 35.7069 15.0671 35.7123 15.1006 35.7188L15 35.7998C6.50002 34.2998 0 26.9 0 18C0 8.1 8.1 0 18 0Z"
+                fill="white"
+              />
+            </svg>
+          </button>
+
+          <button>
+            <svg
+              width="30"
+              height="32"
+              viewBox="0 0 30 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5328 26.5179C13.2028 26.5179 15.3673 24.6063 15.3673 21.6834V0H21.1652C20.84 3.95446 24.7711 7.77436 29.1064 7.687V13.1389C25.3988 13.1389 22.2461 11.5712 21.1487 10.7012V21.6834C21.1487 26.5179 17.3455 32 10.5328 32C3.72019 32 0 26.5179 0 21.6834C0 14.86 7.22087 10.9027 12.0034 11.8699V17.4231C11.7628 17.338 11.1424 17.2121 10.6139 17.2121C7.92172 17.1129 5.6984 19.2964 5.6984 21.6834C5.6984 24.3534 7.86285 26.5179 10.5328 26.5179Z"
+                fill="white"
+              />
+            </svg>
+          </button>
+        </div>
       </section>
 
       <section className="flex flex-col gap-8 justify-center items-center px-4 container mx-auto">
@@ -154,7 +201,9 @@ export default function Home() {
               <tbody className="divide-y divide-gray-100">
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Monday</td>
-                  <td className="py-3 px-6 text-right text-gray-500">Closed</td>
+                  <td className="py-3 px-6 text-right text-gray-900">
+                    10:00-14:00 / 17:00-21:00
+                  </td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Tuesday</td>
@@ -163,31 +212,31 @@ export default function Home() {
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Wednesday</td>
                   <td className="py-3 px-6 text-right text-gray-900">
-                    10:00 AM - 7:00 PM
+                    10:00-14:00 / 17:00-21:00
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Thursday</td>
                   <td className="py-3 px-6 text-right text-gray-900">
-                    10:00 AM - 7:00 PM
+                    10:00-14:00 / 17:00-21:00
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Friday</td>
                   <td className="py-3 px-6 text-right text-gray-900">
-                    10:00 AM - 7:00 PM
+                    10:00-14:00 / 17:00-21:00
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Saturday</td>
                   <td className="py-3 px-6 text-right text-gray-900">
-                    8:00 AM - 5:00 PM
+                    09:00-19:00
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-6 text-gray-700">Sunday</td>
                   <td className="py-3 px-6 text-right text-gray-900">
-                    8:00 AM - 5:00 PM
+                    10:00-15:00
                   </td>
                 </tr>
               </tbody>
@@ -225,9 +274,10 @@ export default function Home() {
             Through <i>consultation</i> we are dedicated to{" "}
             <i>understand your unique preferences</i> and{" "}
             <b>tailor our recommendations to suit your specific needs.</b>{" "}
-            Whether you&apos;re seeking a <b>new haircut, beard trim,</b> or grooming
-            routine, we&apos;re here to <b>guide you through the process,</b>{" "}
-            ensuring that you not only look great but also{" "}
+            Whether you&apos;re seeking a <b>new haircut, beard trim,</b> or
+            grooming routine, we&apos;re here to{" "}
+            <b>guide you through the process,</b> ensuring that you not only
+            look great but also{" "}
             <b>feel confident with your chosen aesthetic.</b>{" "}
             <i>Trust Alpha Omega Team</i> to provide you with{" "}
             <b>
@@ -262,8 +312,8 @@ export default function Home() {
               <h5 className="font-bold">Comprehensive Guidance</h5>
               <p>
                 Whether you&apos;re seeking a haircut, beard trim, or a complete
-                grooming routine, we&apos;re here to guide you, ensuring you look
-                great and feel confident.
+                grooming routine, we&apos;re here to guide you, ensuring you
+                look great and feel confident.
               </p>
             </div>
           </div>

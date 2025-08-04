@@ -10,7 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -47,13 +47,13 @@ export default function ServiceSelection() {
         for (const barber of barberList) {
           try {
             const barberServices = await BookingService.getTeamMemberServices(
-              barber.id
+              barber.id,
             );
             servicesByBarber[barber.id] = barberServices;
           } catch (serviceErr) {
             console.error(
               `Failed to fetch services for barber ${barber.id}:`,
-              serviceErr
+              serviceErr,
             );
           }
         }
@@ -63,7 +63,7 @@ export default function ServiceSelection() {
         setError(
           err instanceof Error
             ? err.message
-            : "Failed to load barbers and services"
+            : "Failed to load barbers and services",
         );
         console.error("Error fetching data:", err);
       } finally {
@@ -125,7 +125,7 @@ export default function ServiceSelection() {
   }
 
   return (
-    <main className="container mx-auto px-4 py-10 mt-20 mb-20">
+    <main className="container mx-auto px-4 py-10 mt-40 mb-20">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-3">
           Choose Your Barber
@@ -142,10 +142,10 @@ export default function ServiceSelection() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {barbers
             .filter(
-              (barber) => services[barber.id] && services[barber.id].length > 0
+              (barber) => services[barber.id] && services[barber.id].length > 0,
             )
             .map((barber) => (
               <div
@@ -170,8 +170,7 @@ export default function ServiceSelection() {
                 <div className="p-6">
                   <div className="space-y-2 mb-4">
                     <p className="text-gray-600 flex items-center gap-2">
-                      <span className="text-xl">🇪🇸</span>
-                      <span>Español</span>
+                      <span className="text-xl">🇺🇸🇨🇳🇸🇦</span>
                     </p>
                     <p className="text-gray-600 text-sm">
                       @{barber.first_name.toLowerCase()}.barber
@@ -185,7 +184,7 @@ export default function ServiceSelection() {
 
                   <Button
                     onClick={() => handleViewServices(barber)}
-                    className="w-full bg-black text-white hover:bg-gray-800"
+                    className="w-full bg-black text-white hover:bg-gray-800 text-xs md:text-lg"
                     disabled={
                       !services[barber.id] || services[barber.id].length === 0
                     }

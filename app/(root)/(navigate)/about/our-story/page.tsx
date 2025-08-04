@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <main className="flex flex-col gap-20">
+    <main className="flex flex-col gap-20 -mt-20">
       <section className="bg-[url('/bg/about-1.png')] bg-cover bg-center h-80 md:h-[600px] md:mt-20 flex flex-col justify-center items-center text-center text-white"></section>
 
       <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
@@ -18,7 +18,9 @@ export default function Home() {
 
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
-          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">HOW IT BEGINS</h4>
+          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">
+            HOW IT BEGINS
+          </h4>
           <p>
             Two years ago, I arrived in Australia from Greece with no money, a
             dream in my heart and a determination to succeed.{" "}
@@ -45,7 +47,9 @@ export default function Home() {
 
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
-          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">WHY WE CREATES BARBERSHOP</h4>
+          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">
+            WHY WE CREATES BARBERSHOP
+          </h4>
           <p>
             As our collaboration grew stronger, we decided it was time to create
             something new - something that wasn’t existing - a space that would
