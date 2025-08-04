@@ -30,7 +30,7 @@ export default function Home() {
           />
         </div>
 
-        <p>
+        <p className="text-center">
           ELEVATE YOUR IMAGE,
           <br />
           ELEVATE YOUR CONFIDENCE,
