@@ -13,7 +13,6 @@ dayjs.extend(timezone);
 
 interface Service {
   id: number;
-  team_member_id: number;
   name: string;
   description: string;
   price_amount: number;

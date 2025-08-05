@@ -35,7 +35,6 @@ export interface TeamMember {
 
 export interface Service {
   id: number;
-  team_member_id: number;
   name: string;
   description: string;
   price_amount: number;
@@ -45,6 +44,8 @@ export interface Service {
   square_catalog_id: string;
   variation_name?: string;
   is_available?: boolean;
+  // Many-to-many relationship with TeamMembers
+  teamMembers?: TeamMember[];
 }
 
 export interface TimeSlot {
@@ -115,6 +116,30 @@ export const BookingService = {
       return response.data || [];
     } catch (error: any) {
       throw new Error(error.message || `Failed to fetch services for barber ${teamMemberId}`);
+    }
+  },
+
+  /**
+   * Get all services (for reversed flow)
+   */
+  async getAllServices(): Promise<Service[]> {
+    try {
+      const response = await API.get('/services');
+      return response.data || [];
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to fetch services");
+    }
+  },
+
+  /**
+   * Get barbers who offer a specific service (for reversed flow)
+   */
+  async getBarbersForService(serviceId: number): Promise<TeamMember[]> {
+    try {
+      const response = await API.get(`/services/${serviceId}/barbers`);
+      return response.data || [];
+    } catch (error: any) {
+      throw new Error(error.message || `Failed to fetch barbers for service ${serviceId}`);
     }
   },
 
