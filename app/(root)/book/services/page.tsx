@@ -170,7 +170,10 @@ export default function ServiceSelection() {
                 <div className="p-6">
                   <div className="space-y-2 mb-4">
                     <p className="text-gray-600 flex items-center gap-2">
-                      <span className="text-xl">🇦🇺🇬🇷🇺🇸🇨🇳🇸🇦</span>
+                      <span className="text-xl">
+                        Language Spoken <br />
+                        🇦🇺🇬🇷
+                      </span>
                     </p>
                     <p className="text-gray-600 text-sm">
                       @{barber.first_name.toLowerCase()}.barber
