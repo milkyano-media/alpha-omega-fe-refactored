@@ -1,20 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TimeSlot } from "@/lib/booking-service";
+import { TimeSlot, Service } from "@/lib/booking-service";
 import React from "react";
-
-interface Service {
-  id: number;
-  team_member_id: number;
-  name: string;
-  description: string;
-  price_amount: number;
-  price_currency: string;
-  duration: number;
-  service_variation_id: string;
-  square_catalog_id: string;
-}
 
 interface PaymentFormProps {
   squareCard: Square.Card | null;

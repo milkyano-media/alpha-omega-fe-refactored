@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { TimeSlot } from "@/lib/booking-service";
+import { TimeSlot, Service, TeamMember } from "@/lib/booking-service";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -11,15 +11,10 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-interface Service {
-  id: number;
-  name: string;
-  description: string;
-  price_amount: number;
-  price_currency: string;
-  duration: number;
-  service_variation_id: string;
-  square_catalog_id: string;
+interface AdditionalService {
+  service: Service;
+  barber: TeamMember;
+  timeSlot: TimeSlot;
 }
 
 interface BookingSummaryProps {
@@ -28,6 +23,8 @@ interface BookingSummaryProps {
   error: string | null;
   onProceedToPayment: () => void;
   showPaymentForm: boolean;
+  additionalServices?: AdditionalService[];
+  onRemoveAdditionalService?: (index: number) => void;
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -36,13 +33,27 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   error,
   onProceedToPayment,
   showPaymentForm,
+  additionalServices = [],
+  onRemoveAdditionalService,
 }) => {
   if (!selectedService) return null;
 
-  // Display doubled price for customer, but deposit is still the actual price in Square
-  const servicePrice = selectedService ? selectedService.price_amount / 100 : 0;
-  const totalAmount = servicePrice * 2; // Display double the price
-  const depositAmount = servicePrice; // Deposit is the original price (50% of displayed doubled price)
+  // Calculate main service pricing
+  const mainServicePrice = selectedService.price_amount / 100;
+  const mainServiceDisplayPrice = mainServicePrice * 2; // Display double the price
+
+  // Calculate additional services pricing
+  const additionalServicesDisplayPrice = additionalServices.reduce((total, additional) => {
+    return total + (additional.service.price_amount * 2 / 100);
+  }, 0);
+  
+  const additionalServicesDepositPrice = additionalServices.reduce((total, additional) => {
+    return total + (additional.service.price_amount / 100);
+  }, 0);
+
+  // Total amounts
+  const totalAmount = mainServiceDisplayPrice + additionalServicesDisplayPrice;
+  const depositAmount = mainServicePrice + additionalServicesDepositPrice; // 50% of displayed price
 
   // Format time for display in Melbourne timezone
   const formatTime = (isoTime: string) => {
@@ -61,10 +72,11 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   return (
     <div className="mb-4">
       <div className="border border-gray-200 rounded-lg overflow-hidden">
+        {/* Main Service */}
         <div className="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
           <p className="text-sm font-medium">{selectedService.name}</p>
           <div className="flex gap-3 text-xs text-gray-600">
-            <span>${totalAmount.toFixed(2)}</span>
+            <span>${mainServiceDisplayPrice.toFixed(2)}</span>
             <span>
               {selectedService.duration > 10000
                 ? Math.round(selectedService.duration / 60000)
@@ -73,6 +85,40 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Additional Services */}
+        {additionalServices.map((additional, index) => (
+          <div key={index} className="p-3 border-b border-gray-200 bg-blue-50 flex justify-between items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium">{additional.service.name}</p>
+              <p className="text-xs text-gray-600">
+                with {additional.barber.first_name} {additional.barber.last_name} • {" "}
+                {formatTime(additional.timeSlot.start_at)} on {formatDate(additional.timeSlot.start_at)}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-3 text-xs text-gray-600">
+                <span>${((additional.service.price_amount * 2) / 100).toFixed(2)}</span>
+                <span>
+                  {additional.service.duration > 10000
+                    ? Math.round(additional.service.duration / 60000)
+                    : additional.service.duration}{" "}
+                  min
+                </span>
+              </div>
+              {onRemoveAdditionalService && (
+                <button
+                  onClick={() => onRemoveAdditionalService(index)}
+                  className="text-red-600 hover:text-red-800 text-sm ml-2"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Totals */}
         <div className="p-3 flex justify-between items-center">
           <p className="text-sm">Total</p>
           <p className="font-medium">${totalAmount.toFixed(2)}</p>
@@ -83,7 +129,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
         <div className="p-3 border-t border-gray-100 flex justify-between items-center text-gray-500 text-sm">
           <p>Balance due at appointment</p>
-          <p>${depositAmount.toFixed(2)}</p>
+          <p>${(totalAmount - depositAmount).toFixed(2)}</p>
         </div>
       </div>
 
@@ -110,7 +156,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       {!showPaymentForm && (
         <Button
         onClick={onProceedToPayment}
-        className="w-full mt-4 py-3 text-base bg-blue-500 hover:bg-blue-600 text-white rounded-md font-normal"
+        className="w-full mt-4 py-3 text-base bg-black hover:bg-gray-800 transition-colors text-white rounded-md font-normal"
           disabled={!selectedTime}
         >
           {selectedTime ? "Confirm and Pay Deposit" : "Please Select a Time"}

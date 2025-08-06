@@ -6,13 +6,25 @@ import { useAuth } from "@/lib/auth-context";
 import {
   AvailabilityResponse,
   BookingService,
-  TimeSlot
+  TimeSlot,
+  TeamMember,
+  Service
 } from "@/lib/booking-service";
 import {
   DateTimeSelector,
   BookingSummary,
   PaymentForm
 } from "@/components/pages/appointment";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { getServiceImageSafe } from "@/lib/service-images";
+import { getBarberImageSafe } from "@/lib/barber-images";
+import Image from "next/image";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -23,16 +35,10 @@ dayjs.extend(timezone);
 
 // Square type definitions are added globally in types/square.d.ts
 
-interface Service {
-  id: number;
-  team_member_id: number;
-  name: string;
-  description: string;
-  price_amount: number;
-  price_currency: string;
-  duration: number;
-  service_variation_id: string;
-  square_catalog_id: string;
+interface AdditionalService {
+  service: Service;
+  barber: TeamMember;
+  timeSlot: TimeSlot;
 }
 
 export default function AppointmentBooking() {
@@ -54,6 +60,26 @@ export default function AppointmentBooking() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [, setSquareBookingId] = useState<string | null>(null);
   const [creatingBooking, setCreatingBooking] = useState(false);
+  
+  // Additional services state
+  const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([]);
+  const [allServices, setAllServices] = useState<Service[]>([]);
+  const [allBarbers, setAllBarbers] = useState<Record<number, TeamMember[]>>({});
+  
+  // Dialog states for additional service flow
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [showBarberDialog, setShowBarberDialog] = useState(false);
+  const [showDateDialog, setShowDateDialog] = useState(false);
+  
+  // Temporary state for additional service selection
+  const [tempAdditionalService, setTempAdditionalService] = useState<Service | null>(null);
+  const [tempAdditionalBarber, setTempAdditionalBarber] = useState<TeamMember | null>(null);
+  const [tempAdditionalDate, setTempAdditionalDate] = useState<Date>(new Date());
+  const [tempAdditionalTime, setTempAdditionalTime] = useState<TimeSlot | null>(null);
+  const [tempAvailableTimes, setTempAvailableTimes] = useState<TimeSlot[]>([]);
+  const [tempAvailableDates, setTempAvailableDates] = useState<string[]>([]);
+  const [tempIsLoading, setTempIsLoading] = useState(false);
+  
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
 
@@ -259,8 +285,7 @@ export default function AppointmentBooking() {
       const squareResponse = await BookingService.createSquareBooking({
         serviceVariationId: selectedService.service_variation_id,
         teamMemberId:
-          selectedTime.appointment_segments?.[0]?.team_member_id ||
-          `${selectedService.team_member_id}`,
+          selectedTime.appointment_segments?.[0]?.team_member_id || "",
         customerId: user.square_up_id,
         startAt: selectedTime.start_at,
         serviceVariationVersion,
@@ -331,7 +356,7 @@ export default function AppointmentBooking() {
       BookingService.syncBookingWithBackend(
         {
           service_variation_id: selectedService.service_variation_id,
-          team_member_id: selectedService.team_member_id.toString(),
+          team_member_id: selectedTime.appointment_segments?.[0]?.team_member_id || "",
           start_at: selectedTime.start_at,
           service_variation_version:
             selectedTime.appointment_segments?.[0]?.service_variation_version,
@@ -414,6 +439,34 @@ export default function AppointmentBooking() {
       router.push("/book/services");
     }
   }, [isAuthenticated, router]);
+
+  // Fetch all services and barbers for additional service selection
+  useEffect(() => {
+    const fetchAllServicesAndBarbers = async () => {
+      try {
+        const serviceList = await BookingService.getAllServices();
+        setAllServices(serviceList);
+
+        const barbersByService: Record<number, TeamMember[]> = {};
+        for (const service of serviceList) {
+          try {
+            const serviceBarbers = await BookingService.getBarbersForService(service.id);
+            barbersByService[service.id] = serviceBarbers;
+          } catch (err) {
+            console.error(`Failed to fetch barbers for service ${service.id}:`, err);
+          }
+        }
+        
+        setAllBarbers(barbersByService);
+      } catch (err) {
+        console.error("Error fetching services and barbers:", err);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchAllServicesAndBarbers();
+    }
+  }, [isAuthenticated]);
 
   // Handle redirect when booking is confirmed
   useEffect(() => {
@@ -626,6 +679,167 @@ export default function AppointmentBooking() {
     setShowPaymentForm(true);
   };
 
+  // Additional service handlers
+  const handleAddAdditionalService = () => {
+    setShowServiceDialog(true);
+  };
+
+  const handleSelectAdditionalService = (service: Service) => {
+    setTempAdditionalService(service);
+    setShowServiceDialog(false);
+    setShowBarberDialog(true);
+  };
+
+  const handleSelectAdditionalBarber = (barber: TeamMember) => {
+    setTempAdditionalBarber(barber);
+    setShowBarberDialog(false);
+    setShowDateDialog(true);
+    
+    // Fetch availability for this service
+    if (tempAdditionalService) {
+      fetchAdditionalServiceAvailability(tempAdditionalService.service_variation_id);
+    }
+  };
+
+  const handleSelectAdditionalTime = (timeSlot: TimeSlot | null) => {
+    setTempAdditionalTime(timeSlot);
+  };
+
+  const handleConfirmAdditionalService = () => {
+    if (tempAdditionalService && tempAdditionalBarber && tempAdditionalTime) {
+      const newAdditionalService: AdditionalService = {
+        service: tempAdditionalService,
+        barber: tempAdditionalBarber,
+        timeSlot: tempAdditionalTime
+      };
+      
+      setAdditionalServices(prev => [...prev, newAdditionalService]);
+      
+      // Reset temp state
+      setTempAdditionalService(null);
+      setTempAdditionalBarber(null);
+      setTempAdditionalTime(null);
+      setTempAvailableTimes([]);
+      setTempAvailableDates([]);
+      setShowDateDialog(false);
+    }
+  };
+
+  const handleRemoveAdditionalService = (index: number) => {
+    setAdditionalServices(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Check if a service/barber/time combination is already selected
+  const isServiceTimeConflict = (serviceId: number, teamMemberId: string, startAt: string) => {
+    // Check main booking - only conflict if it's the exact same time
+    if (selectedTime?.start_at === startAt) {
+      return true;
+    }
+    
+    // Check additional services - only conflict if it's the exact same time slot
+    return additionalServices.some(additional => 
+      additional.timeSlot.start_at === startAt
+    );
+  };
+
+  // Fetch availability for additional service
+  const fetchAdditionalServiceAvailability = async (serviceVariationId: string, targetDate?: Date) => {
+    setTempIsLoading(true);
+    
+    try {
+      const now = new Date();
+      // Square API has a max query range of 32 days, so let's use 30 days to be safe
+      const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+      
+      const response = await BookingService.searchAvailability(
+        serviceVariationId,
+        now,
+        endDate
+      );
+      
+      const dates = Object.keys(response.availabilities_by_date);
+      setTempAvailableDates(dates);
+      
+      // Set times for the specified date or current temp date
+      const dateToUse = targetDate || tempAdditionalDate;
+      const dateKey = dayjs(dateToUse).tz("Australia/Melbourne").format("YYYY-MM-DD");
+      const availabilities = response.availabilities_by_date[dateKey] || [];
+      
+      console.log(`Additional service availability for ${dateKey}:`, availabilities.length, 'slots');
+      
+      // Filter out conflicting times
+      const filteredAvailabilities = availabilities.filter(slot => {
+        const conflict = isServiceTimeConflict(tempAdditionalService?.id || 0, slot.appointment_segments?.[0]?.team_member_id || '', slot.start_at);
+        return !conflict;
+      });
+      
+      console.log(`After filtering conflicts: ${filteredAvailabilities.length} available slots`);
+      
+      // Sort times chronologically
+      filteredAvailabilities.sort(
+        (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      );
+      
+      setTempAvailableTimes(filteredAvailabilities);
+    } catch (err) {
+      console.error("Error fetching additional service availability:", err);
+      setTempAvailableTimes([]);
+    } finally {
+      setTempIsLoading(false);
+    }
+  };
+
+  // Handle additional service date changes
+  const handleAdditionalDateChange = async (date: Date) => {
+    setTempAdditionalDate(date);
+    setTempAdditionalTime(null);
+    
+    if (tempAdditionalService) {
+      setTempIsLoading(true);
+      
+      // Get the date key for the selected date
+      const dateKey = dayjs(date).tz("Australia/Melbourne").format("YYYY-MM-DD");
+      
+      // Check if we already have availability data for this date
+      if (tempAvailableDates.includes(dateKey)) {
+        // We have data, just need to filter for this specific date
+        try {
+          const now = new Date();
+          // Square API has a max query range of 32 days, so let's use 30 days to be safe
+          const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+          
+          const response = await BookingService.searchAvailability(
+            tempAdditionalService.service_variation_id,
+            now,
+            endDate
+          );
+          
+          const availabilities = response.availabilities_by_date[dateKey] || [];
+          
+          // Filter out conflicting times
+          const filteredAvailabilities = availabilities.filter(slot => {
+            return !isServiceTimeConflict(tempAdditionalService?.id || 0, slot.appointment_segments?.[0]?.team_member_id || '', slot.start_at);
+          });
+          
+          // Sort times chronologically
+          filteredAvailabilities.sort(
+            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+          );
+          
+          setTempAvailableTimes(filteredAvailabilities);
+        } catch (err) {
+          console.error("Error updating times for date:", err);
+          setTempAvailableTimes([]);
+        }
+      } else {
+        // No availability for this date
+        setTempAvailableTimes([]);
+      }
+      
+      setTempIsLoading(false);
+    }
+  };
+
   if (!selectedService) {
     return (
       <main className="flex flex-col gap-3 mt-20">
@@ -696,17 +910,333 @@ export default function AppointmentBooking() {
                 onCancelPayment={() => setShowPaymentForm(false)}
               />
             ) : (
-              <BookingSummary
-                selectedService={selectedService}
-                selectedTime={selectedTime}
-                error={error}
-                onProceedToPayment={handleShowPaymentForm}
-                showPaymentForm={showPaymentForm}
-              />
+              <>
+                <BookingSummary
+                  selectedService={selectedService}
+                  selectedTime={selectedTime}
+                  error={error}
+                  onProceedToPayment={handleShowPaymentForm}
+                  showPaymentForm={showPaymentForm}
+                  additionalServices={additionalServices}
+                  onRemoveAdditionalService={handleRemoveAdditionalService}
+                />
+                
+                {/* Add Additional Service Button */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={handleAddAdditionalService}
+                    variant="outline"
+                    className="w-full bg-black text-white hover:bg-gray-800 border-black"
+                  >
+                    Add Additional Service
+                  </Button>
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Service Selection Dialog */}
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden bg-gradient-to-br from-gray-50 to-white">
+          <DialogHeader className="border-b border-gray-200 pb-4">
+            <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+              Select Additional Service
+            </DialogTitle>
+            <p className="text-gray-600 text-center mt-2">
+              Choose from our available services to complete your grooming experience
+            </p>
+          </DialogHeader>
+          
+          <div className="overflow-y-auto max-h-[calc(85vh-120px)] p-6">
+            <div className="grid gap-6 max-w-4xl mx-auto">
+              {allServices
+                .filter(service => service.id !== selectedService?.id)
+                .filter(service => allBarbers[service.id] && allBarbers[service.id].length > 0)
+                .map(service => {
+                  const serviceImage = getServiceImageSafe(service.name, service.description);
+                  return (
+                    <div
+                      key={service.id}
+                      className="bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-gray-400 transition-all duration-300 cursor-pointer group transform hover:scale-[1.02]"
+                      onClick={() => handleSelectAdditionalService(service)}
+                    >
+                      <div className="flex flex-col sm:flex-row items-center sm:items-center p-4 sm:p-6 gap-4 sm:gap-6">
+                        {/* Service Image - Centered on mobile */}
+                        <div className={`w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl bg-gradient-to-br ${serviceImage.gradient} relative overflow-hidden flex-shrink-0 shadow-lg group-hover:shadow-xl transition-shadow mx-auto sm:mx-0`}>
+                          <Image
+                            src={serviceImage.src}
+                            width={112}
+                            height={112}
+                            alt={serviceImage.alt}
+                            className="object-cover w-full h-full opacity-80 group-hover:opacity-90 transition-opacity"
+                          />
+                        </div>
+                        
+                        {/* Service Info - Stacked on mobile */}
+                        <div className="flex-1 space-y-3 text-center sm:text-left w-full">
+                          <div>
+                            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 group-hover:text-black transition-colors">
+                              {service.name}
+                            </h3>
+                            <p className="text-gray-600 mt-2 text-sm sm:text-base lg:text-lg leading-relaxed">
+                              {service.description}
+                            </p>
+                          </div>
+                          
+                          {/* Badges - Responsive layout */}
+                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 lg:gap-6">
+                            <div className="flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                              </svg>
+                              <span className="font-bold text-sm sm:text-base lg:text-lg">
+                                ${((service.price_amount * 2) / 100).toFixed(2)}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5 bg-blue-100 text-blue-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="font-medium text-sm sm:text-base">
+                                {service.duration > 10000 ? Math.round(service.duration / 60000) : service.duration} min
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5 bg-purple-100 text-purple-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              <span className="font-medium text-sm sm:text-base">
+                                {allBarbers[service.id]?.length || 0} barber{(allBarbers[service.id]?.length || 0) !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Arrow Icon - Hidden on mobile */}
+                        <div className="flex-shrink-0 hidden sm:block">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-gray-900 transition-colors flex items-center justify-center">
+                            <svg className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Barber Selection Dialog */}
+      <Dialog open={showBarberDialog} onOpenChange={setShowBarberDialog}>
+        <DialogContent className="max-w-7xl max-h-[90vh] w-[95vw] sm:w-full overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100">
+          <DialogHeader className="border-b border-gray-200 pb-4 sm:pb-6">
+            <DialogTitle className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 text-center">
+              Select Your Barber
+            </DialogTitle>
+            {tempAdditionalService && (
+              <div className="text-center mt-2 sm:mt-3">
+                <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold text-base sm:text-lg">For {tempAdditionalService.name}</span>
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+          
+          <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-3 sm:p-6">
+            {tempAdditionalService && allBarbers[tempAdditionalService.id] ? (
+              <>
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-3 sm:p-4 mb-6 sm:mb-8 text-center">
+                  <p className="text-amber-800 font-medium text-base sm:text-lg">
+                    🏆 <strong>Premium Barbers</strong> - Choose your preferred stylist for the perfect cut
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto">
+                  {allBarbers[tempAdditionalService.id].map(barber => {
+                    const barberImage = getBarberImageSafe(barber.first_name, barber.last_name);
+                    return (
+                      <div
+                        key={barber.id}
+                        className="bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl border border-gray-200 overflow-hidden hover:shadow-xl sm:hover:shadow-2xl hover:border-gray-400 transition-all duration-300 sm:duration-500 cursor-pointer group transform sm:hover:scale-105"
+                        onClick={() => handleSelectAdditionalBarber(barber)}
+                      >
+                        {/* Barber Image */}
+                        <div className={`aspect-square bg-gradient-to-br ${barberImage.gradient} relative overflow-hidden`}>
+                          <Image
+                            src={barberImage.src}
+                            width={400}
+                            height={400}
+                            alt={barberImage.alt}
+                            className="object-cover w-full h-full opacity-90 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
+                                  <div class="w-full h-full bg-gradient-to-br ${barberImage.gradient} flex items-center justify-center">
+                                    <span class="text-white font-bold text-8xl">${barberImage.initials}</span>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                          
+                          {/* Overlay Info */}
+                          <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
+                            <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">{barber.first_name}</h3>
+                            <p className="text-sm sm:text-lg opacity-90 font-medium">{barber.last_name}</p>
+                          </div>
+                          
+                          {/* Professional Badge */}
+                          <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
+                            <div className="bg-white/20 backdrop-blur-sm rounded-full p-1.5 sm:p-2">
+                              <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Barber Info */}
+                        <div className="p-4 sm:p-6 bg-gradient-to-b from-white to-gray-50">
+                          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                            {/* Languages */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12l-4 4h8l-4 4H3z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-xs sm:text-sm text-gray-600 font-medium">Languages</p>
+                                <p className="text-sm sm:text-base lg:text-lg">🇦🇺 🇬🇷 English • Greek</p>
+                              </div>
+                            </div>
+                            
+                            {/* Social Handle */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-xs sm:text-sm text-gray-600 font-medium">Social</p>
+                                <p className="text-sm sm:text-base font-mono text-gray-900">
+                                  @{barber.first_name.toLowerCase()}.barber
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Status */}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-xs sm:text-sm text-gray-600 font-medium">Status</p>
+                                <p className="text-sm sm:text-base capitalize font-semibold text-green-700">
+                                  {barber.status}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Selection Button */}
+                          <Button
+                            className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105"
+                          >
+                            <span className="flex items-center justify-center gap-2">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Select {barber.first_name}
+                            </span>
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Barbers Available</h3>
+                <p className="text-gray-500 text-lg">
+                  No barbers are currently available for this service.
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Date/Time Selection Dialog */}
+      <Dialog open={showDateDialog} onOpenChange={setShowDateDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>
+              Select Date & Time for {tempAdditionalService?.name} with {tempAdditionalBarber?.first_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[calc(80vh-100px)] p-4">
+            <div className="grid grid-cols-1 gap-6">
+              <div>
+                <DateTimeSelector
+                  selectedDate={tempAdditionalDate}
+                  onDateChange={handleAdditionalDateChange}
+                  onMonthChange={handleAdditionalDateChange}
+                  onTimeSelect={handleSelectAdditionalTime}
+                  selectedTime={tempAdditionalTime}
+                  availableTimes={tempAvailableTimes}
+                  availableDates={tempAvailableDates}
+                  isLoading={tempIsLoading}
+                />
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-4">Selection Summary</h3>
+                {tempAdditionalService && (
+                  <div className="space-y-2">
+                    <p><strong>Service:</strong> {tempAdditionalService.name}</p>
+                    {tempAdditionalBarber && (
+                      <p><strong>Barber:</strong> {tempAdditionalBarber.first_name} {tempAdditionalBarber.last_name}</p>
+                    )}
+                    {tempAdditionalTime && (
+                      <p><strong>Time:</strong> {dayjs(tempAdditionalTime.start_at).tz("Australia/Melbourne").format("h:mm A on dddd, MMM D")}</p>
+                    )}
+                    <p><strong>Price:</strong> ${((tempAdditionalService.price_amount * 2) / 100).toFixed(2)}</p>
+                  </div>
+                )}
+                <Button
+                  onClick={handleConfirmAdditionalService}
+                  disabled={!tempAdditionalTime}
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700"
+                >
+                  {tempAdditionalTime ? "Confirm Additional Service" : "Please Select a Time"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
