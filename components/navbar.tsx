@@ -20,7 +20,7 @@ export function Navbar() {
       ref={navRef}
       className="flex flex-col sticky top-0 bg-black/15 md:bg-black/15 backdrop-blur-xs z-navbar -mt-8"
     >
-      <div className="hidden md:flex justify-between items-center p-4 border-b border-[#DCDCDC] text-white">
+      {/* <div className="hidden md:flex justify-between items-center p-4 border-b border-[#DCDCDC] text-white">
         <div className="flex gap-8">
           <a href="#">Location</a>
           <a href="">+61 0000 000 000</a>
@@ -46,7 +46,7 @@ export function Navbar() {
             />
           </svg>
         </a>
-      </div>
+      </div> */}
 
       <div className="flex justify-between items-center p-4">
         <Link href="/" className="w-40 md:w-60 text-white">
