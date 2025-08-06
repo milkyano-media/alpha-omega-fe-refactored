@@ -475,7 +475,7 @@ export default function Home() {
           <p>@Alpha_Omega</p>
         </div>
 
-        <div className="rounded-xl shadow-xl w-60 md:w-2xl h-96" />
+        {/* <div className="rounded-xl shadow-xl w-60 md:w-2xl h-96" /> */}
 
         <p>OR FIND US AT</p>
 
