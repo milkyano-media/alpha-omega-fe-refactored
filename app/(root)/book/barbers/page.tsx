@@ -299,6 +299,22 @@ function BarberSelectionContent() {
                             }
                           }}
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        
+                        {/* Overlay Info */}
+                        <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
+                          <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">{barber.first_name}</h3>
+                          <p className="text-sm sm:text-lg opacity-90 font-medium">{barber.last_name}</p>
+                        </div>
+                        
+                        {/* Professional Badge */}
+                        <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
+                          <div className="bg-white/20 backdrop-blur-sm rounded-full p-1.5 sm:p-2">
+                            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Card Content */}
@@ -313,7 +329,7 @@ function BarberSelectionContent() {
                               </div>
                               <div>
                                 <p className="text-xs sm:text-sm text-gray-600 font-medium">Languages</p>
-                                <p className="text-sm sm:text-base lg:text-lg">🇦🇺 🇬🇷 English • Greek</p>
+                                <p className="text-sm sm:text-base lg:text-lg">🇦🇺 🇬🇷</p>
                               </div>
                             </div>
                             

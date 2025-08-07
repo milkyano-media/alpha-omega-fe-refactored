@@ -1207,7 +1207,7 @@ export default function AppointmentBooking() {
                               </div>
                               <div>
                                 <p className="text-xs sm:text-sm text-gray-600 font-medium">Languages</p>
-                                <p className="text-sm sm:text-base lg:text-lg">🇦🇺 🇬🇷 English • Greek</p>
+                                <p className="text-sm sm:text-base lg:text-lg">🇦🇺 🇬🇷</p>
                               </div>
                             </div>
                             
