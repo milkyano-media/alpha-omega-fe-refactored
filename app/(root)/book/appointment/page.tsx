@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getServiceImageSafe } from "@/lib/service-images";
 import { getBarberImageSafe } from "@/lib/barber-images";
 import Image from "next/image";
 import dayjs from "dayjs";
@@ -961,84 +960,80 @@ export default function AppointmentBooking() {
           </DialogHeader>
           
           <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6">
-            <div className="grid gap-6 w-full px-4">
-              {allServices
-                .filter(service => service.id !== selectedService?.id)
-                .filter(service => allBarbers[service.id] && allBarbers[service.id].length > 0)
-                .map(service => {
-                  const serviceImage = getServiceImageSafe(service.name, service.description);
-                  return (
-                    <div
-                      key={service.id}
-                      className="bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl hover:border-gray-400 transition-all duration-300 cursor-pointer group transform hover:scale-[1.02]"
-                      onClick={() => handleSelectAdditionalService(service)}
-                    >
-                      <div className="flex flex-col sm:flex-row items-center sm:items-center p-4 sm:p-6 gap-4 sm:gap-6">
-                        {/* Service Image - Centered on mobile */}
-                        <div className={`w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-2xl bg-gradient-to-br ${serviceImage.gradient} relative overflow-hidden flex-shrink-0 shadow-lg group-hover:shadow-xl transition-shadow mx-auto sm:mx-0`}>
-                          <Image
-                            src={serviceImage.src}
-                            width={112}
-                            height={112}
-                            alt={serviceImage.alt}
-                            className="object-cover w-full h-full opacity-80 group-hover:opacity-90 transition-opacity"
-                          />
-                        </div>
-                        
-                        {/* Service Info - Stacked on mobile */}
-                        <div className="flex-1 space-y-3 text-center sm:text-left w-full">
-                          <div>
-                            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 group-hover:text-black transition-colors">
-                              {service.name}
-                            </h3>
-                            <p className="text-gray-600 mt-2 text-sm sm:text-base lg:text-lg leading-relaxed">
-                              {service.description}
-                            </p>
-                          </div>
-                          
-                          {/* Badges - Responsive layout */}
-                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 lg:gap-6">
-                            <div className="flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                              </svg>
-                              <span className="font-bold text-sm sm:text-base lg:text-lg">
-                                ${((service.price_amount * 2) / 100).toFixed(2)}
-                              </span>
+            <div className="max-w-5xl mx-auto">
+              <div className="grid gap-3 sm:gap-4">
+                {allServices
+                  .filter(service => service.id !== selectedService?.id)
+                  .filter(service => allBarbers[service.id] && allBarbers[service.id].length > 0)
+                  .map(service => {
+                    return (
+                      <div
+                        key={service.id}
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-gray-300 transition-all duration-300 cursor-pointer group"
+                        onClick={() => handleSelectAdditionalService(service)}
+                      >
+                        <div className="flex flex-col sm:flex-row items-center sm:items-center p-4 sm:p-6 gap-4 sm:gap-6">
+                          {/* Service Info */}
+                          <div className="flex-1 min-w-0 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex-1 space-y-2 sm:space-y-3 text-center sm:text-left">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-black transition-colors">
+                                  {service.name}
+                                </h3>
+                                
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 text-sm text-gray-600">
+                                  <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                    </svg>
+                                    <span className="font-bold text-gray-900">
+                                      ${((service.price_amount * 2) / 100).toFixed(2)}
+                                    </span>
+                                  </span>
+                                  
+                                  <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {service.duration > 10000
+                                      ? Math.round(service.duration / 60000)
+                                      : service.duration} min
+                                  </span>
+                                  
+                                  {allBarbers[service.id] && (
+                                    <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+                                      <span className="font-bold text-gray-900">
+                                       {allBarbers[service.id].length} barber{allBarbers[service.id].length !== 1 ? 's' : ''}
+                                      </span>
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {service.description && (
+                                  <p className="text-sm sm:text-base text-gray-600 line-clamp-2 leading-relaxed">
+                                    {service.description}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Action Button */}
+                              <div className="flex-shrink-0 w-full sm:w-auto">
+                                <Button
+                                  className="w-full sm:w-auto bg-gray-900 text-white hover:bg-gray-800 px-6 py-3 font-semibold transition-all duration-200 group-hover:bg-gray-800 shadow-sm"
+                                  disabled={
+                                    !allBarbers[service.id] || allBarbers[service.id].length === 0
+                                  }
+                                >
+                                  Select Service
+                                </Button>
+                              </div>
                             </div>
-                            
-                            <div className="flex items-center gap-1.5 bg-blue-100 text-blue-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="font-medium text-sm sm:text-base">
-                                {service.duration > 10000 ? Math.round(service.duration / 60000) : service.duration} min
-                              </span>
-                            </div>
-                            
-                            <div className="flex items-center gap-1.5 bg-purple-100 text-purple-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                              </svg>
-                              <span className="font-medium text-sm sm:text-base">
-                                {allBarbers[service.id]?.length || 0} barber{(allBarbers[service.id]?.length || 0) !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Arrow Icon - Hidden on mobile */}
-                        <div className="flex-shrink-0 hidden sm:block">
-                          <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-gray-900 transition-colors flex items-center justify-center">
-                            <svg className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </DialogContent>
@@ -1046,18 +1041,20 @@ export default function AppointmentBooking() {
 
       {/* Barber Selection Dialog */}
       <Dialog open={showBarberDialog} onOpenChange={setShowBarberDialog}>
-        <DialogContent className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100" style={{ width: '95vw', maxWidth: '1400px' }}>
+        <DialogContent className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-b from-gray-50 to-white" style={{ width: '95vw', maxWidth: '1200px' }}>
           <DialogHeader className="border-b border-gray-200 pb-4 sm:pb-6">
-            <DialogTitle className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 text-center">
-              Select Your Barber
+            <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center">
+              Choose Your Barber
             </DialogTitle>
             {tempAdditionalService && (
-              <div className="text-center mt-2 sm:mt-3">
-                <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="font-semibold text-base sm:text-lg">For {tempAdditionalService.name}</span>
+              <div className="text-center mt-4">
+                <div className="bg-white rounded-lg shadow-sm border p-4 max-w-md mx-auto">
+                  <h3 className="font-semibold text-gray-900">{tempAdditionalService.name}</h3>
+                  <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
+                    <span>${((tempAdditionalService.price_amount * 2) / 100).toFixed(2)}</span>
+                    <span>•</span>
+                    <span>{tempAdditionalService.duration > 10000 ? Math.round(tempAdditionalService.duration / 60000) : tempAdditionalService.duration} min</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -1066,84 +1063,50 @@ export default function AppointmentBooking() {
           <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-3 sm:p-6">
             {tempAdditionalService && allBarbers[tempAdditionalService.id] ? (
               <>
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-3 sm:p-4 mb-6 sm:mb-8 text-center">
-                  <p className="text-amber-800 font-medium text-base sm:text-lg">
-                    🏆 <strong>Premium Barbers</strong> - Choose your preferred stylist for the perfect cut
+                <div className="bg-gray-50 rounded-lg p-3 mb-6 max-w-2xl mx-auto">
+                  <p className="text-xs text-gray-700 text-center">
+                    🎯 <strong>Limited Availability</strong> - Book your preferred time slot today!
                   </p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 w-full px-4">
+                <div className="max-w-6xl mx-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Random Barber Card - First Position */}
                   {allBarbers[tempAdditionalService.id] && allBarbers[tempAdditionalService.id].length > 0 && (
                     <div
-                      className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl border-2 border-dashed border-purple-300 hover:border-purple-500 overflow-hidden hover:shadow-xl sm:hover:shadow-2xl transition-all duration-300 sm:duration-500 cursor-pointer group transform sm:hover:scale-105"
+                      className="h-min bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
                       onClick={handleSelectRandomAdditionalBarber}
                     >
-                      {/* Random Barber Image */}
-                      <div className="aspect-square bg-gradient-to-br from-purple-100 to-blue-100 relative overflow-hidden">
-                        <Image
-                          src="/assets/random-barber.png"
-                          width={400}
-                          height={400}
-                          alt="Random Barber Selection"
-                          className="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-all duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent"></div>
-                        
-                        {/* Floating Icon */}
-                        <div className="absolute top-4 right-4">
-                          <div className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center animate-bounce">
-                            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 2h10a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11v6m-3-3l3-3 3 3" />
-                            </svg>
-                          </div>
-                        </div>
+                      {/* Card Content */}
+                      <div className="p-6 space-y-4">
+                        {/* Review Text */}
+                        <p className="text-purple-800 text-md leading-relaxed font-medium">
+                          Let our expert team choose the perfect barber for your style. 
+                          Every one of our barbers delivers exceptional results.
+                        </p>
 
-                        {/* Overlay Info */}
-                        <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
-                          <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">Random</h3>
-                          <p className="text-sm sm:text-lg opacity-90 font-medium">Selection</p>
+                        {/* Customer Info */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">✨</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-purple-900">Random Selection</p>
+                              <p className="text-xs text-purple-600">Surprise Choice</p>
+                            </div>
+                          </div>
+                          <div className="text-purple-300 text-2xl">
+                            &quot;
+                          </div>
                         </div>
                       </div>
 
-                      {/* Card Content */}
-                      <div className="p-4 sm:p-6 bg-gradient-to-b from-white to-purple-50">
-                        <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-                          {/* Review Text */}
-                          <div className="text-center">
-                            <p className="text-purple-800 text-sm leading-relaxed font-medium">
-                              Let our expert team choose the perfect barber for your style. 
-                              Every one of our barbers delivers exceptional results.
-                            </p>
-                          </div>
-
-                          {/* Customer Info */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">✨</span>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-purple-900">Random Selection</p>
-                                <p className="text-xs text-purple-600">Surprise Choice</p>
-                              </div>
-                            </div>
-                            <div className="text-purple-300 text-2xl">
-                              &quot;
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Selection Button */}
-                        <Button className="w-full bg-black hover:bg-gray-800 text-white transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105 mt-18">
-                          <span className="flex items-center justify-center gap-2">
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Choose Next Available
-                          </span>
-                        </Button>
+                      {/* Book Button */}
+                      <div className="px-6 pt-16 pb-4">
+                        <button className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
+                          Choose the next available Barber
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1154,24 +1117,26 @@ export default function AppointmentBooking() {
                     return (
                       <div
                         key={barber.id}
-                        className="bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl border border-gray-200 overflow-hidden hover:shadow-xl sm:hover:shadow-2xl hover:border-gray-400 transition-all duration-300 sm:duration-500 cursor-pointer group transform sm:hover:scale-105"
+                        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group max-w-sm mx-auto"
                         onClick={() => handleSelectAdditionalBarber(barber)}
                       >
                         {/* Barber Image */}
-                        <div className={`aspect-square bg-gradient-to-br ${barberImage.gradient} relative overflow-hidden`}>
+                        <div className="aspect-square bg-gray-100 relative overflow-hidden">
                           <Image
                             src={barberImage.src}
                             width={400}
                             height={400}
                             alt={barberImage.alt}
-                            className="object-cover w-full h-full opacity-90 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
+                            className="object-cover w-full h-full"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               const parent = target.parentElement;
                               if (parent) {
                                 parent.innerHTML = `
-                                  <div class="w-full h-full bg-gradient-to-br ${barberImage.gradient} flex items-center justify-center">
-                                    <span class="text-white font-bold text-8xl">${barberImage.initials}</span>
+                                  <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                      <span class="text-gray-400 text-3xl font-bold">?</span>
+                                    </div>
                                   </div>
                                 `;
                               }
@@ -1195,9 +1160,9 @@ export default function AppointmentBooking() {
                           </div>
                         </div>
 
-                        {/* Barber Info */}
-                        <div className="p-4 sm:p-6 bg-gradient-to-b from-white to-gray-50">
-                          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                        {/* Card Content */}
+                        <div className="p-6 space-y-4">
+                          <div className="space-y-3 sm:space-y-4 mb-2 sm:mb-6">
                             {/* Languages */}
                             <div className="flex items-center gap-2 sm:gap-3">
                               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -1242,33 +1207,36 @@ export default function AppointmentBooking() {
                             </div>
                           </div>
 
-                          {/* Selection Button */}
-                          <Button
-                            className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105"
-                          >
-                            <span className="flex items-center justify-center gap-2">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Select {barber.first_name}
-                            </span>
-                          </Button>
+                          {/* Book Button */}
+                          <div className="px-6 pb-6">
+                            <Button
+                              className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105"
+                            >
+                              <span className="flex items-center justify-center gap-2">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Select {barber.first_name}
+                              </span>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </>
             ) : (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center max-w-2xl mx-auto">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Barbers Available</h3>
-                <p className="text-gray-500 text-lg">
-                  No barbers are currently available for this service.
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Barbers Available</h3>
+                <p className="text-gray-500">
+                  No barbers are currently available for this service. Please try another service or contact us directly.
                 </p>
               </div>
             )}
