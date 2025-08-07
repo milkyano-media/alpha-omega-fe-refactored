@@ -1,8 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TimeSlot, Service } from "@/lib/booking-service";
+import { TimeSlot, Service, TeamMember } from "@/lib/booking-service";
 import React from "react";
+
+interface AdditionalService {
+  service: Service;
+  barber: TeamMember;
+  timeSlot: TimeSlot;
+}
 
 interface PaymentFormProps {
   squareCard: Square.Card | null;
@@ -13,6 +19,7 @@ interface PaymentFormProps {
   paymentError: string | null;
   handlePayment: () => Promise<void>;
   onCancelPayment: () => void;
+  additionalServices?: AdditionalService[];
 }
 
 export const PaymentForm: React.FC<PaymentFormProps> = ({
@@ -24,12 +31,19 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   paymentError,
   handlePayment,
   onCancelPayment,
+  additionalServices = [],
 }) => {
   if (!selectedService || !selectedTime) return null;
 
+  // Calculate total deposit amount including additional services
   // The deposit amount is the actual price in Square
   // This is 50% of the doubled price shown to customers
-  const depositAmount = selectedService.price_amount / 100;
+  const mainServiceDeposit = selectedService.price_amount / 100;
+  const additionalServicesDeposit = additionalServices.reduce(
+    (total, additionalService) => total + (additionalService.service.price_amount / 100),
+    0
+  );
+  const depositAmount = mainServiceDeposit + additionalServicesDeposit;
 
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200">
@@ -63,10 +77,20 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         ></div>
 
         <div className="flex flex-col space-y-3">
+          {/* Main Service */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Deposit Amount:</span>
-            <span className="font-medium">${depositAmount.toFixed(2)} AUD</span>
+            <span className="text-gray-600">{selectedService.name} (50% deposit):</span>
+            <span className="font-medium">${mainServiceDeposit.toFixed(2)} AUD</span>
           </div>
+          
+          {/* Additional Services */}
+          {additionalServices.map((additionalService, index) => (
+            <div key={index} className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">{additionalService.service.name} (50% deposit):</span>
+              <span className="font-medium">${(additionalService.service.price_amount / 100).toFixed(2)} AUD</span>
+            </div>
+          ))}
+          
           <div className="bg-gray-50 border-t border-gray-200 pt-2 mt-1 flex items-center justify-between">
             <span className="font-medium">Total Payment:</span>
             <span className="font-bold">${depositAmount.toFixed(2)} AUD</span>

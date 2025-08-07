@@ -78,6 +78,34 @@ export interface BookingResponse {
   message: string;
 }
 
+export interface BatchBookingRequest {
+  bookings: BookingRequest[];
+  idempotencyKey: string;
+  payment_info?: {
+    paymentId: string;
+    amount: string;
+    currency: string;
+    receiptUrl?: string;
+  };
+}
+
+export interface BatchBookingResponse {
+  success: boolean;
+  created_bookings: Array<{
+    index: number;
+    booking: BookingResponse;
+    success: boolean;
+  }>;
+  errors: Array<{
+    index: number;
+    error: string;
+    bookingData: BookingRequest;
+  }>;
+  total_requested: number;
+  total_created: number;
+  total_failed: number;
+}
+
 export interface SquareBookingResponse {
   success: boolean;
   booking?: {
@@ -314,6 +342,18 @@ export const BookingService = {
       return response;
     } catch (error: any) {
       throw new Error(error.message || "Failed to fetch bookings");
+    }
+  },
+
+  /**
+   * Create multiple bookings (for additional services)
+   */
+  async createBatchBookings(batchRequest: BatchBookingRequest): Promise<BatchBookingResponse> {
+    try {
+      const response = await API.post('/bookings/batch', batchRequest);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to create batch bookings");
     }
   },
 };

@@ -169,9 +169,15 @@ export default function AppointmentBooking() {
     setPaymentError(null);
 
     try {
+      // Calculate total deposit amount including additional services
       // The deposit amount is the actual price in Square
       // This is 50% of the doubled price shown to customers
-      const depositAmount = selectedService.price_amount;
+      const mainServiceDeposit = selectedService.price_amount;
+      const additionalServicesDeposit = additionalServices.reduce(
+        (total, additionalService) => total + additionalService.service.price_amount,
+        0
+      );
+      const depositAmount = mainServiceDeposit + additionalServicesDeposit;
       const formattedAmount = (depositAmount / 100).toFixed(2);
 
       // Create a unique idempotency key for this transaction
@@ -232,8 +238,8 @@ export default function AppointmentBooking() {
 
           setPaymentCompleted(true);
 
-          // Immediately create the booking in Square after successful payment
-          await createBookingInSquare(idempotencyKey, paymentInfo);
+          // Immediately create the bookings using batch approach after successful payment
+          await createBatchBookings(idempotencyKey, paymentInfo);
         } else {
           const errorData = await paymentResponse.json();
           throw new Error(errorData.message || "Payment processing failed");
@@ -255,8 +261,8 @@ export default function AppointmentBooking() {
     }
   };
 
-  // Create booking in Square directly after payment
-  const createBookingInSquare = async (
+  // Create multiple bookings using batch approach
+  const createBatchBookings = async (
     idempotencyKey: string,
     paymentInfo: any
   ) => {
@@ -271,37 +277,55 @@ export default function AppointmentBooking() {
     setCreatingBooking(true);
 
     try {
-      // Get service variation version from the appointment segments
+      // Prepare all bookings (main + additional services)
+      const bookingsToCreate = [];
+      
+      // Main booking
       const serviceVariationVersion =
         selectedTime.appointment_segments?.[0]?.service_variation_version;
-
-      // Create customer note with payment details
-      const customerNote =
-        `50% deposit of ${paymentInfo.amount} ${paymentInfo.currency} paid via Square payment (ID: ${paymentInfo.paymentId}).\n` +
-        `Receipt: ${paymentInfo.receiptUrl || "Not available"}\n` +
-        `Remaining balance to be paid at appointment.`;
-
-      // Create booking directly in Square
-      const squareResponse = await BookingService.createSquareBooking({
-        serviceVariationId: selectedService.service_variation_id,
-        teamMemberId:
-          selectedTime.appointment_segments?.[0]?.team_member_id || "",
-        customerId: user.square_up_id,
-        startAt: selectedTime.start_at,
-        serviceVariationVersion,
-        customerNote,
-        idempotencyKey,
-        locationId:
-          selectedTime.location_id ||
-          process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ||
-          ""
+      
+      bookingsToCreate.push({
+        service_variation_id: selectedService.service_variation_id,
+        team_member_id: selectedTime.appointment_segments?.[0]?.team_member_id || "",
+        start_at: selectedTime.start_at,
+        service_variation_version: serviceVariationVersion,
+        customer_note: `Main service: ${selectedService.name}`
+      });
+      
+      // Additional services bookings
+      additionalServices.forEach((additionalService, index) => {
+        bookingsToCreate.push({
+          service_variation_id: additionalService.service.service_variation_id,
+          team_member_id: additionalService.timeSlot.appointment_segments?.[0]?.team_member_id || "",
+          start_at: additionalService.timeSlot.start_at,
+          service_variation_version: additionalService.timeSlot.appointment_segments?.[0]?.service_variation_version,
+          customer_note: `Additional service #${index + 1}: ${additionalService.service.name}`
+        });
       });
 
-      // Store the Square booking ID to use in backend sync
-      if (squareResponse.booking?.id) {
-        setSquareBookingId(squareResponse.booking.id);
+      // Create batch booking request
+      const batchRequest = {
+        bookings: bookingsToCreate,
+        idempotencyKey: idempotencyKey,
+        payment_info: {
+          paymentId: paymentInfo.paymentId,
+          amount: paymentInfo.amount,
+          currency: paymentInfo.currency,
+          receiptUrl: paymentInfo.receiptUrl
+        }
+      };
 
-        // Update payment receipt with booking ID
+      // Call batch booking API
+      const batchResponse = await BookingService.createBatchBookings(batchRequest);
+      
+      if (batchResponse.success && batchResponse.created_bookings.length > 0) {
+        // Store the main booking ID
+        const mainBooking = batchResponse.created_bookings[0]?.booking;
+        if (mainBooking?.data?.square_booking_id) {
+          setSquareBookingId(mainBooking.data.square_booking_id);
+        }
+
+        // Update payment receipt with booking IDs
         const receiptData = JSON.parse(
           localStorage.getItem("paymentReceipt") || "{}"
         );
@@ -309,15 +333,9 @@ export default function AppointmentBooking() {
           "paymentReceipt",
           JSON.stringify({
             ...receiptData,
-            squareBookingId: squareResponse.booking.id
+            bookings: batchResponse.created_bookings,
+            mainBookingId: mainBooking?.data?.square_booking_id
           })
-        );
-
-        // Attempt to sync with our backend - but don't wait for it
-        syncWithBackend(
-          idempotencyKey,
-          squareResponse.booking.id,
-          customerNote
         );
 
         // Mark booking as confirmed and handle UI transitions
@@ -326,96 +344,72 @@ export default function AppointmentBooking() {
         setCreatingBooking(false);
 
         // Save booking details for thank you page
-        saveBookingDetails(squareResponse);
+        saveBatchBookingDetails(batchResponse);
+      } else {
+        throw new Error(
+          batchResponse.errors?.length > 0 
+            ? `Failed to create bookings: ${batchResponse.errors.map(e => e.error).join(', ')}` 
+            : "Failed to create bookings"
+        );
       }
     } catch (error: any) {
-      console.error("Error creating Square booking:", error);
-
-      // Don't show error to user - we'll still try to sync with backend
-      // This ensures smoother user experience even if there are issues
+      console.error("Error creating batch bookings:", error);
       setProcessingPayment(false);
       setCreatingBooking(false);
-      setBookingConfirmed(true);
-
-      // Try backend sync anyway - it might use a different approach
-      syncWithBackend(idempotencyKey);
+      setPaymentError(error.message || "Failed to create bookings");
     }
   };
 
-  // Sync booking with our backend system - don't block user flow on this
-  const syncWithBackend = async (
-    idempotencyKey: string,
-    squareBookingId?: string,
-    customerNote?: string
-  ) => {
-    if (!selectedService || !selectedTime || !user) return;
 
-    try {
-      // If we have a Square booking ID, sync it with our backend
-      // But don't wait for response or block UI flow
-      BookingService.syncBookingWithBackend(
-        {
-          service_variation_id: selectedService.service_variation_id,
-          team_member_id: selectedTime.appointment_segments?.[0]?.team_member_id || "",
-          start_at: selectedTime.start_at,
-          service_variation_version:
-            selectedTime.appointment_segments?.[0]?.service_variation_version,
-          customer_note: customerNote,
-          idempotencyKey
-        },
-        squareBookingId
-      )
-        .then((response) => {
-          // Handle successful backend sync
-          if (response?.data?.id) {
-            // Update the booking ID in localStorage
-            const bookingData = JSON.parse(
-              localStorage.getItem("lastBooking") || "{}"
-            );
-            localStorage.setItem(
-              "lastBooking",
-              JSON.stringify({
-                ...bookingData,
-                id: response.data.id,
-                square_booking_id: response.data.square_booking_id,
-                backend_synced: true
-              })
-            );
-          }
-        })
-        .catch((error) => {
-          // Log error but don't disrupt user flow
-          console.error("Error syncing with backend:", error);
-        });
-    } catch (error) {
-      console.error("Error in backend sync:", error);
-    }
-  };
-
-  // Save booking details for thank you page
-  const saveBookingDetails = (squareResponse: any) => {
+  // Save batch booking details for thank you page
+  const saveBatchBookingDetails = (batchResponse: any) => {
     if (!selectedService || !selectedTime) return;
 
     try {
+      // Calculate total amounts including additional services
+      const mainServiceDeposit = selectedService.price_amount;
+      const additionalServicesDeposit = additionalServices.reduce(
+        (total, additionalService) => total + additionalService.service.price_amount,
+        0
+      );
+      const totalDeposit = mainServiceDeposit + additionalServicesDeposit;
+      const totalAmount = (selectedService.price_amount * 2) + additionalServices.reduce(
+        (total, additionalService) => total + (additionalService.service.price_amount * 2),
+        0
+      );
+
+      // Create service list including additional services
+      const servicesList = [selectedService.name];
+      if (additionalServices.length > 0) {
+        servicesList.push(...additionalServices.map(add => add.service.name));
+      }
+
+      // Get the main booking details
+      const mainBooking = batchResponse.created_bookings?.[0]?.booking;
+      
       localStorage.setItem(
         "lastBooking",
         JSON.stringify({
-          id: squareResponse.booking?.id || "pending",
-          square_booking_id: squareResponse.booking?.id,
-          service: selectedService.name,
+          id: mainBooking?.data?.id || "pending",
+          square_booking_id: mainBooking?.data?.square_booking_id || "pending",
+          service: servicesList.join(", "),
           date: dayjs(selectedTime.start_at).tz("Australia/Melbourne").format("YYYY-MM-DD"),
           time: dayjs(selectedTime.start_at).tz("Australia/Melbourne").format("h:mm A"),
-          deposit: (selectedService.price_amount / 100).toFixed(2), // 50% of the price of double amount
-          total: (selectedService.price_amount / 50).toFixed(2),
-          status: squareResponse.booking?.status || "confirmed",
+          deposit: (totalDeposit / 100).toFixed(2),
+          total: (totalAmount / 100).toFixed(2),
+          status: mainBooking?.data?.status || "confirmed",
           square_confirmed: true,
-          backend_synced: false
+          backend_synced: true, // Already synced through batch API
+          additional_services: additionalServices.length,
+          total_bookings_created: batchResponse.total_created,
+          batch_booking_ids: batchResponse.created_bookings.map((b: any) => b.booking.data.id)
         })
       );
     } catch (error) {
-      console.error("Error saving booking details:", error);
+      console.error("Error saving batch booking details:", error);
     }
   };
+
 
   // Load selected service from localStorage
   useEffect(() => {
@@ -507,13 +501,13 @@ export default function AppointmentBooking() {
         setAvailabilityData(cachedData);
 
         // Extract available dates from cached data
-        const dates = Object.keys(cachedData.availabilities_by_date);
+        const dates = cachedData?.availabilities_by_date ? Object.keys(cachedData.availabilities_by_date) : [];
         setAvailableDates(dates);
 
         // Update time slots for selected date
         // Convert selected date to Melbourne timezone to match API response keys
         const melbourneDateKey = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
-        const availabilities = cachedData.availabilities_by_date[melbourneDateKey] || [];
+        const availabilities = cachedData?.availabilities_by_date?.[melbourneDateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
@@ -570,14 +564,14 @@ export default function AppointmentBooking() {
         setAvailabilityData(response);
 
         // Extract available dates
-        const dates = Object.keys(response.availabilities_by_date);
+        const dates = response?.availabilities_by_date ? Object.keys(response.availabilities_by_date) : [];
         console.log(`${cacheKey} available dates:`, dates);
         setAvailableDates(dates);
 
         // If the selected date has available times, set them
         // Convert selected date to Melbourne timezone to match API response keys
         const melbourneDateKey = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
-        const availabilities = response.availabilities_by_date[melbourneDateKey] || [];
+        const availabilities = response?.availabilities_by_date?.[melbourneDateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
@@ -618,7 +612,7 @@ export default function AppointmentBooking() {
 
     // Get available times for this date from the existing data
     const availabilities =
-      availabilityData.availabilities_by_date[dateKey] || [];
+      availabilityData?.availabilities_by_date?.[dateKey] || [];
 
     // Sort times chronologically
     availabilities.sort(
@@ -697,6 +691,22 @@ export default function AppointmentBooking() {
     
     // Fetch availability for this service
     if (tempAdditionalService) {
+      fetchAdditionalServiceAvailability(tempAdditionalService.service_variation_id);
+    }
+  };
+
+  const handleSelectRandomAdditionalBarber = () => {
+    if (tempAdditionalService && allBarbers[tempAdditionalService.id] && allBarbers[tempAdditionalService.id].length > 0) {
+      // Randomly select a barber from available barbers for this service
+      const availableBarbers = allBarbers[tempAdditionalService.id];
+      const randomIndex = Math.floor(Math.random() * availableBarbers.length);
+      const randomBarber = availableBarbers[randomIndex];
+      
+      setTempAdditionalBarber(randomBarber);
+      setShowBarberDialog(false);
+      setShowDateDialog(true);
+      
+      // Fetch availability for this service
       fetchAdditionalServiceAvailability(tempAdditionalService.service_variation_id);
     }
   };
@@ -908,6 +918,7 @@ export default function AppointmentBooking() {
                 paymentError={paymentError}
                 handlePayment={handlePayment}
                 onCancelPayment={() => setShowPaymentForm(false)}
+                additionalServices={additionalServices}
               />
             ) : (
               <>
@@ -939,7 +950,7 @@ export default function AppointmentBooking() {
 
       {/* Service Selection Dialog */}
       <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden bg-gradient-to-br from-gray-50 to-white">
+        <DialogContent className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-br from-gray-50 to-white" style={{ width: '95vw', maxWidth: '1400px' }}>
           <DialogHeader className="border-b border-gray-200 pb-4">
             <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
               Select Additional Service
@@ -949,8 +960,8 @@ export default function AppointmentBooking() {
             </p>
           </DialogHeader>
           
-          <div className="overflow-y-auto max-h-[calc(85vh-120px)] p-6">
-            <div className="grid gap-6 max-w-4xl mx-auto">
+          <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6">
+            <div className="grid gap-6 w-full px-4">
               {allServices
                 .filter(service => service.id !== selectedService?.id)
                 .filter(service => allBarbers[service.id] && allBarbers[service.id].length > 0)
@@ -1035,7 +1046,7 @@ export default function AppointmentBooking() {
 
       {/* Barber Selection Dialog */}
       <Dialog open={showBarberDialog} onOpenChange={setShowBarberDialog}>
-        <DialogContent className="max-w-7xl max-h-[90vh] w-[95vw] sm:w-full overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100">
+        <DialogContent className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-50 to-gray-100" style={{ width: '95vw', maxWidth: '1400px' }}>
           <DialogHeader className="border-b border-gray-200 pb-4 sm:pb-6">
             <DialogTitle className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 text-center">
               Select Your Barber
@@ -1061,7 +1072,83 @@ export default function AppointmentBooking() {
                   </p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 w-full px-4">
+                  {/* Random Barber Card - First Position */}
+                  {allBarbers[tempAdditionalService.id] && allBarbers[tempAdditionalService.id].length > 0 && (
+                    <div
+                      className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl border-2 border-dashed border-purple-300 hover:border-purple-500 overflow-hidden hover:shadow-xl sm:hover:shadow-2xl transition-all duration-300 sm:duration-500 cursor-pointer group transform sm:hover:scale-105"
+                      onClick={handleSelectRandomAdditionalBarber}
+                    >
+                      {/* Random Barber Image */}
+                      <div className="aspect-square bg-gradient-to-br from-purple-100 to-blue-100 relative overflow-hidden">
+                        <Image
+                          src="/assets/random-barber.png"
+                          width={400}
+                          height={400}
+                          alt="Random Barber Selection"
+                          className="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-all duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent"></div>
+                        
+                        {/* Floating Icon */}
+                        <div className="absolute top-4 right-4">
+                          <div className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center animate-bounce">
+                            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 2h10a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11v6m-3-3l3-3 3 3" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Overlay Info */}
+                        <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
+                          <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">Random</h3>
+                          <p className="text-sm sm:text-lg opacity-90 font-medium">Selection</p>
+                        </div>
+                      </div>
+
+                      {/* Card Content */}
+                      <div className="p-4 sm:p-6 bg-gradient-to-b from-white to-purple-50">
+                        <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                          {/* Review Text */}
+                          <div className="text-center">
+                            <p className="text-purple-800 text-sm leading-relaxed font-medium">
+                              Let our expert team choose the perfect barber for your style. 
+                              Every one of our barbers delivers exceptional results.
+                            </p>
+                          </div>
+
+                          {/* Customer Info */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">✨</span>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-purple-900">Random Selection</p>
+                                <p className="text-xs text-purple-600">Surprise Choice</p>
+                              </div>
+                            </div>
+                            <div className="text-purple-300 text-2xl">
+                              &quot;
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Selection Button */}
+                        <Button className="w-full bg-black hover:bg-gray-800 text-white transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105 mt-18">
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Choose Next Available
+                          </span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Regular Barber Cards */}
                   {allBarbers[tempAdditionalService.id].map(barber => {
                     const barberImage = getBarberImageSafe(barber.first_name, barber.last_name);
                     return (
