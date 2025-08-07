@@ -208,30 +208,30 @@ function BarberSelectionContent() {
                 {/* Random Barber Card - First Position */}
                 {barbers.length > 0 && (
                   <div
-                    className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
+                    className="h-min bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
                     onClick={handleSelectRandomBarber}
                   >
                     {/* Random Barber Image */}
-                    <div className="aspect-square bg-gradient-to-br from-purple-100 to-blue-100 relative overflow-hidden">
-                      <Image
+                    {/* <div className="aspect-square bg-gradient-to-br from-purple-100 to-blue-100 relative overflow-hidden"> */}
+                      {/* <Image
                         src="/assets/random-barber.png"
                         width={400}
                         height={400}
                         alt="Random Barber Selection"
                         className="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent"></div> */}
                       
                       {/* Floating Icons */}
-                      <div className="absolute top-4 right-4">
+                      {/* <div className="absolute top-4 right-4">
                         <div className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center animate-bounce">
                           <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 2h10a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11v6m-3-3l3-3 3 3" />
                           </svg>
                         </div>
-                      </div>
-                    </div>
+                      </div> */}
+                    {/* </div> */}
 
                     {/* Card Content */}
                     <div className="p-6 space-y-4">
@@ -259,7 +259,7 @@ function BarberSelectionContent() {
                     </div>
 
                     {/* Book Button */}
-                    <div className="px-6 pt-16">
+                    <div className="px-6 pt-16 pb-4">
                       <button className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
                         Choose the next available Barber
                       </button>
@@ -304,7 +304,7 @@ function BarberSelectionContent() {
                         {/* Overlay Info */}
                         <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
                           <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">{barber.first_name}</h3>
-                          <p className="text-sm sm:text-lg opacity-90 font-medium">{barber.last_name}</p>
+                          {/* <p className="text-sm sm:text-lg opacity-90 font-medium">{barber.last_name}</p> */}
                         </div>
                         
                         {/* Professional Badge */}

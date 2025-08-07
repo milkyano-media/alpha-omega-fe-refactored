@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { BookingService, TeamMember, Service } from "@/lib/booking-service";
-import { getServiceImageSafe, preloadServiceImages } from "@/lib/service-images";
 import { preloadBarberImages } from "@/lib/barber-images";
 
 export default function ServiceSelection() {
@@ -63,8 +61,7 @@ export default function ServiceSelection() {
 
     fetchData();
     
-    // Preload service and barber images for better performance
-    preloadServiceImages();
+    // Preload barber images for better performance
     preloadBarberImages();
   }, [isAuthenticated, router]);
 
@@ -141,7 +138,6 @@ export default function ServiceSelection() {
                   (service) => barbers[service.id] && barbers[service.id].length > 0,
                 )
                 .map((service) => {
-                  const serviceImage = getServiceImageSafe(service.name, service.description);
                   return (
                     <div
                       key={service.id}
@@ -149,22 +145,6 @@ export default function ServiceSelection() {
                       onClick={() => handleViewBarbers(service)}
                     >
                       <div className="flex flex-col sm:flex-row items-center sm:items-center p-4 sm:p-6 gap-4 sm:gap-6">
-                        {/* Service Image */}
-                        <div className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-xl bg-gradient-to-br ${serviceImage.gradient} relative overflow-hidden flex-shrink-0 shadow-lg mx-auto sm:mx-0`}>
-                          <Image
-                            src={serviceImage.src}
-                            width={128}
-                            height={128}
-                            alt={serviceImage.alt}
-                            className="object-cover w-full h-full opacity-80"
-                            onError={(e) => {
-                              // Fallback to gradient background if image fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        </div>
-
                         {/* Service Info */}
                         <div className="flex-1 min-w-0 w-full">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -193,11 +173,13 @@ export default function ServiceSelection() {
                                 </span>
                                 
                                 {barbers[service.id] && (
-                                  <span className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+                                    {/* <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    {barbers[service.id].length} barber{barbers[service.id].length !== 1 ? 's' : ''}
+                                    </svg> */}
+                                    <span className="font-bold text-gray-900">
+                                     {barbers[service.id].length} barber{barbers[service.id].length !== 1 ? 's' : ''}
+                                    </span>
                                   </span>
                                 )}
                               </div>
