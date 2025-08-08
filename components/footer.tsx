@@ -64,7 +64,7 @@ export function Footer() {
           <b className="text-black text-base">Additional Info & Contact</b>
           <div className="text-black mt-4 space-y-2">
             <p>Alpha Omega</p>
-            <p>+61 0000 000 000</p>
+            <p>+61 03 9012 5480</p>
             <p>AlphaOmega@gmail.com</p>
           </div>
         </div>

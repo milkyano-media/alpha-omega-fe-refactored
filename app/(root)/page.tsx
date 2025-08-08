@@ -46,7 +46,7 @@ export default function Home() {
         </Button>
 
         <div className="flex gap-8 p-8">
-          <a 
+          <a
             href="https://www.instagram.com/alpha.omega_mens.grooming"
             target="_blank"
             rel="noopener noreferrer"
@@ -530,7 +530,7 @@ export default function Home() {
               />
             </svg>
 
-            <p>@InstagramHandle</p>
+            <p>@alpha.omega_mens.grooming</p>
           </div>
 
           <div className="flex gap-2">
@@ -583,7 +583,7 @@ export default function Home() {
               />
             </svg>
 
-            <p>61+ 0000 000 000</p>
+            <p>+61 03 9012 5480</p>
           </div>
 
           <div className="flex gap-2">

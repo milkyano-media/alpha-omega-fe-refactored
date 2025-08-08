@@ -22,81 +22,16 @@ export default function Home() {
 
       <section className="flex flex-col items-center gap-8 px-4 container max-w-2xl mx-auto mb-40">
         <div className="w-full md:w-max flex flex-col items-center gap-4">
-          <Image
-            src={"/assets/barbers-2.png"}
-            width={500}
-            height={500}
-            alt="The Barber"
-          />
-          <h4>Anthony C.</h4>
-
-          <p>
-            <b>HAIR + BEARD </b>$75.00 AUD
-          </p>
-          <p>
-            <b>HAIRCUT </b>$50.00 AUD
-          </p>
-        </div>
-
-        <div className="w-full md:w-max flex flex-col items-center gap-4">
-          <Image
-            src={"/assets/barbers-2.png"}
-            width={500}
-            height={500}
-            alt="The Barber"
-          />
-          <h4>Anthony C.</h4>
-
-          <p>
-            <b>HAIR + BEARD </b>$75.00 AUD
-          </p>
-          <p>
-            <b>HAIRCUT </b>$50.00 AUD
-          </p>
-        </div>
-
-        <div className="w-full md:w-max flex flex-col items-center gap-4">
-          <Image
-            src={"/assets/barbers-2.png"}
-            width={500}
-            height={500}
-            alt="The Barber"
-          />
-          <h4>Anthony C.</h4>
-
-          <p>
-            <b>HAIR + BEARD </b>$75.00 AUD
-          </p>
-          <p>
-            <b>HAIRCUT </b>$50.00 AUD
-          </p>
-        </div>
-
-        <div className="w-full md:w-max flex flex-col items-center gap-4">
-          <Image
-            src={"/assets/barbers-2.png"}
-            width={500}
-            height={500}
-            alt="The Barber"
-          />
-          <h4>Anthony C.</h4>
-
-          <p>
-            <b>HAIR + BEARD </b>$75.00 AUD
-          </p>
-          <p>
-            <b>HAIRCUT </b>$50.00 AUD
-          </p>
-        </div>
-
-        <div className="w-full md:w-max flex flex-col items-center gap-4">
-          <Image
-            src={"/assets/barbers-2.png"}
-            width={500}
-            height={500}
-            alt="The Barber"
-          />
-          <h4>Anthony C.</h4>
+          <div className="aspect-square bg-gray-100 relative overflow-hidden rounded-4xl">
+            <Image
+              src={"/assets/barber-1.png"}
+              width={500}
+              height={500}
+              className="object-cover w-full h-full"
+              alt="The Barber"
+            />
+          </div>
+          <h4>Christos</h4>
 
           <p>
             <b>HAIR + BEARD </b>$75.00 AUD

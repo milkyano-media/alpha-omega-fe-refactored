@@ -8,12 +8,12 @@ import {
   BookingService,
   TimeSlot,
   TeamMember,
-  Service
+  Service,
 } from "@/lib/booking-service";
 import {
   DateTimeSelector,
   BookingSummary,
-  PaymentForm
+  PaymentForm,
 } from "@/components/pages/appointment";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,26 +59,36 @@ export default function AppointmentBooking() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [, setSquareBookingId] = useState<string | null>(null);
   const [creatingBooking, setCreatingBooking] = useState(false);
-  
+
   // Additional services state
-  const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([]);
+  const [additionalServices, setAdditionalServices] = useState<
+    AdditionalService[]
+  >([]);
   const [allServices, setAllServices] = useState<Service[]>([]);
-  const [allBarbers, setAllBarbers] = useState<Record<number, TeamMember[]>>({});
-  
+  const [allBarbers, setAllBarbers] = useState<Record<number, TeamMember[]>>(
+    {},
+  );
+
   // Dialog states for additional service flow
   const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [showBarberDialog, setShowBarberDialog] = useState(false);
   const [showDateDialog, setShowDateDialog] = useState(false);
-  
+
   // Temporary state for additional service selection
-  const [tempAdditionalService, setTempAdditionalService] = useState<Service | null>(null);
-  const [tempAdditionalBarber, setTempAdditionalBarber] = useState<TeamMember | null>(null);
-  const [tempAdditionalDate, setTempAdditionalDate] = useState<Date>(new Date());
-  const [tempAdditionalTime, setTempAdditionalTime] = useState<TimeSlot | null>(null);
+  const [tempAdditionalService, setTempAdditionalService] =
+    useState<Service | null>(null);
+  const [tempAdditionalBarber, setTempAdditionalBarber] =
+    useState<TeamMember | null>(null);
+  const [tempAdditionalDate, setTempAdditionalDate] = useState<Date>(
+    new Date(),
+  );
+  const [tempAdditionalTime, setTempAdditionalTime] = useState<TimeSlot | null>(
+    null,
+  );
   const [tempAvailableTimes, setTempAvailableTimes] = useState<TimeSlot[]>([]);
   const [tempAvailableDates, setTempAvailableDates] = useState<string[]>([]);
   const [tempIsLoading, setTempIsLoading] = useState(false);
-  
+
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
 
@@ -96,7 +106,7 @@ export default function AppointmentBooking() {
       if (!window.Square) {
         console.error("Square.js failed to load");
         setPaymentError(
-          "Payment system failed to load. Please try again later."
+          "Payment system failed to load. Please try again later.",
         );
         return;
       }
@@ -109,7 +119,7 @@ export default function AppointmentBooking() {
         if (!appId || !locationId) {
           console.error("Missing Square credentials in environment variables");
           setPaymentError(
-            "Payment system configuration error. Please contact support."
+            "Payment system configuration error. Please contact support.",
           );
           return;
         }
@@ -154,7 +164,7 @@ export default function AppointmentBooking() {
 
     if (!user) {
       setPaymentError(
-        "User information is not available. Please log in again."
+        "User information is not available. Please log in again.",
       );
       return;
     }
@@ -173,8 +183,9 @@ export default function AppointmentBooking() {
       // This is 50% of the doubled price shown to customers
       const mainServiceDeposit = selectedService.price_amount;
       const additionalServicesDeposit = additionalServices.reduce(
-        (total, additionalService) => total + additionalService.service.price_amount,
-        0
+        (total, additionalService) =>
+          total + additionalService.service.price_amount,
+        0,
       );
       const depositAmount = mainServiceDeposit + additionalServicesDeposit;
       const formattedAmount = (depositAmount / 100).toFixed(2);
@@ -192,10 +203,10 @@ export default function AppointmentBooking() {
           givenName: user.first_name || "",
           familyName: user.last_name || "",
           email: user.email || "",
-          countryCode: "AU"
+          countryCode: "AU",
         },
         customerInitiated: true,
-        sellerKeyedIn: false // Adding the missing required field
+        sellerKeyedIn: false, // Adding the missing required field
       };
 
       // Tokenize the payment method
@@ -206,7 +217,7 @@ export default function AppointmentBooking() {
         const paymentResponse = await fetch("/api/process-payment", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             sourceId: tokenResult.token,
@@ -215,9 +226,9 @@ export default function AppointmentBooking() {
             locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "",
             // Pass customer details for the payment
             customerDetails: {
-              squareCustomerId: user.square_up_id
-            }
-          })
+              squareCustomerId: user.square_up_id,
+            },
+          }),
         });
 
         if (paymentResponse.ok) {
@@ -230,7 +241,7 @@ export default function AppointmentBooking() {
             paymentId: paymentData.payment?.id,
             amount: formattedAmount,
             currency: "AUD",
-            idempotencyKey: idempotencyKey
+            idempotencyKey: idempotencyKey,
           };
 
           localStorage.setItem("paymentReceipt", JSON.stringify(paymentInfo));
@@ -248,13 +259,13 @@ export default function AppointmentBooking() {
         throw new Error(
           `Tokenization failed: ${
             tokenResult.errors?.[0]?.detail || tokenResult.status
-          }`
+          }`,
         );
       }
     } catch (error: any) {
       console.error("Payment error:", error);
       setPaymentError(
-        error instanceof Error ? error.message : "Payment processing failed"
+        error instanceof Error ? error.message : "Payment processing failed",
       );
       setProcessingPayment(false);
     }
@@ -263,7 +274,7 @@ export default function AppointmentBooking() {
   // Create multiple bookings using batch approach
   const createBatchBookings = async (
     idempotencyKey: string,
-    paymentInfo: any
+    paymentInfo: any,
   ) => {
     if (!selectedService || !selectedTime || !user) {
       console.error("Missing required booking information");
@@ -278,27 +289,34 @@ export default function AppointmentBooking() {
     try {
       // Prepare all bookings (main + additional services)
       const bookingsToCreate = [];
-      
+
       // Main booking
       const serviceVariationVersion =
         selectedTime.appointment_segments?.[0]?.service_variation_version;
-      
+
       bookingsToCreate.push({
         service_variation_id: selectedService.service_variation_id,
-        team_member_id: selectedTime.appointment_segments?.[0]?.team_member_id || "",
+        team_member_id:
+          selectedTime.appointment_segments?.[0]?.team_member_id || "",
         start_at: selectedTime.start_at,
         service_variation_version: serviceVariationVersion,
-        customer_note: `Main service: ${selectedService.name}`
+        customer_note: `Main service: ${selectedService.name}`,
       });
-      
+
       // Additional services bookings
       additionalServices.forEach((additionalService, index) => {
         bookingsToCreate.push({
           service_variation_id: additionalService.service.service_variation_id,
-          team_member_id: additionalService.timeSlot.appointment_segments?.[0]?.team_member_id || "",
+          team_member_id:
+            additionalService.timeSlot.appointment_segments?.[0]
+              ?.team_member_id || "",
           start_at: additionalService.timeSlot.start_at,
-          service_variation_version: additionalService.timeSlot.appointment_segments?.[0]?.service_variation_version,
-          customer_note: `Additional service #${index + 1}: ${additionalService.service.name}`
+          service_variation_version:
+            additionalService.timeSlot.appointment_segments?.[0]
+              ?.service_variation_version,
+          customer_note: `Additional service #${index + 1}: ${
+            additionalService.service.name
+          }`,
         });
       });
 
@@ -310,13 +328,15 @@ export default function AppointmentBooking() {
           paymentId: paymentInfo.paymentId,
           amount: paymentInfo.amount,
           currency: paymentInfo.currency,
-          receiptUrl: paymentInfo.receiptUrl
-        }
+          receiptUrl: paymentInfo.receiptUrl,
+        },
       };
 
       // Call batch booking API
-      const batchResponse = await BookingService.createBatchBookings(batchRequest);
-      
+      const batchResponse = await BookingService.createBatchBookings(
+        batchRequest,
+      );
+
       if (batchResponse.success && batchResponse.created_bookings.length > 0) {
         // Store the main booking ID
         const mainBooking = batchResponse.created_bookings[0]?.booking;
@@ -326,15 +346,15 @@ export default function AppointmentBooking() {
 
         // Update payment receipt with booking IDs
         const receiptData = JSON.parse(
-          localStorage.getItem("paymentReceipt") || "{}"
+          localStorage.getItem("paymentReceipt") || "{}",
         );
         localStorage.setItem(
           "paymentReceipt",
           JSON.stringify({
             ...receiptData,
             bookings: batchResponse.created_bookings,
-            mainBookingId: mainBooking?.data?.square_booking_id
-          })
+            mainBookingId: mainBooking?.data?.square_booking_id,
+          }),
         );
 
         // Mark booking as confirmed and handle UI transitions
@@ -346,9 +366,11 @@ export default function AppointmentBooking() {
         saveBatchBookingDetails(batchResponse);
       } else {
         throw new Error(
-          batchResponse.errors?.length > 0 
-            ? `Failed to create bookings: ${batchResponse.errors.map(e => e.error).join(', ')}` 
-            : "Failed to create bookings"
+          batchResponse.errors?.length > 0
+            ? `Failed to create bookings: ${batchResponse.errors
+                .map((e) => e.error)
+                .join(", ")}`
+            : "Failed to create bookings",
         );
       }
     } catch (error: any) {
@@ -359,7 +381,6 @@ export default function AppointmentBooking() {
     }
   };
 
-
   // Save batch booking details for thank you page
   const saveBatchBookingDetails = (batchResponse: any) => {
     if (!selectedService || !selectedTime) return;
@@ -368,32 +389,40 @@ export default function AppointmentBooking() {
       // Calculate total amounts including additional services
       const mainServiceDeposit = selectedService.price_amount;
       const additionalServicesDeposit = additionalServices.reduce(
-        (total, additionalService) => total + additionalService.service.price_amount,
-        0
+        (total, additionalService) =>
+          total + additionalService.service.price_amount,
+        0,
       );
       const totalDeposit = mainServiceDeposit + additionalServicesDeposit;
-      const totalAmount = (selectedService.price_amount * 2) + additionalServices.reduce(
-        (total, additionalService) => total + (additionalService.service.price_amount * 2),
-        0
-      );
+      const totalAmount =
+        selectedService.price_amount * 2 +
+        additionalServices.reduce(
+          (total, additionalService) =>
+            total + additionalService.service.price_amount * 2,
+          0,
+        );
 
       // Create service list including additional services
       const servicesList = [selectedService.name];
       if (additionalServices.length > 0) {
-        servicesList.push(...additionalServices.map(add => add.service.name));
+        servicesList.push(...additionalServices.map((add) => add.service.name));
       }
 
       // Get the main booking details
       const mainBooking = batchResponse.created_bookings?.[0]?.booking;
-      
+
       localStorage.setItem(
         "lastBooking",
         JSON.stringify({
           id: mainBooking?.data?.id || "pending",
           square_booking_id: mainBooking?.data?.square_booking_id || "pending",
           service: servicesList.join(", "),
-          date: dayjs(selectedTime.start_at).tz("Australia/Melbourne").format("YYYY-MM-DD"),
-          time: dayjs(selectedTime.start_at).tz("Australia/Melbourne").format("h:mm A"),
+          date: dayjs(selectedTime.start_at)
+            .tz("Australia/Melbourne")
+            .format("YYYY-MM-DD"),
+          time: dayjs(selectedTime.start_at)
+            .tz("Australia/Melbourne")
+            .format("h:mm A"),
           deposit: (totalDeposit / 100).toFixed(2),
           total: (totalAmount / 100).toFixed(2),
           status: mainBooking?.data?.status || "confirmed",
@@ -401,14 +430,15 @@ export default function AppointmentBooking() {
           backend_synced: true, // Already synced through batch API
           additional_services: additionalServices.length,
           total_bookings_created: batchResponse.total_created,
-          batch_booking_ids: batchResponse.created_bookings.map((b: any) => b.booking.data.id)
-        })
+          batch_booking_ids: batchResponse.created_bookings.map(
+            (b: any) => b.booking.data.id,
+          ),
+        }),
       );
     } catch (error) {
       console.error("Error saving batch booking details:", error);
     }
   };
-
 
   // Load selected service from localStorage
   useEffect(() => {
@@ -443,13 +473,18 @@ export default function AppointmentBooking() {
         const barbersByService: Record<number, TeamMember[]> = {};
         for (const service of serviceList) {
           try {
-            const serviceBarbers = await BookingService.getBarbersForService(service.id);
+            const serviceBarbers = await BookingService.getBarbersForService(
+              service.id,
+            );
             barbersByService[service.id] = serviceBarbers;
           } catch (err) {
-            console.error(`Failed to fetch barbers for service ${service.id}:`, err);
+            console.error(
+              `Failed to fetch barbers for service ${service.id}:`,
+              err,
+            );
           }
         }
-        
+
         setAllBarbers(barbersByService);
       } catch (err) {
         console.error("Error fetching services and barbers:", err);
@@ -500,18 +535,23 @@ export default function AppointmentBooking() {
         setAvailabilityData(cachedData);
 
         // Extract available dates from cached data
-        const dates = cachedData?.availabilities_by_date ? Object.keys(cachedData.availabilities_by_date) : [];
+        const dates = cachedData?.availabilities_by_date
+          ? Object.keys(cachedData.availabilities_by_date)
+          : [];
         setAvailableDates(dates);
 
         // Update time slots for selected date
         // Convert selected date to Melbourne timezone to match API response keys
-        const melbourneDateKey = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
-        const availabilities = cachedData?.availabilities_by_date?.[melbourneDateKey] || [];
+        const melbourneDateKey = dayjs(selectedDate)
+          .tz("Australia/Melbourne")
+          .format("YYYY-MM-DD");
+        const availabilities =
+          cachedData?.availabilities_by_date?.[melbourneDateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
           (a, b) =>
-            new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+            new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
         );
 
         setAvailableTimes(availabilities);
@@ -543,46 +583,51 @@ export default function AppointmentBooking() {
           `Fetching availability for ${cacheKey} from`,
           startDate.toISOString(),
           "to",
-          endDate.toISOString()
+          endDate.toISOString(),
         );
 
         // Make a single request for the entire date range
         const response = await BookingService.searchAvailability(
           selectedService.service_variation_id,
           startDate,
-          endDate
+          endDate,
         );
 
         // Store the response in cache
         setMonthCache((prev) => ({
           ...prev,
-          [cacheKey]: response
+          [cacheKey]: response,
         }));
 
         // Update state with response data
         setAvailabilityData(response);
 
         // Extract available dates
-        const dates = response?.availabilities_by_date ? Object.keys(response.availabilities_by_date) : [];
+        const dates = response?.availabilities_by_date
+          ? Object.keys(response.availabilities_by_date)
+          : [];
         console.log(`${cacheKey} available dates:`, dates);
         setAvailableDates(dates);
 
         // If the selected date has available times, set them
         // Convert selected date to Melbourne timezone to match API response keys
-        const melbourneDateKey = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
-        const availabilities = response?.availabilities_by_date?.[melbourneDateKey] || [];
+        const melbourneDateKey = dayjs(selectedDate)
+          .tz("Australia/Melbourne")
+          .format("YYYY-MM-DD");
+        const availabilities =
+          response?.availabilities_by_date?.[melbourneDateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
           (a, b) =>
-            new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+            new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
         );
 
         setAvailableTimes(availabilities);
       } catch (err: any) {
         console.error("Error fetching availability:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to load availability"
+          err instanceof Error ? err.message : "Failed to load availability",
         );
       } finally {
         setIsLoading(false);
@@ -590,17 +635,13 @@ export default function AppointmentBooking() {
     };
 
     fetchAvailabilityData();
-  }, [
-    selectedMonth,
-    selectedYear,
-    selectedService,
-    selectedDate,
-    monthCache
-  ]);
+  }, [selectedMonth, selectedYear, selectedService, selectedDate, monthCache]);
 
   // Extract date string to avoid complex expression in dependency array
   // Use Melbourne timezone for consistency with API response keys
-  const selectedDateString = dayjs(selectedDate).tz("Australia/Melbourne").format("YYYY-MM-DD");
+  const selectedDateString = dayjs(selectedDate)
+    .tz("Australia/Melbourne")
+    .format("YYYY-MM-DD");
 
   // Update available times when selected date changes
   useEffect(() => {
@@ -615,11 +656,11 @@ export default function AppointmentBooking() {
 
     // Sort times chronologically
     availabilities.sort(
-      (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+      (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
     );
 
     console.log(
-      `Found ${availabilities.length} available slots for ${dateKey}`
+      `Found ${availabilities.length} available slots for ${dateKey}`,
     );
     setAvailableTimes(availabilities);
     setSelectedTime(null); // Reset selected time when date changes
@@ -687,26 +728,34 @@ export default function AppointmentBooking() {
     setTempAdditionalBarber(barber);
     setShowBarberDialog(false);
     setShowDateDialog(true);
-    
+
     // Fetch availability for this service
     if (tempAdditionalService) {
-      fetchAdditionalServiceAvailability(tempAdditionalService.service_variation_id);
+      fetchAdditionalServiceAvailability(
+        tempAdditionalService.service_variation_id,
+      );
     }
   };
 
   const handleSelectRandomAdditionalBarber = () => {
-    if (tempAdditionalService && allBarbers[tempAdditionalService.id] && allBarbers[tempAdditionalService.id].length > 0) {
+    if (
+      tempAdditionalService &&
+      allBarbers[tempAdditionalService.id] &&
+      allBarbers[tempAdditionalService.id].length > 0
+    ) {
       // Randomly select a barber from available barbers for this service
       const availableBarbers = allBarbers[tempAdditionalService.id];
       const randomIndex = Math.floor(Math.random() * availableBarbers.length);
       const randomBarber = availableBarbers[randomIndex];
-      
+
       setTempAdditionalBarber(randomBarber);
       setShowBarberDialog(false);
       setShowDateDialog(true);
-      
+
       // Fetch availability for this service
-      fetchAdditionalServiceAvailability(tempAdditionalService.service_variation_id);
+      fetchAdditionalServiceAvailability(
+        tempAdditionalService.service_variation_id,
+      );
     }
   };
 
@@ -719,11 +768,11 @@ export default function AppointmentBooking() {
       const newAdditionalService: AdditionalService = {
         service: tempAdditionalService,
         barber: tempAdditionalBarber,
-        timeSlot: tempAdditionalTime
+        timeSlot: tempAdditionalTime,
       };
-      
-      setAdditionalServices(prev => [...prev, newAdditionalService]);
-      
+
+      setAdditionalServices((prev) => [...prev, newAdditionalService]);
+
       // Reset temp state
       setTempAdditionalService(null);
       setTempAdditionalBarber(null);
@@ -735,60 +784,80 @@ export default function AppointmentBooking() {
   };
 
   const handleRemoveAdditionalService = (index: number) => {
-    setAdditionalServices(prev => prev.filter((_, i) => i !== index));
+    setAdditionalServices((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Check if a service/barber/time combination is already selected
-  const isServiceTimeConflict = (serviceId: number, teamMemberId: string, startAt: string) => {
+  const isServiceTimeConflict = (
+    serviceId: number,
+    teamMemberId: string,
+    startAt: string,
+  ) => {
     // Check main booking - only conflict if it's the exact same time
     if (selectedTime?.start_at === startAt) {
       return true;
     }
-    
+
     // Check additional services - only conflict if it's the exact same time slot
-    return additionalServices.some(additional => 
-      additional.timeSlot.start_at === startAt
+    return additionalServices.some(
+      (additional) => additional.timeSlot.start_at === startAt,
     );
   };
 
   // Fetch availability for additional service
-  const fetchAdditionalServiceAvailability = async (serviceVariationId: string, targetDate?: Date) => {
+  const fetchAdditionalServiceAvailability = async (
+    serviceVariationId: string,
+    targetDate?: Date,
+  ) => {
     setTempIsLoading(true);
-    
+
     try {
       const now = new Date();
       // Square API has a max query range of 32 days, so let's use 30 days to be safe
-      const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
-      
+      const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
       const response = await BookingService.searchAvailability(
         serviceVariationId,
         now,
-        endDate
+        endDate,
       );
-      
+
       const dates = Object.keys(response.availabilities_by_date);
       setTempAvailableDates(dates);
-      
+
       // Set times for the specified date or current temp date
       const dateToUse = targetDate || tempAdditionalDate;
-      const dateKey = dayjs(dateToUse).tz("Australia/Melbourne").format("YYYY-MM-DD");
+      const dateKey = dayjs(dateToUse)
+        .tz("Australia/Melbourne")
+        .format("YYYY-MM-DD");
       const availabilities = response.availabilities_by_date[dateKey] || [];
-      
-      console.log(`Additional service availability for ${dateKey}:`, availabilities.length, 'slots');
-      
+
+      console.log(
+        `Additional service availability for ${dateKey}:`,
+        availabilities.length,
+        "slots",
+      );
+
       // Filter out conflicting times
-      const filteredAvailabilities = availabilities.filter(slot => {
-        const conflict = isServiceTimeConflict(tempAdditionalService?.id || 0, slot.appointment_segments?.[0]?.team_member_id || '', slot.start_at);
+      const filteredAvailabilities = availabilities.filter((slot) => {
+        const conflict = isServiceTimeConflict(
+          tempAdditionalService?.id || 0,
+          slot.appointment_segments?.[0]?.team_member_id || "",
+          slot.start_at,
+        );
         return !conflict;
       });
-      
-      console.log(`After filtering conflicts: ${filteredAvailabilities.length} available slots`);
-      
+
+      console.log(
+        `After filtering conflicts: ${filteredAvailabilities.length} available slots`,
+      );
+
       // Sort times chronologically
       filteredAvailabilities.sort(
-        (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+        (a, b) =>
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
       );
-      
+
       setTempAvailableTimes(filteredAvailabilities);
     } catch (err) {
       console.error("Error fetching additional service availability:", err);
@@ -802,39 +871,46 @@ export default function AppointmentBooking() {
   const handleAdditionalDateChange = async (date: Date) => {
     setTempAdditionalDate(date);
     setTempAdditionalTime(null);
-    
+
     if (tempAdditionalService) {
       setTempIsLoading(true);
-      
+
       // Get the date key for the selected date
-      const dateKey = dayjs(date).tz("Australia/Melbourne").format("YYYY-MM-DD");
-      
+      const dateKey = dayjs(date)
+        .tz("Australia/Melbourne")
+        .format("YYYY-MM-DD");
+
       // Check if we already have availability data for this date
       if (tempAvailableDates.includes(dateKey)) {
         // We have data, just need to filter for this specific date
         try {
           const now = new Date();
           // Square API has a max query range of 32 days, so let's use 30 days to be safe
-          const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
-          
+          const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
           const response = await BookingService.searchAvailability(
             tempAdditionalService.service_variation_id,
             now,
-            endDate
+            endDate,
           );
-          
+
           const availabilities = response.availabilities_by_date[dateKey] || [];
-          
+
           // Filter out conflicting times
-          const filteredAvailabilities = availabilities.filter(slot => {
-            return !isServiceTimeConflict(tempAdditionalService?.id || 0, slot.appointment_segments?.[0]?.team_member_id || '', slot.start_at);
+          const filteredAvailabilities = availabilities.filter((slot) => {
+            return !isServiceTimeConflict(
+              tempAdditionalService?.id || 0,
+              slot.appointment_segments?.[0]?.team_member_id || "",
+              slot.start_at,
+            );
           });
-          
+
           // Sort times chronologically
           filteredAvailabilities.sort(
-            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+            (a, b) =>
+              new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
           );
-          
+
           setTempAvailableTimes(filteredAvailabilities);
         } catch (err) {
           console.error("Error updating times for date:", err);
@@ -844,7 +920,7 @@ export default function AppointmentBooking() {
         // No availability for this date
         setTempAvailableTimes([]);
       }
-      
+
       setTempIsLoading(false);
     }
   };
@@ -930,7 +1006,7 @@ export default function AppointmentBooking() {
                   additionalServices={additionalServices}
                   onRemoveAdditionalService={handleRemoveAdditionalService}
                 />
-                
+
                 {/* Add Additional Service Button */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <Button
@@ -949,23 +1025,31 @@ export default function AppointmentBooking() {
 
       {/* Service Selection Dialog */}
       <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
-        <DialogContent className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-br from-gray-50 to-white" style={{ width: '95vw', maxWidth: '1400px' }}>
+        <DialogContent
+          className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-br from-gray-50 to-white"
+          style={{ width: "95vw", maxWidth: "1400px" }}
+        >
           <DialogHeader className="border-b border-gray-200 pb-4">
             <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
               Select Additional Service
             </DialogTitle>
             <p className="text-gray-600 text-center mt-2">
-              Choose from our available services to complete your grooming experience
+              Choose from our available services to complete your grooming
+              experience
             </p>
           </DialogHeader>
-          
+
           <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6">
             <div className="max-w-5xl mx-auto">
               <div className="grid gap-3 sm:gap-4">
                 {allServices
-                  .filter(service => service.id !== selectedService?.id)
-                  .filter(service => allBarbers[service.id] && allBarbers[service.id].length > 0)
-                  .map(service => {
+                  .filter((service) => service.id !== selectedService?.id)
+                  .filter(
+                    (service) =>
+                      allBarbers[service.id] &&
+                      allBarbers[service.id].length > 0,
+                  )
+                  .map((service) => {
                     return (
                       <div
                         key={service.id}
@@ -980,35 +1064,63 @@ export default function AppointmentBooking() {
                                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-black transition-colors">
                                   {service.name}
                                 </h3>
-                                
+
                                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 text-sm text-gray-600">
                                   <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                                      />
                                     </svg>
                                     <span className="font-bold text-gray-900">
-                                      ${((service.price_amount * 2) / 100).toFixed(2)}
+                                      $
+                                      {(
+                                        (service.price_amount * 2) /
+                                        100
+                                      ).toFixed(2)}
                                     </span>
                                   </span>
-                                  
+
                                   <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
                                     </svg>
                                     {service.duration > 10000
                                       ? Math.round(service.duration / 60000)
-                                      : service.duration} min
+                                      : service.duration}{" "}
+                                    min
                                   </span>
-                                  
+
                                   {allBarbers[service.id] && (
                                     <span className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
                                       <span className="font-bold text-gray-900">
-                                       {allBarbers[service.id].length} barber{allBarbers[service.id].length !== 1 ? 's' : ''}
+                                        {allBarbers[service.id].length} barber
+                                        {allBarbers[service.id].length !== 1
+                                          ? "s"
+                                          : ""}
                                       </span>
                                     </span>
                                   )}
                                 </div>
-                                
+
                                 {service.description && (
                                   <p className="text-sm sm:text-base text-gray-600 line-clamp-2 leading-relaxed">
                                     {service.description}
@@ -1021,7 +1133,8 @@ export default function AppointmentBooking() {
                                 <Button
                                   className="w-full sm:w-auto bg-gray-900 text-white hover:bg-gray-800 px-6 py-3 font-semibold transition-all duration-200 group-hover:bg-gray-800 shadow-sm"
                                   disabled={
-                                    !allBarbers[service.id] || allBarbers[service.id].length === 0
+                                    !allBarbers[service.id] ||
+                                    allBarbers[service.id].length === 0
                                   }
                                 >
                                   Select Service
@@ -1041,7 +1154,10 @@ export default function AppointmentBooking() {
 
       {/* Barber Selection Dialog */}
       <Dialog open={showBarberDialog} onOpenChange={setShowBarberDialog}>
-        <DialogContent className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-b from-gray-50 to-white" style={{ width: '95vw', maxWidth: '1200px' }}>
+        <DialogContent
+          className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-b from-gray-50 to-white"
+          style={{ width: "95vw", maxWidth: "1200px" }}
+        >
           <DialogHeader className="border-b border-gray-200 pb-4 sm:pb-6">
             <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center">
               Choose Your Barber
@@ -1049,194 +1165,290 @@ export default function AppointmentBooking() {
             {tempAdditionalService && (
               <div className="text-center mt-4">
                 <div className="bg-white rounded-lg shadow-sm border p-4 max-w-md mx-auto">
-                  <h3 className="font-semibold text-gray-900">{tempAdditionalService.name}</h3>
+                  <h3 className="font-semibold text-gray-900">
+                    {tempAdditionalService.name}
+                  </h3>
                   <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
-                    <span>${((tempAdditionalService.price_amount * 2) / 100).toFixed(2)}</span>
+                    <span>
+                      $
+                      {((tempAdditionalService.price_amount * 2) / 100).toFixed(
+                        2,
+                      )}
+                    </span>
                     <span>•</span>
-                    <span>{tempAdditionalService.duration > 10000 ? Math.round(tempAdditionalService.duration / 60000) : tempAdditionalService.duration} min</span>
+                    <span>
+                      {tempAdditionalService.duration > 10000
+                        ? Math.round(tempAdditionalService.duration / 60000)
+                        : tempAdditionalService.duration}{" "}
+                      min
+                    </span>
                   </div>
                 </div>
               </div>
             )}
           </DialogHeader>
-          
+
           <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-3 sm:p-6">
             {tempAdditionalService && allBarbers[tempAdditionalService.id] ? (
               <>
                 <div className="bg-gray-50 rounded-lg p-3 mb-6 max-w-2xl mx-auto">
-                  <p className="text-xs text-gray-700 text-center">
+                  {/* <p className="text-xs text-gray-700 text-center">
                     🎯 <strong>Limited Availability</strong> - Book your preferred time slot today!
-                  </p>
+                  </p> */}
                 </div>
-                
+
                 <div className="max-w-6xl mx-auto">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Random Barber Card - First Position */}
-                  {allBarbers[tempAdditionalService.id] && allBarbers[tempAdditionalService.id].length > 0 && (
-                    <div
-                      className="h-min bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
-                      onClick={handleSelectRandomAdditionalBarber}
-                    >
-                      {/* Card Content */}
-                      <div className="p-6 space-y-4">
-                        {/* Review Text */}
-                        <p className="text-purple-800 text-md leading-relaxed font-medium">
-                          Let our expert team choose the perfect barber for your style. 
-                          Every one of our barbers delivers exceptional results.
-                        </p>
+                    {/* Random Barber Card - First Position */}
+                    {allBarbers[tempAdditionalService.id] &&
+                      allBarbers[tempAdditionalService.id].length > 0 && (
+                        <div
+                          className="h-min bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
+                          onClick={handleSelectRandomAdditionalBarber}
+                        >
+                          {/* Card Content */}
+                          <div className="p-6 space-y-4">
+                            {/* Review Text */}
+                            <p className="text-purple-800 text-md leading-relaxed font-medium">
+                              Let our expert team choose the perfect barber for
+                              your style. Every one of our barbers delivers
+                              exceptional results.
+                            </p>
 
-                        {/* Customer Info */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">✨</span>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-purple-900">Random Selection</p>
-                              <p className="text-xs text-purple-600">Surprise Choice</p>
+                            {/* Customer Info */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">
+                                    ✨
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-purple-900">
+                                    Random Selection
+                                  </p>
+                                  <p className="text-xs text-purple-600">
+                                    Surprise Choice
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-purple-300 text-2xl">
+                                &quot;
+                              </div>
                             </div>
                           </div>
-                          <div className="text-purple-300 text-2xl">
-                            &quot;
+
+                          {/* Book Button */}
+                          <div className="px-6 pt-16 pb-4">
+                            <button className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
+                              Choose the next available Barber
+                            </button>
                           </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Book Button */}
-                      <div className="px-6 pt-16 pb-4">
-                        <button className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
-                          Choose the next available Barber
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Regular Barber Cards */}
-                  {allBarbers[tempAdditionalService.id].map(barber => {
-                    const barberImage = getBarberImageSafe(barber.first_name, barber.last_name);
-                    return (
-                      <div
-                        key={barber.id}
-                        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group max-w-sm mx-auto"
-                        onClick={() => handleSelectAdditionalBarber(barber)}
-                      >
-                        {/* Barber Image */}
-                        <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                          <Image
-                            src={barberImage.src}
-                            width={400}
-                            height={400}
-                            alt={barberImage.alt}
-                            className="object-cover w-full h-full"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `
+                    {/* Regular Barber Cards */}
+                    {allBarbers[tempAdditionalService.id].map((barber) => {
+                      const barberImage = getBarberImageSafe(
+                        barber.first_name,
+                        barber.last_name,
+                      );
+                      return (
+                        <div
+                          key={barber.id}
+                          className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group max-w-sm mx-auto"
+                          onClick={() => handleSelectAdditionalBarber(barber)}
+                        >
+                          {/* Barber Image */}
+                          <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                            <Image
+                              src={barberImage.src}
+                              width={400}
+                              height={400}
+                              alt={barberImage.alt}
+                              className="object-cover w-full h-full"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `
                                   <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                                     <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
                                       <span class="text-gray-400 text-3xl font-bold">?</span>
                                     </div>
                                   </div>
                                 `;
-                              }
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                          
-                          {/* Overlay Info */}
-                          <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
-                            <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">{barber.first_name}</h3>
-                            <p className="text-sm sm:text-lg opacity-90 font-medium">{barber.last_name}</p>
-                          </div>
-                          
-                          {/* Professional Badge */}
-                          <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
-                            <div className="bg-white/20 backdrop-blur-sm rounded-full p-1.5 sm:p-2">
-                              <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
+                                }
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-                        {/* Card Content */}
-                        <div className="p-6 space-y-4">
-                          <div className="space-y-3 sm:space-y-4 mb-2 sm:mb-6">
-                            {/* Languages */}
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12l-4 4h8l-4 4H3z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-xs sm:text-sm text-gray-600 font-medium">Languages</p>
-                                <p className="text-sm sm:text-base lg:text-lg">🇦🇺 🇬🇷</p>
-                              </div>
+                            {/* Overlay Info */}
+                            <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
+                              <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">
+                                {barber.first_name}
+                              </h3>
+                              <p className="text-sm sm:text-lg opacity-90 font-medium">
+                                {barber.last_name}
+                              </p>
                             </div>
-                            
-                            {/* Social Handle */}
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+
+                            {/* Professional Badge */}
+                            <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
+                              <div className="bg-white/20 backdrop-blur-sm rounded-full p-1.5 sm:p-2">
+                                <svg
+                                  className="w-4 h-4 sm:w-6 sm:h-6 text-white"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                                  />
                                 </svg>
-                              </div>
-                              <div>
-                                <p className="text-xs sm:text-sm text-gray-600 font-medium">Social</p>
-                                <p className="text-sm sm:text-base font-mono text-gray-900">
-                                  @{barber.first_name.toLowerCase()}.barber
-                                </p>
-                              </div>
-                            </div>
-                            
-                            {/* Status */}
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-xs sm:text-sm text-gray-600 font-medium">Status</p>
-                                <p className="text-sm sm:text-base capitalize font-semibold text-green-700">
-                                  {barber.status}
-                                </p>
                               </div>
                             </div>
                           </div>
 
-                          {/* Book Button */}
-                          <div className="px-6 pb-6">
-                            <Button
-                              className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105"
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Select {barber.first_name}
-                              </span>
-                            </Button>
+                          {/* Card Content */}
+                          <div className="p-6 space-y-4">
+                            <div className="space-y-3 sm:space-y-4 mb-2 sm:mb-6">
+                              {/* Languages */}
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <svg
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M3 5h12l-4 4h8l-4 4H3z"
+                                    />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                                    Languages
+                                  </p>
+                                  <p className="text-sm sm:text-base lg:text-lg">
+                                    🇦🇺 🇬🇷
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Social Handle */}
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                  <svg
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                                    Social
+                                  </p>
+                                  <p className="text-sm sm:text-base font-mono text-gray-900">
+                                    @{barber.first_name.toLowerCase()}.barber
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Status */}
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                  <svg
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-green-600"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                                    />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                                    Status
+                                  </p>
+                                  <p className="text-sm sm:text-base capitalize font-semibold text-green-700">
+                                    {barber.status}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Book Button */}
+                            <div className="px-6 pb-6">
+                              <Button className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105">
+                                <span className="flex items-center justify-center gap-2">
+                                  <svg
+                                    className="w-4 h-4 sm:w-5 sm:h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                  Select {barber.first_name}
+                                </span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               </>
             ) : (
               <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center max-w-2xl mx-auto">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-8 h-8 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Barbers Available</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No Barbers Available
+                </h3>
                 <p className="text-gray-500">
-                  No barbers are currently available for this service. Please try another service or contact us directly.
+                  No barbers are currently available for this service. Please
+                  try another service or contact us directly.
                 </p>
               </div>
             )}
@@ -1249,7 +1461,8 @@ export default function AppointmentBooking() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>
-              Select Date & Time for {tempAdditionalService?.name} with {tempAdditionalBarber?.first_name}
+              Select Date & Time for {tempAdditionalService?.name} with{" "}
+              {tempAdditionalBarber?.first_name}
             </DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[calc(80vh-100px)] p-4">
@@ -1270,14 +1483,30 @@ export default function AppointmentBooking() {
                 <h3 className="font-semibold mb-4">Selection Summary</h3>
                 {tempAdditionalService && (
                   <div className="space-y-2">
-                    <p><strong>Service:</strong> {tempAdditionalService.name}</p>
+                    <p>
+                      <strong>Service:</strong> {tempAdditionalService.name}
+                    </p>
                     {tempAdditionalBarber && (
-                      <p><strong>Barber:</strong> {tempAdditionalBarber.first_name} {tempAdditionalBarber.last_name}</p>
+                      <p>
+                        <strong>Barber:</strong>{" "}
+                        {tempAdditionalBarber.first_name}{" "}
+                        {tempAdditionalBarber.last_name}
+                      </p>
                     )}
                     {tempAdditionalTime && (
-                      <p><strong>Time:</strong> {dayjs(tempAdditionalTime.start_at).tz("Australia/Melbourne").format("h:mm A on dddd, MMM D")}</p>
+                      <p>
+                        <strong>Time:</strong>{" "}
+                        {dayjs(tempAdditionalTime.start_at)
+                          .tz("Australia/Melbourne")
+                          .format("h:mm A on dddd, MMM D")}
+                      </p>
                     )}
-                    <p><strong>Price:</strong> ${((tempAdditionalService.price_amount * 2) / 100).toFixed(2)}</p>
+                    <p>
+                      <strong>Price:</strong> $
+                      {((tempAdditionalService.price_amount * 2) / 100).toFixed(
+                        2,
+                      )}
+                    </p>
                   </div>
                 )}
                 <Button
@@ -1285,7 +1514,9 @@ export default function AppointmentBooking() {
                   disabled={!tempAdditionalTime}
                   className="w-full mt-4 bg-green-600 hover:bg-green-700"
                 >
-                  {tempAdditionalTime ? "Confirm Additional Service" : "Please Select a Time"}
+                  {tempAdditionalTime
+                    ? "Confirm Additional Service"
+                    : "Please Select a Time"}
                 </Button>
               </div>
             </div>

@@ -103,7 +103,7 @@ export default function Home() {
               />
             </svg>
 
-            <p>@InstagramHandle</p>
+            <p>@alpha.omega_mens.grooming</p>
           </div>
 
           <div className="flex gap-2">
@@ -156,7 +156,7 @@ export default function Home() {
               />
             </svg>
 
-            <p>61+ 0000 000 000</p>
+            <p>+61 03 9012 5480</p>
           </div>
 
           <div className="flex gap-2">

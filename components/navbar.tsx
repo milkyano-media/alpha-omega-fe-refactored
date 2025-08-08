@@ -23,7 +23,7 @@ export function Navbar() {
       {/* <div className="hidden md:flex justify-between items-center p-4 border-b border-[#DCDCDC] text-white">
         <div className="flex gap-8">
           <a href="#">Location</a>
-          <a href="">+61 0000 000 000</a>
+          <a href="">+61 03 9012 5480</a>
         </div>
 
         <a href="#" className="w-7">

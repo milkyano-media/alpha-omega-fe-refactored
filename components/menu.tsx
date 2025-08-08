@@ -43,7 +43,7 @@ export function Menu() {
           {isClient &&
             (isAuthenticated ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm">
+                <span className="text-sm text-white">
                   Hello, {user?.first_name || "User"}
                 </span>
                 <button
