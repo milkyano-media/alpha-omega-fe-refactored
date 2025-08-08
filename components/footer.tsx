@@ -65,7 +65,7 @@ export function Footer() {
           <div className="text-black mt-4 space-y-2">
             <p>Alpha Omega</p>
             <p>+61 03 9012 5480</p>
-            <p>AlphaOmega@gmail.com</p>
+            <p>alpha.omega.mens.grooming@gmail.com</p>
           </div>
         </div>
 
@@ -85,11 +85,12 @@ export function Footer() {
         {/* Locations */}
         <div>
           <b className="text-black text-base">Location</b>
-          <div className="text-black mt-4 space-y-2">
+          <div className="text-transparent mt-4 space-y-2">
+            <span className="text-black">Prahran</span>
             {locations.map((row, index) => (
               <div key={index} className="flex justify-between">
-                <span>{row[0]}</span>
-                <span>{row[1]}</span>
+                <span className="hover:text-black">{row[0]}</span>
+                <span className="hover:text-black">{row[1]}</span>
               </div>
             ))}
           </div>

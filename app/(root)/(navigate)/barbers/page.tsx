@@ -32,13 +32,6 @@ export default function Home() {
             />
           </div>
           <h4>Christos</h4>
-
-          <p>
-            <b>HAIR + BEARD </b>$75.00 AUD
-          </p>
-          <p>
-            <b>HAIRCUT </b>$50.00 AUD
-          </p>
         </div>
       </section>
     </main>

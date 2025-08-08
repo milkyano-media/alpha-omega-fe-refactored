@@ -18,7 +18,7 @@ export default function Home() {
   };
   return (
     <main className="flex flex-col gap-20">
-      <section className="flex flex-col gap-8 px-4 mt-40 text-center container mx-auto">
+      <section className="flex flex-col gap-8 px-4 mt-40 text-center items-center container mx-auto">
         <div className="w-full md:w-max self-center">
           <Image
             src={"/assets/main-6.png"}
@@ -125,7 +125,7 @@ export default function Home() {
               />
             </svg>
 
-            <p>Email@gmail.com</p>
+            <p>alpha.omega.mens.grooming@gmail.com</p>
           </div>
         </div>
       </section>
@@ -140,20 +140,12 @@ export default function Home() {
           />
         </div>
 
-        <p>
-          Conveniently located in the heart of [City/Suburb Name], our
-          barbershop is designed for your comfort and style. Drop by for a
-          premium grooming experience in a welcoming space that’s just around
-          the corner.
-        </p>
-
-        <div className="w-full max-w-2xl h-96 bg-[#F8F8F8]"></div>
-
-        <b className="text-center">
-          379 Darling St, <br />
-          New South Wales, <br />
-          Sydney 2041
-        </b>
+        <Image
+          src={"/assets/main-5.png"}
+          width={500}
+          height={500}
+          alt="Alpha Omega on the map"
+        />
 
         <Button variant={"secondary"} onClick={handleBookUs}>
           BOOK US

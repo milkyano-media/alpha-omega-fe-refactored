@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Menu } from "./menu";
 import Link from "next/link";
+import Image from "next/image";
 
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
@@ -65,6 +66,31 @@ export function Navbar() {
 
         <Menu />
       </div>
+
+      <div className="overflow-hidden whitespace-nowrap">
+        <div className="flex animate-marquee">
+          {/* First set of images */}
+          <MarqueeItems />
+          {/* Duplicate set for seamless loop */}
+          <MarqueeItems />
+        </div>
+      </div>
     </nav>
+  );
+}
+
+function MarqueeItems() {
+  return (
+    <div className="flex md:gap-64 gap-16 shrink-0 md:mr-64 mr-16">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Image
+          key={i}
+          src="/assets/ao-pixelate.png"
+          height={50}
+          width={50}
+          alt="alpha omega pixelate"
+        />
+      ))}
+    </div>
   );
 }
