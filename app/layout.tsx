@@ -14,16 +14,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Determine Square SDK URL based on environment
+  const isProduction = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT === 'production';
+  const squareSDKUrl = isProduction 
+    ? 'https://web.squarecdn.com/v1/square.js'
+    : 'https://sandbox.web.squarecdn.com/v1/square.js';
+
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
-        {/* Square Web Payments SDK */}
+        {/* Square Web Payments SDK - Environment determined by NEXT_PUBLIC_SQUARE_ENVIRONMENT */}
         <script
           type='text/javascript'
-          // SANDBOX
-          src='https://sandbox.web.squarecdn.com/v1/square.js'
-          // PRODUCTION
-          // src="https://web.squarecdn.com/v1/square.js"
+          src={squareSDKUrl}
         />
       </head>
       <body

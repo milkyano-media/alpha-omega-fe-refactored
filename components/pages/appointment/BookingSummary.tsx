@@ -40,20 +40,15 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   // Calculate main service pricing
   const mainServicePrice = selectedService.price_amount / 100;
-  const mainServiceDisplayPrice = mainServicePrice * 2; // Display double the price
 
   // Calculate additional services pricing
-  const additionalServicesDisplayPrice = additionalServices.reduce((total, additional) => {
-    return total + (additional.service.price_amount * 2 / 100);
-  }, 0);
-  
-  const additionalServicesDepositPrice = additionalServices.reduce((total, additional) => {
+  const additionalServicesPrice = additionalServices.reduce((total, additional) => {
     return total + (additional.service.price_amount / 100);
   }, 0);
 
   // Total amounts
-  const totalAmount = mainServiceDisplayPrice + additionalServicesDisplayPrice;
-  const depositAmount = mainServicePrice + additionalServicesDepositPrice; // 50% of displayed price
+  const totalAmount = mainServicePrice + additionalServicesPrice;
+  const depositAmount = totalAmount * 0.5; // 50% of total amount
 
   // Format time for display in Melbourne timezone
   const formatTime = (isoTime: string) => {
@@ -76,7 +71,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         <div className="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
           <p className="text-sm font-medium">{selectedService.name}</p>
           <div className="flex gap-3 text-xs text-gray-600">
-            <span>${mainServiceDisplayPrice.toFixed(2)}</span>
+            <span>${mainServicePrice.toFixed(2)}</span>
             <span>
               {selectedService.duration > 10000
                 ? Math.round(selectedService.duration / 60000)
@@ -98,7 +93,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <div className="flex gap-3 text-xs text-gray-600">
-                <span>${((additional.service.price_amount * 2) / 100).toFixed(2)}</span>
+                <span>${(additional.service.price_amount / 100).toFixed(2)}</span>
                 <span>
                   {additional.service.duration > 10000
                     ? Math.round(additional.service.duration / 60000)

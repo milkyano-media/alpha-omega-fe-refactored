@@ -178,16 +178,15 @@ export default function AppointmentBooking() {
     setPaymentError(null);
 
     try {
-      // Calculate total deposit amount including additional services
-      // The deposit amount is the actual price in Square
-      // This is 50% of the doubled price shown to customers
-      const mainServiceDeposit = selectedService.price_amount;
-      const additionalServicesDeposit = additionalServices.reduce(
+      // Calculate total amount and 50% deposit including additional services
+      const mainServicePrice = selectedService.price_amount;
+      const additionalServicesPrice = additionalServices.reduce(
         (total, additionalService) =>
           total + additionalService.service.price_amount,
         0,
       );
-      const depositAmount = mainServiceDeposit + additionalServicesDeposit;
+      const totalAmount = mainServicePrice + additionalServicesPrice;
+      const depositAmount = Math.round(totalAmount * 0.5); // 50% deposit, rounded to avoid decimal cents
       const formattedAmount = (depositAmount / 100).toFixed(2);
 
       // Create a unique idempotency key for this transaction
@@ -287,42 +286,59 @@ export default function AppointmentBooking() {
     setCreatingBooking(true);
 
     try {
-      // Prepare all bookings (main + additional services)
-      const bookingsToCreate = [];
+      // Prepare appointment segments (main + additional services)
+      const appointmentSegments = [];
+      
+      // Find the earliest start time for the booking
+      const allStartTimes = [
+        selectedTime.start_at,
+        ...additionalServices.map(service => service.timeSlot.start_at)
+      ];
+      const earliestStartTime = allStartTimes.sort()[0];
 
-      // Main booking
-      const serviceVariationVersion =
+      // Main service segment
+      const mainServiceVariationVersion =
         selectedTime.appointment_segments?.[0]?.service_variation_version;
 
-      bookingsToCreate.push({
+      appointmentSegments.push({
         service_variation_id: selectedService.service_variation_id,
         team_member_id:
           selectedTime.appointment_segments?.[0]?.team_member_id || "",
-        start_at: selectedTime.start_at,
-        service_variation_version: serviceVariationVersion,
-        customer_note: `Main service: ${selectedService.name}`,
+        duration_minutes: selectedService.duration > 10000
+          ? Math.round(selectedService.duration / 60000)
+          : selectedService.duration,
+        service_variation_version: mainServiceVariationVersion,
+        start_at: selectedTime.start_at, // Keep original start time for this segment
       });
 
-      // Additional services bookings
-      additionalServices.forEach((additionalService, index) => {
-        bookingsToCreate.push({
+      // Additional services segments
+      additionalServices.forEach((additionalService) => {
+        appointmentSegments.push({
           service_variation_id: additionalService.service.service_variation_id,
           team_member_id:
             additionalService.timeSlot.appointment_segments?.[0]
               ?.team_member_id || "",
-          start_at: additionalService.timeSlot.start_at,
+          duration_minutes: additionalService.service.duration > 10000
+            ? Math.round(additionalService.service.duration / 60000)
+            : additionalService.service.duration,
           service_variation_version:
             additionalService.timeSlot.appointment_segments?.[0]
               ?.service_variation_version,
-          customer_note: `Additional service #${index + 1}: ${
-            additionalService.service.name
-          }`,
+          start_at: additionalService.timeSlot.start_at, // Keep original start time for this segment
         });
       });
 
-      // Create batch booking request
-      const batchRequest = {
-        bookings: bookingsToCreate,
+      // Create service list for customer note
+      const servicesList = [selectedService.name];
+      if (additionalServices.length > 0) {
+        servicesList.push(...additionalServices.map((add) => add.service.name));
+      }
+
+      // Create single booking request with multiple appointment segments
+      const singleBookingRequest = {
+        start_at: earliestStartTime,
+        appointment_segments: appointmentSegments,
+        customer_note: `Multi-service appointment: ${servicesList.join(", ")}`,
         idempotencyKey: idempotencyKey,
         payment_info: {
           paymentId: paymentInfo.paymentId,
@@ -332,19 +348,18 @@ export default function AppointmentBooking() {
         },
       };
 
-      // Call batch booking API
-      const batchResponse = await BookingService.createBatchBookings(
-        batchRequest,
+      // Call single booking API
+      const bookingResponse = await BookingService.createBookingWithSegments(
+        singleBookingRequest,
       );
 
-      if (batchResponse.success && batchResponse.created_bookings.length > 0) {
-        // Store the main booking ID
-        const mainBooking = batchResponse.created_bookings[0]?.booking;
-        if (mainBooking?.data?.square_booking_id) {
-          setSquareBookingId(mainBooking.data.square_booking_id);
+      if (bookingResponse.success && bookingResponse.booking) {
+        // Store the booking ID
+        if (bookingResponse.booking.data?.square_booking_id) {
+          setSquareBookingId(bookingResponse.booking.data.square_booking_id);
         }
 
-        // Update payment receipt with booking IDs
+        // Update payment receipt with booking ID
         const receiptData = JSON.parse(
           localStorage.getItem("paymentReceipt") || "{}",
         );
@@ -352,8 +367,8 @@ export default function AppointmentBooking() {
           "paymentReceipt",
           JSON.stringify({
             ...receiptData,
-            bookings: batchResponse.created_bookings,
-            mainBookingId: mainBooking?.data?.square_booking_id,
+            booking: bookingResponse.booking,
+            bookingId: bookingResponse.booking.data?.square_booking_id,
           }),
         );
 
@@ -363,14 +378,12 @@ export default function AppointmentBooking() {
         setCreatingBooking(false);
 
         // Save booking details for thank you page
-        saveBatchBookingDetails(batchResponse);
+        saveBookingDetails(bookingResponse);
       } else {
         throw new Error(
-          batchResponse.errors?.length > 0
-            ? `Failed to create bookings: ${batchResponse.errors
-                .map((e) => e.error)
-                .join(", ")}`
-            : "Failed to create bookings",
+          bookingResponse.error
+            ? `Failed to create booking: ${bookingResponse.error}`
+            : "Failed to create booking",
         );
       }
     } catch (error: any) {
@@ -381,26 +394,20 @@ export default function AppointmentBooking() {
     }
   };
 
-  // Save batch booking details for thank you page
-  const saveBatchBookingDetails = (batchResponse: any) => {
+  // Save booking details for thank you page
+  const saveBookingDetails = (bookingResponse: any) => {
     if (!selectedService || !selectedTime) return;
 
     try {
       // Calculate total amounts including additional services
-      const mainServiceDeposit = selectedService.price_amount;
-      const additionalServicesDeposit = additionalServices.reduce(
+      const mainServicePrice = selectedService.price_amount;
+      const additionalServicesPrice = additionalServices.reduce(
         (total, additionalService) =>
           total + additionalService.service.price_amount,
         0,
       );
-      const totalDeposit = mainServiceDeposit + additionalServicesDeposit;
-      const totalAmount =
-        selectedService.price_amount * 2 +
-        additionalServices.reduce(
-          (total, additionalService) =>
-            total + additionalService.service.price_amount * 2,
-          0,
-        );
+      const totalAmount = mainServicePrice + additionalServicesPrice;
+      const totalDeposit = Math.round(totalAmount * 0.5); // 50% deposit
 
       // Create service list including additional services
       const servicesList = [selectedService.name];
@@ -408,14 +415,14 @@ export default function AppointmentBooking() {
         servicesList.push(...additionalServices.map((add) => add.service.name));
       }
 
-      // Get the main booking details
-      const mainBooking = batchResponse.created_bookings?.[0]?.booking;
+      // Get the booking details
+      const booking = bookingResponse.booking;
 
       localStorage.setItem(
         "lastBooking",
         JSON.stringify({
-          id: mainBooking?.data?.id || "pending",
-          square_booking_id: mainBooking?.data?.square_booking_id || "pending",
+          id: booking?.data?.id || "pending",
+          square_booking_id: booking?.data?.square_booking_id || "pending",
           service: servicesList.join(", "),
           date: dayjs(selectedTime.start_at)
             .tz("Australia/Melbourne")
@@ -425,18 +432,16 @@ export default function AppointmentBooking() {
             .format("h:mm A"),
           deposit: (totalDeposit / 100).toFixed(2),
           total: (totalAmount / 100).toFixed(2),
-          status: mainBooking?.data?.status || "confirmed",
+          status: booking?.data?.status || "confirmed",
           square_confirmed: true,
-          backend_synced: true, // Already synced through batch API
+          backend_synced: true, // Already synced through single booking API
           additional_services: additionalServices.length,
-          total_bookings_created: batchResponse.total_created,
-          batch_booking_ids: batchResponse.created_bookings.map(
-            (b: any) => b.booking.data.id,
-          ),
+          appointment_segments: additionalServices.length + 1, // Total segments including main service
+          booking_id: booking?.data?.id,
         }),
       );
     } catch (error) {
-      console.error("Error saving batch booking details:", error);
+      console.error("Error saving booking details:", error);
     }
   };
 
@@ -476,7 +481,9 @@ export default function AppointmentBooking() {
             const serviceBarbers = await BookingService.getBarbersForService(
               service.id,
             );
-            barbersByService[service.id] = serviceBarbers;
+            // Filter out barbers with is_owner=true
+            const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+            barbersByService[service.id] = availableBarbers;
           } catch (err) {
             console.error(
               `Failed to fetch barbers for service ${service.id}:`,
@@ -1082,10 +1089,7 @@ export default function AppointmentBooking() {
                                     </svg>
                                     <span className="font-bold text-gray-900">
                                       $
-                                      {(
-                                        (service.price_amount * 2) /
-                                        100
-                                      ).toFixed(2)}
+                                      {(service.price_amount / 100).toFixed(2)}
                                     </span>
                                   </span>
 
@@ -1171,9 +1175,7 @@ export default function AppointmentBooking() {
                   <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
                     <span>
                       $
-                      {((tempAdditionalService.price_amount * 2) / 100).toFixed(
-                        2,
-                      )}
+                      {(tempAdditionalService.price_amount / 100).toFixed(2)}
                     </span>
                     <span>•</span>
                     <span>
@@ -1503,9 +1505,7 @@ export default function AppointmentBooking() {
                     )}
                     <p>
                       <strong>Price:</strong> $
-                      {((tempAdditionalService.price_amount * 2) / 100).toFixed(
-                        2,
-                      )}
+                      {(tempAdditionalService.price_amount / 100).toFixed(2)}
                     </p>
                   </div>
                 )}
