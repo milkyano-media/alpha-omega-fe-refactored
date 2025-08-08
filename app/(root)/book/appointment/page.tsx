@@ -1229,9 +1229,6 @@ export default function AppointmentBooking() {
                                   <p className="text-sm font-medium text-purple-900">
                                     Random Selection
                                   </p>
-                                  <p className="text-xs text-purple-600">
-                                    Surprise Choice
-                                  </p>
                                 </div>
                               </div>
                               <div className="text-purple-300 text-2xl">

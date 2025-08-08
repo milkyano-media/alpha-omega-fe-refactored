@@ -45,7 +45,7 @@ const formSchema = z.object({
         if (!value || value === "+") return false;
         return isPossiblePhoneNumber(value);
       },
-      { message: "Please enter a valid phone number" }
+      { message: "Please enter a valid phone number" },
     ),
   experience: z
     .string()
@@ -72,7 +72,7 @@ const formSchema = z.object({
           return false;
         }
       },
-      { message: "Please enter a valid URL" }
+      { message: "Please enter a valid URL" },
     ),
 });
 
@@ -101,10 +101,10 @@ export function BarberApplicationForm() {
     try {
       // Here you would typically send the application to your backend
       console.log("Barber application submitted:", values);
-      
+
       // For now, just show success
       alert("Thank you for your application! We'll be in touch soon.");
-      
+
       // Reset form
       form.reset();
     } catch {
@@ -118,7 +118,9 @@ export function BarberApplicationForm() {
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold">Join Our Team</h2>
-        <p className="text-gray-600 mt-2">Apply to become a barber at Alpha Omega</p>
+        <p className="text-gray-600 mt-2">
+          Apply to become a barber at Alpha Omega
+        </p>
       </div>
 
       <Form {...form}>
@@ -181,7 +183,7 @@ export function BarberApplicationForm() {
                   <PhoneInput
                     international
                     defaultCountry="AU"
-                    placeholder="+61 000 000 000"
+                    placeholder="+61 03 9012 5480"
                     value={field.value}
                     onChange={(value) => field.onChange(value || "")}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -266,11 +268,7 @@ export function BarberApplicationForm() {
             <div className="text-red-500 text-sm text-center">{error}</div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Submitting..." : "Submit Application"}
           </Button>
 

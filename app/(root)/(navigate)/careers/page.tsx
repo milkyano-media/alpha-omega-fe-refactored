@@ -132,7 +132,7 @@ export default function Home() {
               />
             </svg>
 
-            <p>Email@gmail.com</p>
+            <p>alpha.omega.mens.grooming@gmail.com</p>
           </div>
         </div>
 
