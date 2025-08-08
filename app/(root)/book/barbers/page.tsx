@@ -71,7 +71,9 @@ function BarberSelectionContent() {
         const serviceBarbers = await BookingService.getBarbersForService(
           serviceData.id,
         );
-        setBarbers(serviceBarbers);
+        // Filter out barbers with is_owner=true
+        const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+        setBarbers(availableBarbers);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load barbers");
         console.error("Error fetching barbers:", err);

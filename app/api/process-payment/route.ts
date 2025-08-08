@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Environment } from 'square';
 
-// Square client configuration
+// Determine Square environment based on env variable
+const isProduction = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT === 'production';
+const squareEnvironment = isProduction ? Environment.Production : Environment.Sandbox;
+
+// Square client configuration - Environment determined by NEXT_PUBLIC_SQUARE_ENVIRONMENT
 const square = new Client({
-  // environment: Environment.Production,
-  environment: Environment.Sandbox,
+  environment: squareEnvironment,
   accessToken: process.env.SQUARE_ACCESS_TOKEN || ''
 });
 

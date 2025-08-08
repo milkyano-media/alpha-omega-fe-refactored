@@ -37,7 +37,9 @@ export default function ServiceSelection() {
             const serviceBarbers = await BookingService.getBarbersForService(
               service.id,
             );
-            barbersByService[service.id] = serviceBarbers;
+            // Filter out barbers with is_owner=true
+            const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+            barbersByService[service.id] = availableBarbers;
           } catch (barberErr) {
             console.error(
               `Failed to fetch barbers for service ${service.id}:`,

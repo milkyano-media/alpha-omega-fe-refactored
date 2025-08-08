@@ -106,6 +106,33 @@ export interface BatchBookingResponse {
   total_failed: number;
 }
 
+export interface AppointmentSegment {
+  service_variation_id: string;
+  team_member_id: string;
+  duration_minutes: number;
+  service_variation_version?: number;
+  start_at: string; // Individual segment start time
+}
+
+export interface SingleBookingRequest {
+  start_at: string; // Overall booking start time (earliest segment)
+  appointment_segments: AppointmentSegment[];
+  customer_note?: string;
+  idempotencyKey: string;
+  payment_info?: {
+    paymentId: string;
+    amount: string;
+    currency: string;
+    receiptUrl: string;
+  };
+}
+
+export interface SingleBookingResponse {
+  success: boolean;
+  booking?: BookingResponse;
+  error?: string;
+}
+
 export interface SquareBookingResponse {
   success: boolean;
   booking?: {
@@ -346,7 +373,8 @@ export const BookingService = {
   },
 
   /**
-   * Create multiple bookings (for additional services)
+   * Create multiple bookings (for additional services) - DEPRECATED
+   * Use createBookingWithSegments instead
    */
   async createBatchBookings(batchRequest: BatchBookingRequest): Promise<BatchBookingResponse> {
     try {
@@ -354,6 +382,18 @@ export const BookingService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.message || "Failed to create batch bookings");
+    }
+  },
+
+  /**
+   * Create single booking with multiple appointment segments (Square API compliant)
+   */
+  async createBookingWithSegments(bookingRequest: SingleBookingRequest): Promise<SingleBookingResponse> {
+    try {
+      const response = await API.post('/bookings/segments', bookingRequest);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to create booking with segments");
     }
   },
 };

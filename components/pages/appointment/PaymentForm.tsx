@@ -35,15 +35,20 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
 }) => {
   if (!selectedService || !selectedTime) return null;
 
-  // Calculate total deposit amount including additional services
-  // The deposit amount is the actual price in Square
-  // This is 50% of the doubled price shown to customers
-  const mainServiceDeposit = selectedService.price_amount / 100;
-  const additionalServicesDeposit = additionalServices.reduce(
+  // Calculate total amount and 50% deposit
+  const mainServicePrice = selectedService.price_amount / 100;
+  const additionalServicesPrice = additionalServices.reduce(
     (total, additionalService) => total + (additionalService.service.price_amount / 100),
     0
   );
-  const depositAmount = mainServiceDeposit + additionalServicesDeposit;
+  const totalAmount = mainServicePrice + additionalServicesPrice;
+  const depositAmount = totalAmount * 0.5; // 50% deposit
+  
+  // Individual service deposits for display
+  const mainServiceDeposit = mainServicePrice * 0.5;
+  const additionalServiceDeposits = additionalServices.map(
+    (additionalService) => (additionalService.service.price_amount / 100) * 0.5
+  );
 
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200">
@@ -87,7 +92,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
           {additionalServices.map((additionalService, index) => (
             <div key={index} className="flex items-center justify-between text-sm">
               <span className="text-gray-600">{additionalService.service.name} (50% deposit):</span>
-              <span className="font-medium">${(additionalService.service.price_amount / 100).toFixed(2)} AUD</span>
+              <span className="font-medium">${additionalServiceDeposits[index].toFixed(2)} AUD</span>
             </div>
           ))}
           
