@@ -1050,7 +1050,6 @@ export default function AppointmentBooking() {
             <div className="max-w-5xl mx-auto">
               <div className="grid gap-3 sm:gap-4">
                 {allServices
-                  .filter((service) => service.id !== selectedService?.id)
                   .filter(
                     (service) =>
                       allBarbers[service.id] &&
