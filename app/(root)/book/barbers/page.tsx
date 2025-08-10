@@ -363,15 +363,15 @@ function BarberSelectionContent() {
                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
                               <svg
                                 className="w-4 h-4 sm:w-5 sm:h-5 text-black"
+                                viewBox="0 0 800 800"
                                 fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
                               >
                                 <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M3 5h12l-4 4h8l-4 4H3z"
+                                  fill-rule="evenodd"
+                                  clip-rule="evenodd"
+                                  d="M680 95.2383H240V323.81H690.36L565.24 209.524L680 95.2383ZM800 95.2383L676.76 209.524L800 323.81V400H160V19.0479H770.36H800V95.2383ZM0 780.953H80.0002V19.0479H0V780.953Z"
+                                  fill="black"
                                 />
                               </svg>
                             </div>
