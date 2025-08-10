@@ -1213,8 +1213,8 @@ export default function AppointmentBooking() {
                           <div className="p-6 space-y-4">
                             {/* Review Text */}
                             <p className="text-black text-md leading-relaxed font-medium">
-                              "Save time by choosing our next available barber"{" "}
-                              <br />
+                              &quot;Save time by choosing our next available
+                              barber&quot; <br />
                               Choose the next available Barber
                             </p>
                           </div>
