@@ -79,7 +79,7 @@ export function Navbar() {
   );
 }
 
-function MarqueeItems() {
+export function MarqueeItems() {
   return (
     <div className="flex md:gap-64 gap-16 shrink-0 md:mr-64 mr-16">
       {Array.from({ length: 4 }).map((_, i) => (

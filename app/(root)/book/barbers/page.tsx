@@ -72,7 +72,9 @@ function BarberSelectionContent() {
           serviceData.id,
         );
         // Filter out barbers with is_owner=true
-        const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+        const availableBarbers = serviceBarbers.filter(
+          (barber) => !barber.is_owner,
+        );
         setBarbers(availableBarbers);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load barbers");
@@ -244,7 +246,7 @@ function BarberSelectionContent() {
                 {/* Random Barber Card - First Position */}
                 {barbers.length > 0 && (
                   <div
-                    className="h-min bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
+                    className="flex flex-col justify-between h-full w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto"
                     onClick={handleSelectRandomBarber}
                   >
                     {/* Random Barber Image */}
@@ -270,36 +272,18 @@ function BarberSelectionContent() {
                     {/* </div> */}
 
                     {/* Card Content */}
-                    <div className="p-2 md:p-6 space-y-4">
+                    <div className="p-6 space-y-4">
                       {/* Review Text */}
-                      <p className="text-purple-800 text-xs md:text-xl leading-relaxed font-medium">
-                        Let our expert team choose the perfect barber for your
-                        style. Every one of our barbers delivers exceptional
-                        results.
+                      <p className="text-black text-md leading-relaxed font-medium">
+                        "Save time by choosing our next available barber" <br />
+                        Choose the next available Barber
                       </p>
-
-                      {/* Customer Info */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">
-                              ✨
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-purple-900">
-                              Next Available
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-purple-300 text-2xl">&quot;</div>
-                      </div>
                     </div>
 
                     {/* Book Button */}
-                    <div className="px-2 md:px-6 pt-6 md:pt-16 pb-4">
-                      <button className="w-full text-xs md:text-lg bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
-                        Choose the next available Barber
+                    <div className="p-2 md:px-6 pt-6 md:pt-16 md:pb-6">
+                      <button className="w-full text-base sm:text-lg bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
+                        Click Here
                       </button>
                     </div>
                   </div>

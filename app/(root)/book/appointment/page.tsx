@@ -288,11 +288,11 @@ export default function AppointmentBooking() {
     try {
       // Prepare appointment segments (main + additional services)
       const appointmentSegments = [];
-      
+
       // Find the earliest start time for the booking
       const allStartTimes = [
         selectedTime.start_at,
-        ...additionalServices.map(service => service.timeSlot.start_at)
+        ...additionalServices.map((service) => service.timeSlot.start_at),
       ];
       const earliestStartTime = allStartTimes.sort()[0];
 
@@ -304,9 +304,10 @@ export default function AppointmentBooking() {
         service_variation_id: selectedService.service_variation_id,
         team_member_id:
           selectedTime.appointment_segments?.[0]?.team_member_id || "",
-        duration_minutes: selectedService.duration > 10000
-          ? Math.round(selectedService.duration / 60000)
-          : selectedService.duration,
+        duration_minutes:
+          selectedService.duration > 10000
+            ? Math.round(selectedService.duration / 60000)
+            : selectedService.duration,
         service_variation_version: mainServiceVariationVersion,
         start_at: selectedTime.start_at, // Keep original start time for this segment
       });
@@ -318,9 +319,10 @@ export default function AppointmentBooking() {
           team_member_id:
             additionalService.timeSlot.appointment_segments?.[0]
               ?.team_member_id || "",
-          duration_minutes: additionalService.service.duration > 10000
-            ? Math.round(additionalService.service.duration / 60000)
-            : additionalService.service.duration,
+          duration_minutes:
+            additionalService.service.duration > 10000
+              ? Math.round(additionalService.service.duration / 60000)
+              : additionalService.service.duration,
           service_variation_version:
             additionalService.timeSlot.appointment_segments?.[0]
               ?.service_variation_version,
@@ -482,7 +484,9 @@ export default function AppointmentBooking() {
               service.id,
             );
             // Filter out barbers with is_owner=true
-            const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+            const availableBarbers = serviceBarbers.filter(
+              (barber) => !barber.is_owner,
+            );
             barbersByService[service.id] = availableBarbers;
           } catch (err) {
             console.error(
@@ -972,7 +976,7 @@ export default function AppointmentBooking() {
   return (
     <main className="flex flex-col gap-6 mt-30 mb-16">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 md:mt-10">
           {/* Left column - Calendar and time selection */}
           <DateTimeSelector
             selectedDate={selectedDate}
@@ -1087,8 +1091,7 @@ export default function AppointmentBooking() {
                                       />
                                     </svg>
                                     <span className="font-bold text-gray-900">
-                                      $
-                                      {(service.price_amount / 100).toFixed(2)}
+                                      ${(service.price_amount / 100).toFixed(2)}
                                     </span>
                                   </span>
 
@@ -1158,7 +1161,7 @@ export default function AppointmentBooking() {
       {/* Barber Selection Dialog */}
       <Dialog open={showBarberDialog} onOpenChange={setShowBarberDialog}>
         <DialogContent
-          className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-b from-gray-50 to-white"
+          className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-b from-gray-50 to-white h-full"
           style={{ width: "95vw", maxWidth: "1200px" }}
         >
           <DialogHeader className="border-b border-gray-200 pb-4 sm:pb-6">
@@ -1173,8 +1176,7 @@ export default function AppointmentBooking() {
                   </h3>
                   <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
                     <span>
-                      $
-                      {(tempAdditionalService.price_amount / 100).toFixed(2)}
+                      ${(tempAdditionalService.price_amount / 100).toFixed(2)}
                     </span>
                     <span>•</span>
                     <span>
@@ -1189,7 +1191,7 @@ export default function AppointmentBooking() {
             )}
           </DialogHeader>
 
-          <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-3 sm:p-6">
+          <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-3 sm:p-6 pb-20">
             {tempAdditionalService && allBarbers[tempAdditionalService.id] ? (
               <>
                 <div className="bg-gray-50 rounded-lg p-3 mb-6 max-w-2xl mx-auto">
@@ -1204,42 +1206,23 @@ export default function AppointmentBooking() {
                     {allBarbers[tempAdditionalService.id] &&
                       allBarbers[tempAdditionalService.id].length > 0 && (
                         <div
-                          className="h-min bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto border-2 border-dashed border-purple-300 hover:border-purple-500"
+                          className="flex flex-col justify-between h-full w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto"
                           onClick={handleSelectRandomAdditionalBarber}
                         >
                           {/* Card Content */}
                           <div className="p-6 space-y-4">
                             {/* Review Text */}
-                            <p className="text-purple-800 text-md leading-relaxed font-medium">
-                              Let our expert team choose the perfect barber for
-                              your style. Every one of our barbers delivers
-                              exceptional results.
+                            <p className="text-black text-md leading-relaxed font-medium">
+                              "Save time by choosing our next available barber"{" "}
+                              <br />
+                              Choose the next available Barber
                             </p>
-
-                            {/* Customer Info */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">
-                                    ✨
-                                  </span>
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-purple-900">
-                                    Random Selection
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-purple-300 text-2xl">
-                                &quot;
-                              </div>
-                            </div>
                           </div>
 
                           {/* Book Button */}
-                          <div className="px-6 pt-16 pb-4">
-                            <button className="w-full bg-black hover:bg-gray-800 text-white font-semibold py-4 rounded-lg transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
-                              Choose the next available Barber
+                          <div className="p-6 pt-16 md:pb-4">
+                            <button className="w-full text-base sm:text-lg bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
+                              Click Here
                             </button>
                           </div>
                         </div>
@@ -1316,9 +1299,9 @@ export default function AppointmentBooking() {
                             <div className="space-y-3 sm:space-y-4 mb-2 sm:mb-6">
                               {/* Languages */}
                               <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
                                   <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-black"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -1333,7 +1316,7 @@ export default function AppointmentBooking() {
                                 </div>
                                 <div>
                                   <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                                    Languages
+                                    Languages Spoken
                                   </p>
                                   <p className="text-sm sm:text-base lg:text-lg">
                                     🇦🇺 🇬🇷
@@ -1343,9 +1326,9 @@ export default function AppointmentBooking() {
 
                               {/* Social Handle */}
                               <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
                                   <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-black"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -1370,9 +1353,9 @@ export default function AppointmentBooking() {
 
                               {/* Status */}
                               <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
                                   <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-green-600"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 text-black"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -1386,7 +1369,7 @@ export default function AppointmentBooking() {
                                   </svg>
                                 </div>
                                 <div>
-                                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                                  <p className="text-xs sm:text-sm text-black font-medium">
                                     Status
                                   </p>
                                   <p className="text-sm sm:text-base capitalize font-semibold text-green-700">
@@ -1397,7 +1380,7 @@ export default function AppointmentBooking() {
                             </div>
 
                             {/* Book Button */}
-                            <div className="px-6 pb-6">
+                            <div className="pt-6 w-full">
                               <Button className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105">
                                 <span className="flex items-center justify-center gap-2">
                                   <svg

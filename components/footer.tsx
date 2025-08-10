@@ -66,6 +66,9 @@ export function Footer() {
             <p>Alpha Omega</p>
             <p>+61 03 9012 5480</p>
             <p>alpha.omega.mens.grooming@gmail.com</p>
+            <a href="https://instagram.com/alpha.omega_mens.grooming">
+              IG@alpha.omega_mens.grooming
+            </a>
           </div>
         </div>
 
