@@ -4,10 +4,12 @@ import { useEffect, useState, useRef } from "react";
 import { Menu } from "./menu";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const [navHeight, setNavHeight] = useState(0);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (navRef.current) {
@@ -67,14 +69,16 @@ export function Navbar() {
         <Menu />
       </div>
 
-      <div className="overflow-hidden whitespace-nowrap">
-        <div className="flex animate-marquee">
-          {/* First set of images */}
-          <MarqueeItems />
-          {/* Duplicate set for seamless loop */}
-          <MarqueeItems />
+      {pathname === "/book/appointment" && (
+        <div className="overflow-hidden whitespace-nowrap">
+          <div className="flex animate-marquee">
+            {/* First set of images */}
+            <MarqueeItems />
+            {/* Duplicate set for seamless loop */}
+            <MarqueeItems />
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 }
