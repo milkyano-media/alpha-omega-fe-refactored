@@ -22,8 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getBarberImageSafe } from "@/lib/barber-images";
-import Image from "next/image";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -71,23 +69,6 @@ export default function AppointmentBooking() {
 
   // Dialog states for additional service flow
   const [showServiceDialog, setShowServiceDialog] = useState(false);
-  const [showBarberDialog, setShowBarberDialog] = useState(false);
-  const [showDateDialog, setShowDateDialog] = useState(false);
-
-  // Temporary state for additional service selection
-  const [tempAdditionalService, setTempAdditionalService] =
-    useState<Service | null>(null);
-  const [tempAdditionalBarber, setTempAdditionalBarber] =
-    useState<TeamMember | null>(null);
-  const [tempAdditionalDate, setTempAdditionalDate] = useState<Date>(
-    new Date(),
-  );
-  const [tempAdditionalTime, setTempAdditionalTime] = useState<TimeSlot | null>(
-    null,
-  );
-  const [tempAvailableTimes, setTempAvailableTimes] = useState<TimeSlot[]>([]);
-  const [tempAvailableDates, setTempAvailableDates] = useState<string[]>([]);
-  const [tempIsLoading, setTempIsLoading] = useState(false);
 
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
@@ -270,7 +251,7 @@ export default function AppointmentBooking() {
     }
   };
 
-  // Create multiple bookings using batch approach
+  // Create multiple separate bookings
   const createBatchBookings = async (
     idempotencyKey: string,
     paymentInfo: any,
@@ -286,61 +267,35 @@ export default function AppointmentBooking() {
     setCreatingBooking(true);
 
     try {
-      // Prepare appointment segments (main + additional services)
-      const appointmentSegments = [];
+      // Prepare all bookings (main + additional services)
+      const bookingsToCreate = [];
 
-      // Find the earliest start time for the booking
-      const allStartTimes = [
-        selectedTime.start_at,
-        ...additionalServices.map((service) => service.timeSlot.start_at),
-      ];
-      const earliestStartTime = allStartTimes.sort()[0];
-
-      // Main service segment
+      // Main service booking
       const mainServiceVariationVersion =
         selectedTime.appointment_segments?.[0]?.service_variation_version;
 
-      appointmentSegments.push({
+      bookingsToCreate.push({
         service_variation_id: selectedService.service_variation_id,
-        team_member_id:
-          selectedTime.appointment_segments?.[0]?.team_member_id || "",
-        duration_minutes:
-          selectedService.duration > 10000
-            ? Math.round(selectedService.duration / 60000)
-            : selectedService.duration,
+        team_member_id: selectedTime.appointment_segments?.[0]?.team_member_id || "",
+        start_at: selectedTime.start_at,
+        customer_note: `Main service: ${selectedService.name}`,
         service_variation_version: mainServiceVariationVersion,
-        start_at: selectedTime.start_at, // Keep original start time for this segment
       });
 
-      // Additional services segments
-      additionalServices.forEach((additionalService) => {
-        appointmentSegments.push({
+      // Additional services bookings
+      additionalServices.forEach((additionalService, index) => {
+        bookingsToCreate.push({
           service_variation_id: additionalService.service.service_variation_id,
-          team_member_id:
-            additionalService.timeSlot.appointment_segments?.[0]
-              ?.team_member_id || "",
-          duration_minutes:
-            additionalService.service.duration > 10000
-              ? Math.round(additionalService.service.duration / 60000)
-              : additionalService.service.duration,
-          service_variation_version:
-            additionalService.timeSlot.appointment_segments?.[0]
-              ?.service_variation_version,
-          start_at: additionalService.timeSlot.start_at, // Keep original start time for this segment
+          team_member_id: additionalService.timeSlot.appointment_segments?.[0]?.team_member_id || "",
+          start_at: additionalService.timeSlot.start_at,
+          customer_note: `Additional service ${index + 1}: ${additionalService.service.name}`,
+          service_variation_version: additionalService.timeSlot.appointment_segments?.[0]?.service_variation_version,
         });
       });
 
-      // Create service list for customer note
-      const servicesList = [selectedService.name];
-      if (additionalServices.length > 0) {
-        servicesList.push(...additionalServices.map((add) => add.service.name));
-      }
-
-      // Create single booking request with multiple appointment segments
-      const singleBookingRequest = {
-        start_at: earliestStartTime,
-        appointment_segments: appointmentSegments,
-        customer_note: `Multi-service appointment: ${servicesList.join(", ")}`,
+      // Create batch booking request
+      const batchBookingRequest = {
+        bookings: bookingsToCreate,
         idempotencyKey: idempotencyKey,
         payment_info: {
           paymentId: paymentInfo.paymentId,
@@ -350,18 +305,19 @@ export default function AppointmentBooking() {
         },
       };
 
-      // Call single booking API
-      const bookingResponse = await BookingService.createBookingWithSegments(
-        singleBookingRequest,
+      // Call batch booking API
+      const bookingResponse = await BookingService.createBatchBookings(
+        batchBookingRequest,
       );
 
-      if (bookingResponse.success && bookingResponse.booking) {
-        // Store the booking ID
-        if (bookingResponse.booking.data?.square_booking_id) {
-          setSquareBookingId(bookingResponse.booking.data.square_booking_id);
+      if (bookingResponse.success) {
+        // Store the first booking ID
+        const firstBooking = bookingResponse.created_bookings?.[0]?.booking;
+        if (firstBooking?.data?.square_booking_id) {
+          setSquareBookingId(firstBooking.data.square_booking_id);
         }
 
-        // Update payment receipt with booking ID
+        // Update payment receipt with booking IDs
         const receiptData = JSON.parse(
           localStorage.getItem("paymentReceipt") || "{}",
         );
@@ -369,8 +325,8 @@ export default function AppointmentBooking() {
           "paymentReceipt",
           JSON.stringify({
             ...receiptData,
-            booking: bookingResponse.booking,
-            bookingId: bookingResponse.booking.data?.square_booking_id,
+            bookings: bookingResponse.created_bookings,
+            totalBookings: bookingResponse.total_created,
           }),
         );
 
@@ -383,9 +339,9 @@ export default function AppointmentBooking() {
         saveBookingDetails(bookingResponse);
       } else {
         throw new Error(
-          bookingResponse.error
-            ? `Failed to create booking: ${bookingResponse.error}`
-            : "Failed to create booking",
+          bookingResponse.errors?.length > 0
+            ? `Failed to create bookings: ${bookingResponse.errors.map(e => e.error).join(", ")}`
+            : "Failed to create bookings",
         );
       }
     } catch (error: any) {
@@ -417,14 +373,14 @@ export default function AppointmentBooking() {
         servicesList.push(...additionalServices.map((add) => add.service.name));
       }
 
-      // Get the booking details
-      const booking = bookingResponse.booking;
+      // Get the first booking details (main booking)
+      const firstBooking = bookingResponse.created_bookings?.[0]?.booking;
 
       localStorage.setItem(
         "lastBooking",
         JSON.stringify({
-          id: booking?.data?.id || "pending",
-          square_booking_id: booking?.data?.square_booking_id || "pending",
+          id: firstBooking?.data?.id || "pending",
+          square_booking_id: firstBooking?.data?.square_booking_id || "pending",
           service: servicesList.join(", "),
           date: dayjs(selectedTime.start_at)
             .tz("Australia/Melbourne")
@@ -434,12 +390,12 @@ export default function AppointmentBooking() {
             .format("h:mm A"),
           deposit: (totalDeposit / 100).toFixed(2),
           total: (totalAmount / 100).toFixed(2),
-          status: booking?.data?.status || "confirmed",
+          status: firstBooking?.data?.status || "confirmed",
           square_confirmed: true,
-          backend_synced: true, // Already synced through single booking API
+          backend_synced: true, 
           additional_services: additionalServices.length,
-          appointment_segments: additionalServices.length + 1, // Total segments including main service
-          booking_id: booking?.data?.id,
+          total_bookings: bookingResponse.total_created || 1, // Total separate bookings created
+          booking_ids: bookingResponse.created_bookings?.map((b: {booking: any}) => b.booking?.data?.id) || [],
         }),
       );
     } catch (error) {
@@ -470,42 +426,7 @@ export default function AppointmentBooking() {
     }
   }, [isAuthenticated, router]);
 
-  // Fetch all services and barbers for additional service selection
-  useEffect(() => {
-    const fetchAllServicesAndBarbers = async () => {
-      try {
-        const serviceList = await BookingService.getAllServices();
-        setAllServices(serviceList);
-
-        const barbersByService: Record<number, TeamMember[]> = {};
-        for (const service of serviceList) {
-          try {
-            const serviceBarbers = await BookingService.getBarbersForService(
-              service.id,
-            );
-            // Filter out barbers with is_owner=true
-            const availableBarbers = serviceBarbers.filter(
-              (barber) => !barber.is_owner,
-            );
-            barbersByService[service.id] = availableBarbers;
-          } catch (err) {
-            console.error(
-              `Failed to fetch barbers for service ${service.id}:`,
-              err,
-            );
-          }
-        }
-
-        setAllBarbers(barbersByService);
-      } catch (err) {
-        console.error("Error fetching services and barbers:", err);
-      }
-    };
-
-    if (isAuthenticated) {
-      fetchAllServicesAndBarbers();
-    }
-  }, [isAuthenticated]);
+  // Services and barbers are now fetched when "Add Additional Service" button is clicked
 
   // Handle redirect when booking is confirmed
   useEffect(() => {
@@ -552,12 +473,10 @@ export default function AppointmentBooking() {
         setAvailableDates(dates);
 
         // Update time slots for selected date
-        // Convert selected date to Melbourne timezone to match API response keys
-        const melbourneDateKey = dayjs(selectedDate)
-          .tz("Australia/Melbourne")
-          .format("YYYY-MM-DD");
+        // Use consistent date formatting
+        const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
         const availabilities =
-          cachedData?.availabilities_by_date?.[melbourneDateKey] || [];
+          cachedData?.availabilities_by_date?.[dateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
@@ -621,12 +540,10 @@ export default function AppointmentBooking() {
         setAvailableDates(dates);
 
         // If the selected date has available times, set them
-        // Convert selected date to Melbourne timezone to match API response keys
-        const melbourneDateKey = dayjs(selectedDate)
-          .tz("Australia/Melbourne")
-          .format("YYYY-MM-DD");
+        // Use consistent date formatting
+        const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
         const availabilities =
-          response?.availabilities_by_date?.[melbourneDateKey] || [];
+          response?.availabilities_by_date?.[dateKey] || [];
 
         // Sort times chronologically
         availabilities.sort(
@@ -649,10 +566,12 @@ export default function AppointmentBooking() {
   }, [selectedMonth, selectedYear, selectedService, selectedDate, monthCache]);
 
   // Extract date string to avoid complex expression in dependency array
-  // Use Melbourne timezone for consistency with API response keys
-  const selectedDateString = dayjs(selectedDate)
-    .tz("Australia/Melbourne")
-    .format("YYYY-MM-DD");
+  // Use local date formatting to prevent timezone conversion issues
+  const selectedDateString = dayjs(selectedDate).format("YYYY-MM-DD");
+  
+  // Debug: Log the selected date conversion
+  console.log("Selected date (local):", selectedDate);
+  console.log("Selected date string:", selectedDateString);
 
   // Update available times when selected date changes
   useEffect(() => {
@@ -675,19 +594,22 @@ export default function AppointmentBooking() {
     );
     setAvailableTimes(availabilities);
     setSelectedTime(null); // Reset selected time when date changes
+    setAdditionalServices([]); // Clear additional services when date changes
     // Note: We use selectedDateString instead of selectedDate to avoid complex expression warning
   }, [availabilityData, selectedDateString]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     setSelectedTime(null); // Reset selected time when date changes
+    setAdditionalServices([]); // Clear additional services when date changes
   };
 
   // Handle month changes from the calendar
   const handleMonthChange = (date: Date) => {
     console.log("Month changed to:", date);
-    // Clear any previously selected time
+    // Clear any previously selected time and additional services
     setSelectedTime(null);
+    setAdditionalServices([]);
 
     // Create cache key for the target month
     const targetMonth = date.getMonth();
@@ -715,6 +637,67 @@ export default function AppointmentBooking() {
     setSelectedTime(time);
   };
 
+  // Recalculate additional service times when main service time changes
+  useEffect(() => {
+    if (!selectedTime || !selectedService) {
+      return;
+    }
+
+    // Use callback to access current additionalServices without adding to dependencies
+    setAdditionalServices(currentServices => {
+      if (currentServices.length === 0) {
+        return currentServices; // No change if no additional services
+      }
+
+      console.log("Main service time changed, recalculating additional service times...");
+      
+      // Recalculate times for all additional services sequentially
+      const recalculatedServices = currentServices.map((additionalService, index) => {
+        // Calculate the start time based on previous services
+        let calculatedStartTime: Date;
+        
+        if (index === 0) {
+          // First additional service starts after main service
+          calculatedStartTime = new Date(selectedTime.start_at);
+          const mainServiceDuration = selectedService.duration > 10000 
+            ? selectedService.duration / 60000 
+            : selectedService.duration;
+          calculatedStartTime.setMinutes(calculatedStartTime.getMinutes() + mainServiceDuration);
+        } else {
+          // Subsequent services start after previous additional service
+          const previousService = currentServices[index - 1];
+          calculatedStartTime = new Date(previousService.timeSlot.start_at);
+          const previousDuration = previousService.service.duration > 10000 
+            ? previousService.service.duration / 60000 
+            : previousService.service.duration;
+          calculatedStartTime.setMinutes(calculatedStartTime.getMinutes() + previousDuration);
+        }
+
+        // Apply 30-minute rounding
+        const minutes = calculatedStartTime.getMinutes();
+        const remainder = minutes % 30;
+        if (remainder !== 0) {
+          calculatedStartTime.setMinutes(minutes + (30 - remainder));
+        }
+
+        // Create new time slot with recalculated time
+        const newTimeSlot = {
+          ...additionalService.timeSlot,
+          start_at: calculatedStartTime.toISOString()
+        };
+
+        console.log(`Recalculated ${additionalService.service.name} to: ${dayjs(calculatedStartTime).tz("Australia/Melbourne").format("h:mm A")}`);
+
+        return {
+          ...additionalService,
+          timeSlot: newTimeSlot
+        };
+      });
+
+      return recalculatedServices;
+    });
+  }, [selectedTime, selectedService]); // Only depend on selectedTime and selectedService
+
   // Show payment form
   const handleShowPaymentForm = () => {
     if (!selectedService || !selectedTime || !user) {
@@ -725,72 +708,316 @@ export default function AppointmentBooking() {
   };
 
   // Additional service handlers
-  const handleAddAdditionalService = () => {
-    setShowServiceDialog(true);
-  };
+  const handleAddAdditionalService = async () => {
+    // Check if main service time is selected
+    if (!selectedTime || !selectedService) {
+      setError("Please select a main service and time first");
+      return;
+    }
 
-  const handleSelectAdditionalService = (service: Service) => {
-    setTempAdditionalService(service);
-    setShowServiceDialog(false);
-    setShowBarberDialog(true);
-  };
+    // Fetch fresh services and barbers when dialog opens
+    try {
+      setError(null); // Clear any existing errors
+      console.log("Fetching services and barbers for additional service dialog...");
+      
+      const serviceList = await BookingService.getAllServices();
+      console.log(`Fetched ${serviceList.length} services:`, serviceList.map(s => s.name));
+      setAllServices(serviceList);
 
-  const handleSelectAdditionalBarber = (barber: TeamMember) => {
-    setTempAdditionalBarber(barber);
-    setShowBarberDialog(false);
-    setShowDateDialog(true);
+      const barbersByService: Record<number, TeamMember[]> = {};
+      for (const service of serviceList) {
+        try {
+          const serviceBarbers = await BookingService.getBarbersForService(
+            service.id,
+          );
+          // Filter out barbers with is_owner=true
+          const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+          barbersByService[service.id] = availableBarbers;
+          console.log(`Service ${service.name}: ${availableBarbers.length} available barbers`);
+        } catch (err) {
+          console.error(
+            `Failed to fetch barbers for service ${service.id} (${service.name}):`,
+            err,
+          );
+          // Set empty array instead of leaving undefined
+          barbersByService[service.id] = [];
+        }
+      }
 
-    // Fetch availability for this service
-    if (tempAdditionalService) {
-      fetchAdditionalServiceAvailability(
-        tempAdditionalService.service_variation_id,
-      );
+      console.log("All barbers by service:", Object.keys(barbersByService).map(id => 
+        `${serviceList.find(s => s.id === parseInt(id))?.name}: ${barbersByService[parseInt(id)].length} barbers`
+      ));
+      
+      setAllBarbers(barbersByService);
+      setShowServiceDialog(true);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      setError("Failed to load services. Please try again.");
     }
   };
 
-  const handleSelectRandomAdditionalBarber = () => {
-    if (
-      tempAdditionalService &&
-      allBarbers[tempAdditionalService.id] &&
-      allBarbers[tempAdditionalService.id].length > 0
-    ) {
-      // Randomly select a barber from available barbers for this service
-      const availableBarbers = allBarbers[tempAdditionalService.id];
-      const randomIndex = Math.floor(Math.random() * availableBarbers.length);
-      const randomBarber = availableBarbers[randomIndex];
-
-      setTempAdditionalBarber(randomBarber);
-      setShowBarberDialog(false);
-      setShowDateDialog(true);
-
-      // Fetch availability for this service
-      fetchAdditionalServiceAvailability(
-        tempAdditionalService.service_variation_id,
-      );
+  const handleSelectAdditionalService = async (service: Service) => {
+    console.log("🚀 handleSelectAdditionalService called with service:", service.name);
+    
+    if (!selectedTime || !selectedService) {
+      setError("Please select a main service and time first");
+      return;
     }
-  };
 
-  const handleSelectAdditionalTime = (timeSlot: TimeSlot | null) => {
-    setTempAdditionalTime(timeSlot);
-  };
+    // Get the barber from the main booking
+    const mainBarber = selectedTime.appointment_segments?.[0]?.team_member_id;
+    console.log("Main barber ID from selectedTime:", mainBarber);
+    console.log("selectedTime structure:", selectedTime);
+    
+    if (!mainBarber) {
+      setError("Cannot determine main service barber");
+      return;
+    }
 
-  const handleConfirmAdditionalService = () => {
-    if (tempAdditionalService && tempAdditionalBarber && tempAdditionalTime) {
+    // Debug allBarbers structure
+    console.log("allBarbers structure:", allBarbers);
+    console.log("allBarbers keys:", Object.keys(allBarbers));
+    const flattenedBarbers = Object.values(allBarbers).flat();
+    console.log("Flattened barbers count:", flattenedBarbers.length);
+    console.log("Flattened barbers IDs:", flattenedBarbers.map(b => b.square_up_id));
+    
+    // Debug data types
+    console.log("mainBarber type and value:", typeof mainBarber, mainBarber);
+    flattenedBarbers.forEach(barber => {
+      console.log(`Barber ${barber.first_name} ${barber.last_name}: type=${typeof barber.square_up_id}, value="${barber.square_up_id}"`);
+    });
+
+    // Find the barber object - first check in allBarbers, then fetch from API if needed
+    // Try both strict and loose equality comparisons
+    let barberObj = flattenedBarbers.find(
+      barber => barber.square_up_id === mainBarber || barber.square_up_id == mainBarber
+    );
+    
+    if (!barberObj) {
+      try {
+        // Fetch all team members to find the main barber
+        console.log(`Main barber (${mainBarber}) not found in allBarbers, fetching all team members...`);
+        const allTeamMembers = await BookingService.getTeamMembers();
+        console.log(`Fetched ${allTeamMembers.length} team members from API`);
+        console.log("All team members:", allTeamMembers.map(tm => ({ 
+          id: tm.id, 
+          square_up_id: tm.square_up_id, 
+          name: `${tm.first_name} ${tm.last_name}`,
+          is_owner: tm.is_owner 
+        })));
+        
+        // Debug data types in API response
+        console.log("From API - mainBarber type and value:", typeof mainBarber, mainBarber);
+        allTeamMembers.forEach(barber => {
+          console.log(`API Barber ${barber.first_name} ${barber.last_name}: type=${typeof barber.square_up_id}, value="${barber.square_up_id}"`);
+        });
+        
+        // Try both strict and loose equality comparisons
+        barberObj = allTeamMembers.find(barber => barber.square_up_id === mainBarber || barber.square_up_id == mainBarber);
+        
+        if (!barberObj) {
+          console.error(`Main barber with ID ${mainBarber} not found in ${allTeamMembers.length} team members`);
+          console.error("Available team member IDs:", allTeamMembers.map(tm => tm.square_up_id));
+          setError("Main service barber not found");
+          return;
+        }
+        console.log(`Found main barber: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`);
+      } catch (error) {
+        console.error("Error fetching team members:", error);
+        setError("Failed to load barber information");
+        return;
+      }
+    } else {
+      console.log(`Found main barber in allBarbers: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`);
+    }
+
+    try {
+      // Calculate when the LAST added service ends (sequential logic for all services)
+      let lastServiceEndTime;
+      
+      if (additionalServices.length === 0) {
+        // No additional services yet, schedule after main service
+        lastServiceEndTime = new Date(selectedTime.start_at);
+        const mainServiceDuration = selectedService.duration > 10000 
+          ? selectedService.duration / 60000 
+          : selectedService.duration;
+        lastServiceEndTime.setMinutes(lastServiceEndTime.getMinutes() + mainServiceDuration);
+      } else {
+        // Schedule after the last added service (most recent in the array)
+        const lastAddedService = additionalServices[additionalServices.length - 1];
+        lastServiceEndTime = new Date(lastAddedService.timeSlot.start_at);
+        const lastServiceDuration = lastAddedService.service.duration > 10000 
+          ? lastAddedService.service.duration / 60000 
+          : lastAddedService.service.duration;
+        lastServiceEndTime.setMinutes(lastServiceEndTime.getMinutes() + lastServiceDuration);
+      }
+      
+      // Round up to next 30-minute increment if not already on one
+      const minutes = lastServiceEndTime.getMinutes();
+      const remainder = minutes % 30;
+      if (remainder !== 0) {
+        lastServiceEndTime.setMinutes(minutes + (30 - remainder));
+      }
+      
+      const endTimeFormatted = dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A");
+      console.log(`Last service ends at: ${lastServiceEndTime.toISOString()} (${endTimeFormatted})`);
+
+      // Check if this is the same service as main service
+      const isSameService = service.id === selectedService.id;
+      let assignedTimeSlot;
+
+      if (isSameService) {
+        // Same service - use cached availability data for same date
+        const selectedTimeDate = dayjs(selectedTime.start_at).format("YYYY-MM-DD");
+        const availableTimesForDate = availabilityData?.availabilities_by_date?.[selectedTimeDate] || [];
+        
+        console.log("Same service - using cached data for date:", selectedTimeDate);
+        console.log("Available times:", availableTimesForDate.map(slot => ({
+          time: slot.start_at,
+          formatted: dayjs(slot.start_at).tz("Australia/Melbourne").format("h:mm A")
+        })));
+        
+        // Check if the exact rounded time slot is available and valid
+        const exactMatchSlot = availableTimesForDate.find(slot => {
+          const slotTime = new Date(slot.start_at);
+          const isExactTime = Math.abs(slotTime.getTime() - lastServiceEndTime.getTime()) < 60000; // Within 1 minute
+          const isSameBarber = slot.appointment_segments?.[0]?.team_member_id === mainBarber;
+          const noConflict = !isServiceTimeConflict(service.id, mainBarber, slot.start_at);
+          
+          return isExactTime && isSameBarber && noConflict;
+        });
+
+        if (exactMatchSlot) {
+          assignedTimeSlot = exactMatchSlot;
+          console.log(`Using exact match slot at ${dayjs(exactMatchSlot.start_at).tz("Australia/Melbourne").format("h:mm A")}`);
+        } else {
+          // Always use the calculated rounded time, create custom slot
+          console.log(`No exact match found, creating slot at calculated time ${dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A")}`);
+          assignedTimeSlot = {
+            start_at: lastServiceEndTime.toISOString(),
+            location_id: selectedTime.location_id, // Use the same location as the main service
+            appointment_segments: [{
+              team_member_id: mainBarber,
+              service_variation_id: service.service_variation_id,
+              duration_minutes: service.duration > 10000 
+                ? Math.round(service.duration / 60000) 
+                : service.duration,
+              service_variation_version: 1 // Add required field
+            }]
+          };
+        }
+      } else {
+        // Different service - fetch fresh availability and find slot after last service end time
+        console.log("Different service - fetching fresh availability");
+        const startDate = new Date(selectedDate);
+        const endDate = new Date(selectedDate);
+        endDate.setDate(endDate.getDate() + 1); // Only fetch selected day + 1 day
+
+        const response = await BookingService.searchAvailability(
+          service.service_variation_id,
+          startDate,
+          endDate,
+        );
+
+        // Get all available slots and filter for same barber and after last service end time
+        const allAvailableSlots = Object.values(response.availabilities_by_date).flat();
+        console.log("All available slots for different service:", allAvailableSlots.map(slot => ({
+          time: slot.start_at,
+          formatted: dayjs(slot.start_at).tz("Australia/Melbourne").format("h:mm A")
+        })));
+
+        // Check if the exact rounded time slot is available and valid
+        const exactMatchSlot = allAvailableSlots.find(slot => {
+          const slotTime = new Date(slot.start_at);
+          const slotDay = dayjs(slot.start_at).tz("Australia/Melbourne").format("YYYY-MM-DD");
+          const selectedDay = dayjs(selectedDate).format("YYYY-MM-DD");
+          
+          const isExactTime = Math.abs(slotTime.getTime() - lastServiceEndTime.getTime()) < 60000; // Within 1 minute
+          const isSameBarber = slot.appointment_segments?.[0]?.team_member_id === mainBarber;
+          const noConflict = !isServiceTimeConflict(service.id, mainBarber, slot.start_at);
+          const isSameDay = slotDay === selectedDay;
+          
+          return isExactTime && isSameBarber && noConflict && isSameDay;
+        });
+
+        if (exactMatchSlot) {
+          assignedTimeSlot = exactMatchSlot;
+          console.log(`Using exact match slot at ${dayjs(exactMatchSlot.start_at).tz("Australia/Melbourne").format("h:mm A")}`);
+        } else {
+          // Always use the calculated rounded time, create custom slot
+          console.log(`No exact match found, creating slot at calculated time ${dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A")}`);
+          assignedTimeSlot = {
+            start_at: lastServiceEndTime.toISOString(),
+            location_id: selectedTime.location_id, // Use the same location as the main service
+            appointment_segments: [{
+              team_member_id: mainBarber,
+              service_variation_id: service.service_variation_id,
+              duration_minutes: service.duration > 10000 
+                ? Math.round(service.duration / 60000) 
+                : service.duration,
+              service_variation_version: 1 // Add required field
+            }]
+          };
+        }
+      }
+
+      if (assignedTimeSlot) {
+        const selectedFormatted = dayjs(assignedTimeSlot.start_at).tz("Australia/Melbourne").format("h:mm A");
+        const selectedDay = dayjs(assignedTimeSlot.start_at).tz("Australia/Melbourne").format("dddd, MMM D");
+        console.log(`Selected next slot: ${selectedFormatted} on ${selectedDay} (${assignedTimeSlot.start_at})`);
+      } else {
+        console.log("No available slot found, using fallback time");
+        // Check if the fallback time is still on the same day
+        const fallbackDay = dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("YYYY-MM-DD");
+        const selectedDay = dayjs(selectedDate).format("YYYY-MM-DD");
+        
+        if (fallbackDay !== selectedDay) {
+          console.log("Fallback time would be on different day, rejecting");
+          // Show error or handle appropriately - for now, let's try to find the last possible slot of the day
+          const endOfDay = dayjs(selectedDate).endOf('day').toDate();
+          const lastPossibleTime = new Date(Math.min(endOfDay.getTime() - (service.duration > 10000 ? service.duration / 1000 : service.duration * 60 * 1000), endOfDay.getTime()));
+          assignedTimeSlot = {
+            start_at: lastPossibleTime.toISOString(),
+            location_id: selectedTime.location_id, // Use the same location as the main service
+            appointment_segments: [{
+              team_member_id: mainBarber,
+              service_variation_id: service.service_variation_id,
+              duration_minutes: service.duration > 10000 
+                ? Math.round(service.duration / 60000) 
+                : service.duration,
+              service_variation_version: 1 // Add required field
+            }]
+          };
+        } else {
+          // Fallback to calculated end time if no slots available
+          assignedTimeSlot = {
+            start_at: lastServiceEndTime.toISOString(),
+            location_id: selectedTime.location_id, // Use the same location as the main service
+            appointment_segments: [{
+              team_member_id: mainBarber,
+              service_variation_id: service.service_variation_id,
+              duration_minutes: service.duration > 10000 
+                ? Math.round(service.duration / 60000) 
+                : service.duration,
+              service_variation_version: 1 // Add required field
+            }]
+          };
+        }
+      }
+
+      // Create the additional service with automatic assignment
       const newAdditionalService: AdditionalService = {
-        service: tempAdditionalService,
-        barber: tempAdditionalBarber,
-        timeSlot: tempAdditionalTime,
+        service: service,
+        barber: barberObj,
+        timeSlot: assignedTimeSlot,
       };
 
       setAdditionalServices((prev) => [...prev, newAdditionalService]);
+      setShowServiceDialog(false);
 
-      // Reset temp state
-      setTempAdditionalService(null);
-      setTempAdditionalBarber(null);
-      setTempAdditionalTime(null);
-      setTempAvailableTimes([]);
-      setTempAvailableDates([]);
-      setShowDateDialog(false);
+    } catch (error) {
+      console.error("Error adding additional service:", error);
+      setError("Failed to add additional service. Please try again.");
     }
   };
 
@@ -813,127 +1040,6 @@ export default function AppointmentBooking() {
     return additionalServices.some(
       (additional) => additional.timeSlot.start_at === startAt,
     );
-  };
-
-  // Fetch availability for additional service
-  const fetchAdditionalServiceAvailability = async (
-    serviceVariationId: string,
-    targetDate?: Date,
-  ) => {
-    setTempIsLoading(true);
-
-    try {
-      const now = new Date();
-      // Square API has a max query range of 32 days, so let's use 30 days to be safe
-      const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-
-      const response = await BookingService.searchAvailability(
-        serviceVariationId,
-        now,
-        endDate,
-      );
-
-      const dates = Object.keys(response.availabilities_by_date);
-      setTempAvailableDates(dates);
-
-      // Set times for the specified date or current temp date
-      const dateToUse = targetDate || tempAdditionalDate;
-      const dateKey = dayjs(dateToUse)
-        .tz("Australia/Melbourne")
-        .format("YYYY-MM-DD");
-      const availabilities = response.availabilities_by_date[dateKey] || [];
-
-      console.log(
-        `Additional service availability for ${dateKey}:`,
-        availabilities.length,
-        "slots",
-      );
-
-      // Filter out conflicting times
-      const filteredAvailabilities = availabilities.filter((slot) => {
-        const conflict = isServiceTimeConflict(
-          tempAdditionalService?.id || 0,
-          slot.appointment_segments?.[0]?.team_member_id || "",
-          slot.start_at,
-        );
-        return !conflict;
-      });
-
-      console.log(
-        `After filtering conflicts: ${filteredAvailabilities.length} available slots`,
-      );
-
-      // Sort times chronologically
-      filteredAvailabilities.sort(
-        (a, b) =>
-          new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
-      );
-
-      setTempAvailableTimes(filteredAvailabilities);
-    } catch (err) {
-      console.error("Error fetching additional service availability:", err);
-      setTempAvailableTimes([]);
-    } finally {
-      setTempIsLoading(false);
-    }
-  };
-
-  // Handle additional service date changes
-  const handleAdditionalDateChange = async (date: Date) => {
-    setTempAdditionalDate(date);
-    setTempAdditionalTime(null);
-
-    if (tempAdditionalService) {
-      setTempIsLoading(true);
-
-      // Get the date key for the selected date
-      const dateKey = dayjs(date)
-        .tz("Australia/Melbourne")
-        .format("YYYY-MM-DD");
-
-      // Check if we already have availability data for this date
-      if (tempAvailableDates.includes(dateKey)) {
-        // We have data, just need to filter for this specific date
-        try {
-          const now = new Date();
-          // Square API has a max query range of 32 days, so let's use 30 days to be safe
-          const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
-
-          const response = await BookingService.searchAvailability(
-            tempAdditionalService.service_variation_id,
-            now,
-            endDate,
-          );
-
-          const availabilities = response.availabilities_by_date[dateKey] || [];
-
-          // Filter out conflicting times
-          const filteredAvailabilities = availabilities.filter((slot) => {
-            return !isServiceTimeConflict(
-              tempAdditionalService?.id || 0,
-              slot.appointment_segments?.[0]?.team_member_id || "",
-              slot.start_at,
-            );
-          });
-
-          // Sort times chronologically
-          filteredAvailabilities.sort(
-            (a, b) =>
-              new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
-          );
-
-          setTempAvailableTimes(filteredAvailabilities);
-        } catch (err) {
-          console.error("Error updating times for date:", err);
-          setTempAvailableTimes([]);
-        }
-      } else {
-        // No availability for this date
-        setTempAvailableTimes([]);
-      }
-
-      setTempIsLoading(false);
-    }
   };
 
   if (!selectedService) {
@@ -1023,9 +1129,10 @@ export default function AppointmentBooking() {
                   <Button
                     onClick={handleAddAdditionalService}
                     variant="outline"
-                    className="w-full bg-black text-white hover:bg-gray-800 border-black"
+                    className="w-full bg-black text-white hover:bg-gray-800 border-black disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed"
+                    disabled={!selectedTime}
                   >
-                    Add Additional Service
+                    {selectedTime ? "Add Additional Service" : "Select Time First"}
                   </Button>
                 </div>
               </>
@@ -1042,11 +1149,10 @@ export default function AppointmentBooking() {
         >
           <DialogHeader className="border-b border-gray-200 pb-4">
             <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
-              Select Additional Service
+              Add Another Service
             </DialogTitle>
             <p className="text-gray-600 text-center mt-2">
-              Choose from our available services to complete your grooming
-              experience
+              Select an additional service with your current barber. Same services will be scheduled consecutively.
             </p>
           </DialogHeader>
 
@@ -1054,11 +1160,12 @@ export default function AppointmentBooking() {
             <div className="max-w-5xl mx-auto">
               <div className="grid gap-3 sm:gap-4">
                 {allServices
-                  .filter(
-                    (service) =>
-                      allBarbers[service.id] &&
-                      allBarbers[service.id].length > 0,
-                  )
+                  .filter((service) => {
+                    // Show all services - we'll assign them to the same barber automatically
+                    // The barber matching will be handled in the booking creation logic
+                    console.log(`Showing service: ${service.name} (will use main barber for booking)`);
+                    return true;
+                  })
                   .map((service) => {
                     return (
                       <div
@@ -1158,350 +1265,6 @@ export default function AppointmentBooking() {
         </DialogContent>
       </Dialog>
 
-      {/* Barber Selection Dialog */}
-      <Dialog open={showBarberDialog} onOpenChange={setShowBarberDialog}>
-        <DialogContent
-          className="max-w-none w-[95vw] max-h-[90vh] overflow-hidden bg-gradient-to-b from-gray-50 to-white h-full"
-          style={{ width: "95vw", maxWidth: "1200px" }}
-        >
-          <DialogHeader className="border-b border-gray-200 pb-4 sm:pb-6">
-            <DialogTitle className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center">
-              Choose Your Barber
-            </DialogTitle>
-            {tempAdditionalService && (
-              <div className="text-center mt-4">
-                <div className="bg-white rounded-lg shadow-sm border p-4 max-w-md mx-auto">
-                  <h3 className="font-semibold text-gray-900">
-                    {tempAdditionalService.name}
-                  </h3>
-                  <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
-                    <span>
-                      ${(tempAdditionalService.price_amount / 100).toFixed(2)}
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {tempAdditionalService.duration > 10000
-                        ? Math.round(tempAdditionalService.duration / 60000)
-                        : tempAdditionalService.duration}{" "}
-                      min
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </DialogHeader>
-
-          <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-3 sm:p-6 pb-20">
-            {tempAdditionalService && allBarbers[tempAdditionalService.id] ? (
-              <>
-                <div className="bg-gray-50 rounded-lg p-3 mb-6 max-w-2xl mx-auto">
-                  {/* <p className="text-xs text-gray-700 text-center">
-                    🎯 <strong>Limited Availability</strong> - Book your preferred time slot today!
-                  </p> */}
-                </div>
-
-                <div className="max-w-6xl mx-auto">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {/* Random Barber Card - First Position */}
-                    {allBarbers[tempAdditionalService.id] &&
-                      allBarbers[tempAdditionalService.id].length > 0 && (
-                        <div
-                          className="flex flex-col justify-between h-full w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group max-w-sm mx-auto"
-                          onClick={handleSelectRandomAdditionalBarber}
-                        >
-                          {/* Card Content */}
-                          <div className="p-6 space-y-4">
-                            {/* Review Text */}
-                            <p className="text-black text-md leading-relaxed font-medium">
-                              &quot;Save time by choosing our next available
-                              barber&quot; <br />
-                              Choose the next available Barber
-                            </p>
-                          </div>
-
-                          {/* Book Button */}
-                          <div className="p-6 pt-16 md:pb-4">
-                            <button className="w-full text-base sm:text-lg bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
-                              Click Here
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                    {/* Regular Barber Cards */}
-                    {allBarbers[tempAdditionalService.id].map((barber) => {
-                      const barberImage = getBarberImageSafe(
-                        barber.first_name,
-                        barber.last_name,
-                      );
-                      return (
-                        <div
-                          key={barber.id}
-                          className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group max-w-sm mx-auto"
-                          onClick={() => handleSelectAdditionalBarber(barber)}
-                        >
-                          {/* Barber Image */}
-                          <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                            <Image
-                              src={barberImage.src}
-                              width={400}
-                              height={400}
-                              alt={barberImage.alt}
-                              className="object-cover w-full h-full"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.innerHTML = `
-                                  <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                      <span class="text-gray-400 text-3xl font-bold">?</span>
-                                    </div>
-                                  </div>
-                                `;
-                                }
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                            {/* Overlay Info */}
-                            <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 text-white">
-                              <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-wide">
-                                {barber.first_name}
-                              </h3>
-                              <p className="text-sm sm:text-lg opacity-90 font-medium">
-                                {barber.last_name}
-                              </p>
-                            </div>
-
-                            {/* Professional Badge */}
-                            <div className="absolute top-2 sm:top-4 right-2 sm:right-4">
-                              <div className="bg-white/20 backdrop-blur-sm rounded-full p-1.5 sm:p-2">
-                                <svg
-                                  className="w-4 h-4 sm:w-6 sm:h-6 text-white"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                                  />
-                                </svg>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Card Content */}
-                          <div className="p-6 space-y-4">
-                            <div className="space-y-3 sm:space-y-4 mb-2 sm:mb-6">
-                              {/* Languages */}
-                              <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                  <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-black"
-                                    viewBox="0 0 800 800"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      fill-rule="evenodd"
-                                      clip-rule="evenodd"
-                                      d="M680 95.2383H240V323.81H690.36L565.24 209.524L680 95.2383ZM800 95.2383L676.76 209.524L800 323.81V400H160V19.0479H770.36H800V95.2383ZM0 780.953H80.0002V19.0479H0V780.953Z"
-                                      fill="black"
-                                    />
-                                  </svg>
-                                </div>
-                                <div>
-                                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                                    Languages Spoken
-                                  </p>
-                                  <p className="text-sm sm:text-base lg:text-lg">
-                                    🇦🇺 🇬🇷
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Social Handle */}
-                              <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                  <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-black"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                    />
-                                  </svg>
-                                </div>
-                                <div>
-                                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                                    Social
-                                  </p>
-                                  <p className="text-sm sm:text-base font-mono text-gray-900">
-                                    @{barber.first_name.toLowerCase()}.barber
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Status */}
-                              <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                  <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5 text-black"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                                    />
-                                  </svg>
-                                </div>
-                                <div>
-                                  <p className="text-xs sm:text-sm text-black font-medium">
-                                    Status
-                                  </p>
-                                  <p className="text-sm sm:text-base capitalize font-semibold text-green-700">
-                                    {barber.status}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Book Button */}
-                            <div className="pt-6 w-full">
-                              <Button className="w-full bg-gradient-to-r from-gray-900 to-black text-white hover:from-gray-800 hover:to-gray-900 group-hover:from-black group-hover:to-gray-800 transition-all duration-300 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform sm:hover:scale-105">
-                                <span className="flex items-center justify-center gap-2">
-                                  <svg
-                                    className="w-4 h-4 sm:w-5 sm:h-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
-                                  Select {barber.first_name}
-                                </span>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center max-w-2xl mx-auto">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No Barbers Available
-                </h3>
-                <p className="text-gray-500">
-                  No barbers are currently available for this service. Please
-                  try another service or contact us directly.
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Date/Time Selection Dialog */}
-      <Dialog open={showDateDialog} onOpenChange={setShowDateDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>
-              Select Date & Time for {tempAdditionalService?.name} with{" "}
-              {tempAdditionalBarber?.first_name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto max-h-[calc(80vh-100px)] p-4">
-            <div className="grid grid-cols-1 gap-6">
-              <div>
-                <DateTimeSelector
-                  selectedDate={tempAdditionalDate}
-                  onDateChange={handleAdditionalDateChange}
-                  onMonthChange={handleAdditionalDateChange}
-                  onTimeSelect={handleSelectAdditionalTime}
-                  selectedTime={tempAdditionalTime}
-                  availableTimes={tempAvailableTimes}
-                  availableDates={tempAvailableDates}
-                  isLoading={tempIsLoading}
-                />
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-4">Selection Summary</h3>
-                {tempAdditionalService && (
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Service:</strong> {tempAdditionalService.name}
-                    </p>
-                    {tempAdditionalBarber && (
-                      <p>
-                        <strong>Barber:</strong>{" "}
-                        {tempAdditionalBarber.first_name}{" "}
-                        {tempAdditionalBarber.last_name}
-                      </p>
-                    )}
-                    {tempAdditionalTime && (
-                      <p>
-                        <strong>Time:</strong>{" "}
-                        {dayjs(tempAdditionalTime.start_at)
-                          .tz("Australia/Melbourne")
-                          .format("h:mm A on dddd, MMM D")}
-                      </p>
-                    )}
-                    <p>
-                      <strong>Price:</strong> $
-                      {(tempAdditionalService.price_amount / 100).toFixed(2)}
-                    </p>
-                  </div>
-                )}
-                <Button
-                  onClick={handleConfirmAdditionalService}
-                  disabled={!tempAdditionalTime}
-                  className="w-full mt-4 bg-green-600 hover:bg-green-700"
-                >
-                  {tempAdditionalTime
-                    ? "Confirm Additional Service"
-                    : "Please Select a Time"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }
