@@ -373,8 +373,7 @@ export const BookingService = {
   },
 
   /**
-   * Create multiple bookings (for additional services) - DEPRECATED
-   * Use createBookingWithSegments instead
+   * Create multiple separate bookings (for additional services with same barber)
    */
   async createBatchBookings(batchRequest: BatchBookingRequest): Promise<BatchBookingResponse> {
     try {

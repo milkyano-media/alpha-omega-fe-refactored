@@ -89,7 +89,7 @@ export function MarqueeItems() {
       {Array.from({ length: 4 }).map((_, i) => (
         <Image
           key={i}
-          src="/assets/ao-pixelate.png"
+          src="/assets/ao-pixelate-black.png"
           height={50}
           width={50}
           alt="alpha omega pixelate"
