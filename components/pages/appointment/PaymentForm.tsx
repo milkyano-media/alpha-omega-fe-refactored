@@ -35,20 +35,24 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
 }) => {
   if (!selectedService || !selectedTime) return null;
 
-  // Calculate total amount and 50% deposit
+  // Calculate card fee from full subtotal, entire fee goes to deposit
   const mainServicePrice = selectedService.price_amount / 100;
   const additionalServicesPrice = additionalServices.reduce(
     (total, additionalService) => total + (additionalService.service.price_amount / 100),
     0
   );
-  const totalAmount = mainServicePrice + additionalServicesPrice;
-  const depositAmount = totalAmount * 0.5; // 50% deposit
+  const subtotalAmount = mainServicePrice + additionalServicesPrice;
+  const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
+  const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
+  const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
+  const totalAmount = subtotalAmount + cardFee; // Total including card fee
+  // const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
   
-  // Individual service deposits for display
-  const mainServiceDeposit = mainServicePrice * 0.5;
-  const additionalServiceDeposits = additionalServices.map(
-    (additionalService) => (additionalService.service.price_amount / 100) * 0.5
-  );
+  // Individual service deposits for display (not currently used in UI)
+  // const mainServiceDeposit = mainServicePrice * 0.5;
+  // const additionalServiceDeposits = additionalServices.map(
+  //   (additionalService) => (additionalService.service.price_amount / 100) * 0.5
+  // );
 
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200">
@@ -84,20 +88,35 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         <div className="flex flex-col space-y-3">
           {/* Main Service */}
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">{selectedService.name} (50% deposit):</span>
-            <span className="font-medium">${mainServiceDeposit.toFixed(2)} AUD</span>
+            <span className="text-gray-600">{selectedService.name}:</span>
+            <span className="font-medium">${mainServicePrice.toFixed(2)} AUD</span>
           </div>
           
           {/* Additional Services */}
           {additionalServices.map((additionalService, index) => (
             <div key={index} className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">{additionalService.service.name} (50% deposit):</span>
-              <span className="font-medium">${additionalServiceDeposits[index].toFixed(2)} AUD</span>
+              <span className="text-gray-600">{additionalService.service.name}:</span>
+              <span className="font-medium">${(additionalService.service.price_amount / 100).toFixed(2)} AUD</span>
             </div>
           ))}
           
+          <div className="border-t border-gray-200 pt-2 mt-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Subtotal:</span>
+              <span className="font-medium">${subtotalAmount.toFixed(2)} AUD</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-gray-600">Card Payment Fee (2.2%):</span>
+              <span className="font-medium">${cardFee.toFixed(2)} AUD</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-gray-600">Total:</span>
+              <span className="font-medium">${totalAmount.toFixed(2)} AUD</span>
+            </div>
+          </div>
+          
           <div className="bg-gray-50 border-t border-gray-200 pt-2 mt-1 flex items-center justify-between">
-            <span className="font-medium">Total Payment:</span>
+            <span className="font-medium">Deposit Payment (50%):</span>
             <span className="font-bold">${depositAmount.toFixed(2)} AUD</span>
           </div>
         </div>

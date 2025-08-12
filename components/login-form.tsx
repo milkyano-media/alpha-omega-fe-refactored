@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@/lib/auth-context";
+import { ForgotPasswordModal } from "@/components/forgot-password-modal";
 
 // Define the schema for form validation
 const loginSchema = z.object({
@@ -39,6 +40,7 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams?.get('returnUrl') || null;
@@ -120,12 +122,13 @@ export function LoginForm({
                       <FormItem>
                         <div className="flex items-center">
                           <FormLabel className="text-sm font-medium">Password</FormLabel>
-                          <a
-                            href="#"
+                          <button
+                            type="button"
+                            onClick={() => setShowForgotPassword(true)}
                             className="ml-auto text-sm text-blue-600 underline-offset-4 hover:underline"
                           >
                             Forgot your password?
-                          </a>
+                          </button>
                         </div>
                         <FormControl>
                           <Input type="password" placeholder="••••••••" className="h-11 px-4" {...field} />
@@ -168,6 +171,15 @@ export function LoginForm({
         By clicking Sign In, you agree to our <a href="#" className="text-blue-600 hover:underline underline-offset-4">Terms of Service</a>{" "}
         and <a href="#" className="text-blue-600 hover:underline underline-offset-4">Privacy Policy</a>.
       </div>
+      
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        onSuccess={() => {
+          // Clear any existing error and show success message
+          setError(null);
+        }}
+      />
     </div>
   );
 }
