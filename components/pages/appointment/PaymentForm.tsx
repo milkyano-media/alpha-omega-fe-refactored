@@ -46,13 +46,13 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
   const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
   const totalAmount = subtotalAmount + cardFee; // Total including card fee
-  const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
+  // const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
   
-  // Individual service deposits for display
-  const mainServiceDeposit = mainServicePrice * 0.5;
-  const additionalServiceDeposits = additionalServices.map(
-    (additionalService) => (additionalService.service.price_amount / 100) * 0.5
-  );
+  // Individual service deposits for display (not currently used in UI)
+  // const mainServiceDeposit = mainServicePrice * 0.5;
+  // const additionalServiceDeposits = additionalServices.map(
+  //   (additionalService) => (additionalService.service.price_amount / 100) * 0.5
+  // );
 
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200">

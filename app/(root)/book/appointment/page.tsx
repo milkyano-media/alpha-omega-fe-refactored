@@ -25,6 +25,7 @@ import {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { MarqueeItems } from "@/components/navbar";
 
 // Configure dayjs with timezone support
 dayjs.extend(utc);
@@ -175,8 +176,8 @@ export default function AppointmentBooking() {
       const baseDepositAmount = Math.round(subtotalAmount * 0.5); // 50% deposit of services
       const depositAmount = baseDepositAmount + cardFee; // Deposit includes entire card fee
       
-      // Total amount is subtotal + card fee
-      const totalAmount = subtotalAmount + cardFee;
+      // Total amount is subtotal + card fee (used for display in components)
+      // const totalAmount = subtotalAmount + cardFee;
       const formattedAmount = (depositAmount / 100).toFixed(2);
 
       // Create a unique idempotency key for this transaction
@@ -351,7 +352,9 @@ export default function AppointmentBooking() {
       } else {
         throw new Error(
           bookingResponse.errors?.length > 0
-            ? `Failed to create bookings: ${bookingResponse.errors.map(e => e.error).join(", ")}`
+            ? `Failed to create bookings: ${bookingResponse.errors
+                .map((e) => e.error)
+                .join(", ")}`
             : "Failed to create bookings",
         );
       }
@@ -412,10 +415,13 @@ export default function AppointmentBooking() {
           total: (totalAmount / 100).toFixed(2),
           status: firstBooking?.data?.status || "confirmed",
           square_confirmed: true,
-          backend_synced: true, 
+          backend_synced: true,
           additional_services: additionalServices.length,
           total_bookings: bookingResponse.total_created || 1, // Total separate bookings created
-          booking_ids: bookingResponse.created_bookings?.map((b: {booking: any}) => b.booking?.data?.id) || [],
+          booking_ids:
+            bookingResponse.created_bookings?.map(
+              (b: { booking: any }) => b.booking?.data?.id,
+            ) || [],
         }),
       );
     } catch (error) {
@@ -588,7 +594,7 @@ export default function AppointmentBooking() {
   // Extract date string to avoid complex expression in dependency array
   // Use local date formatting to prevent timezone conversion issues
   const selectedDateString = dayjs(selectedDate).format("YYYY-MM-DD");
-  
+
   // Debug: Log the selected date conversion
   console.log("Selected date (local):", selectedDate);
   console.log("Selected date string:", selectedDateString);
@@ -664,55 +670,71 @@ export default function AppointmentBooking() {
     }
 
     // Use callback to access current additionalServices without adding to dependencies
-    setAdditionalServices(currentServices => {
+    setAdditionalServices((currentServices) => {
       if (currentServices.length === 0) {
         return currentServices; // No change if no additional services
       }
 
-      console.log("Main service time changed, recalculating additional service times...");
-      
+      console.log(
+        "Main service time changed, recalculating additional service times...",
+      );
+
       // Recalculate times for all additional services sequentially
-      const recalculatedServices = currentServices.map((additionalService, index) => {
-        // Calculate the start time based on previous services
-        let calculatedStartTime: Date;
-        
-        if (index === 0) {
-          // First additional service starts after main service
-          calculatedStartTime = new Date(selectedTime.start_at);
-          const mainServiceDuration = selectedService.duration > 10000 
-            ? selectedService.duration / 60000 
-            : selectedService.duration;
-          calculatedStartTime.setMinutes(calculatedStartTime.getMinutes() + mainServiceDuration);
-        } else {
-          // Subsequent services start after previous additional service
-          const previousService = currentServices[index - 1];
-          calculatedStartTime = new Date(previousService.timeSlot.start_at);
-          const previousDuration = previousService.service.duration > 10000 
-            ? previousService.service.duration / 60000 
-            : previousService.service.duration;
-          calculatedStartTime.setMinutes(calculatedStartTime.getMinutes() + previousDuration);
-        }
+      const recalculatedServices = currentServices.map(
+        (additionalService, index) => {
+          // Calculate the start time based on previous services
+          let calculatedStartTime: Date;
 
-        // Apply 30-minute rounding
-        const minutes = calculatedStartTime.getMinutes();
-        const remainder = minutes % 30;
-        if (remainder !== 0) {
-          calculatedStartTime.setMinutes(minutes + (30 - remainder));
-        }
+          if (index === 0) {
+            // First additional service starts after main service
+            calculatedStartTime = new Date(selectedTime.start_at);
+            const mainServiceDuration =
+              selectedService.duration > 10000
+                ? selectedService.duration / 60000
+                : selectedService.duration;
+            calculatedStartTime.setMinutes(
+              calculatedStartTime.getMinutes() + mainServiceDuration,
+            );
+          } else {
+            // Subsequent services start after previous additional service
+            const previousService = currentServices[index - 1];
+            calculatedStartTime = new Date(previousService.timeSlot.start_at);
+            const previousDuration =
+              previousService.service.duration > 10000
+                ? previousService.service.duration / 60000
+                : previousService.service.duration;
+            calculatedStartTime.setMinutes(
+              calculatedStartTime.getMinutes() + previousDuration,
+            );
+          }
 
-        // Create new time slot with recalculated time
-        const newTimeSlot = {
-          ...additionalService.timeSlot,
-          start_at: calculatedStartTime.toISOString()
-        };
+          // Apply 30-minute rounding
+          const minutes = calculatedStartTime.getMinutes();
+          const remainder = minutes % 30;
+          if (remainder !== 0) {
+            calculatedStartTime.setMinutes(minutes + (30 - remainder));
+          }
 
-        console.log(`Recalculated ${additionalService.service.name} to: ${dayjs(calculatedStartTime).tz("Australia/Melbourne").format("h:mm A")}`);
+          // Create new time slot with recalculated time
+          const newTimeSlot = {
+            ...additionalService.timeSlot,
+            start_at: calculatedStartTime.toISOString(),
+          };
 
-        return {
-          ...additionalService,
-          timeSlot: newTimeSlot
-        };
-      });
+          console.log(
+            `Recalculated ${additionalService.service.name} to: ${dayjs(
+              calculatedStartTime,
+            )
+              .tz("Australia/Melbourne")
+              .format("h:mm A")}`,
+          );
+
+          return {
+            ...additionalService,
+            timeSlot: newTimeSlot,
+          };
+        },
+      );
 
       return recalculatedServices;
     });
@@ -738,10 +760,15 @@ export default function AppointmentBooking() {
     // Fetch fresh services and barbers when dialog opens
     try {
       setError(null); // Clear any existing errors
-      console.log("Fetching services and barbers for additional service dialog...");
-      
+      console.log(
+        "Fetching services and barbers for additional service dialog...",
+      );
+
       const serviceList = await BookingService.getAllServices();
-      console.log(`Fetched ${serviceList.length} services:`, serviceList.map(s => s.name));
+      console.log(
+        `Fetched ${serviceList.length} services:`,
+        serviceList.map((s) => s.name),
+      );
       setAllServices(serviceList);
 
       const barbersByService: Record<number, TeamMember[]> = {};
@@ -751,9 +778,13 @@ export default function AppointmentBooking() {
             service.id,
           );
           // Filter out barbers with is_owner=true
-          const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+          const availableBarbers = serviceBarbers.filter(
+            (barber) => !barber.is_owner,
+          );
           barbersByService[service.id] = availableBarbers;
-          console.log(`Service ${service.name}: ${availableBarbers.length} available barbers`);
+          console.log(
+            `Service ${service.name}: ${availableBarbers.length} available barbers`,
+          );
         } catch (err) {
           console.error(
             `Failed to fetch barbers for service ${service.id} (${service.name}):`,
@@ -764,10 +795,16 @@ export default function AppointmentBooking() {
         }
       }
 
-      console.log("All barbers by service:", Object.keys(barbersByService).map(id => 
-        `${serviceList.find(s => s.id === parseInt(id))?.name}: ${barbersByService[parseInt(id)].length} barbers`
-      ));
-      
+      console.log(
+        "All barbers by service:",
+        Object.keys(barbersByService).map(
+          (id) =>
+            `${serviceList.find((s) => s.id === parseInt(id))?.name}: ${
+              barbersByService[parseInt(id)].length
+            } barbers`,
+        ),
+      );
+
       setAllBarbers(barbersByService);
       setShowServiceDialog(true);
     } catch (error) {
@@ -777,8 +814,11 @@ export default function AppointmentBooking() {
   };
 
   const handleSelectAdditionalService = async (service: Service) => {
-    console.log("🚀 handleSelectAdditionalService called with service:", service.name);
-    
+    console.log(
+      "🚀 handleSelectAdditionalService called with service:",
+      service.name,
+    );
+
     if (!selectedTime || !selectedService) {
       setError("Please select a main service and time first");
       return;
@@ -788,7 +828,7 @@ export default function AppointmentBooking() {
     const mainBarber = selectedTime.appointment_segments?.[0]?.team_member_id;
     console.log("Main barber ID from selectedTime:", mainBarber);
     console.log("selectedTime structure:", selectedTime);
-    
+
     if (!mainBarber) {
       setError("Cannot determine main service barber");
       return;
@@ -799,88 +839,135 @@ export default function AppointmentBooking() {
     console.log("allBarbers keys:", Object.keys(allBarbers));
     const flattenedBarbers = Object.values(allBarbers).flat();
     console.log("Flattened barbers count:", flattenedBarbers.length);
-    console.log("Flattened barbers IDs:", flattenedBarbers.map(b => b.square_up_id));
-    
+    console.log(
+      "Flattened barbers IDs:",
+      flattenedBarbers.map((b) => b.square_up_id),
+    );
+
     // Debug data types
     console.log("mainBarber type and value:", typeof mainBarber, mainBarber);
-    flattenedBarbers.forEach(barber => {
-      console.log(`Barber ${barber.first_name} ${barber.last_name}: type=${typeof barber.square_up_id}, value="${barber.square_up_id}"`);
+    flattenedBarbers.forEach((barber) => {
+      console.log(
+        `Barber ${barber.first_name} ${
+          barber.last_name
+        }: type=${typeof barber.square_up_id}, value="${barber.square_up_id}"`,
+      );
     });
 
     // Find the barber object - first check in allBarbers, then fetch from API if needed
     // Try both strict and loose equality comparisons
     let barberObj = flattenedBarbers.find(
-      barber => barber.square_up_id === mainBarber || barber.square_up_id == mainBarber
+      (barber) =>
+        barber.square_up_id === mainBarber || barber.square_up_id == mainBarber,
     );
-    
+
     if (!barberObj) {
       try {
         // Fetch all team members to find the main barber
-        console.log(`Main barber (${mainBarber}) not found in allBarbers, fetching all team members...`);
+        console.log(
+          `Main barber (${mainBarber}) not found in allBarbers, fetching all team members...`,
+        );
         const allTeamMembers = await BookingService.getTeamMembers();
         console.log(`Fetched ${allTeamMembers.length} team members from API`);
-        console.log("All team members:", allTeamMembers.map(tm => ({ 
-          id: tm.id, 
-          square_up_id: tm.square_up_id, 
-          name: `${tm.first_name} ${tm.last_name}`,
-          is_owner: tm.is_owner 
-        })));
-        
+        console.log(
+          "All team members:",
+          allTeamMembers.map((tm) => ({
+            id: tm.id,
+            square_up_id: tm.square_up_id,
+            name: `${tm.first_name} ${tm.last_name}`,
+            is_owner: tm.is_owner,
+          })),
+        );
+
         // Debug data types in API response
-        console.log("From API - mainBarber type and value:", typeof mainBarber, mainBarber);
-        allTeamMembers.forEach(barber => {
-          console.log(`API Barber ${barber.first_name} ${barber.last_name}: type=${typeof barber.square_up_id}, value="${barber.square_up_id}"`);
+        console.log(
+          "From API - mainBarber type and value:",
+          typeof mainBarber,
+          mainBarber,
+        );
+        allTeamMembers.forEach((barber) => {
+          console.log(
+            `API Barber ${barber.first_name} ${
+              barber.last_name
+            }: type=${typeof barber.square_up_id}, value="${
+              barber.square_up_id
+            }"`,
+          );
         });
-        
+
         // Try both strict and loose equality comparisons
-        barberObj = allTeamMembers.find(barber => barber.square_up_id === mainBarber || barber.square_up_id == mainBarber);
-        
+        barberObj = allTeamMembers.find(
+          (barber) =>
+            barber.square_up_id === mainBarber ||
+            barber.square_up_id == mainBarber,
+        );
+
         if (!barberObj) {
-          console.error(`Main barber with ID ${mainBarber} not found in ${allTeamMembers.length} team members`);
-          console.error("Available team member IDs:", allTeamMembers.map(tm => tm.square_up_id));
+          console.error(
+            `Main barber with ID ${mainBarber} not found in ${allTeamMembers.length} team members`,
+          );
+          console.error(
+            "Available team member IDs:",
+            allTeamMembers.map((tm) => tm.square_up_id),
+          );
           setError("Main service barber not found");
           return;
         }
-        console.log(`Found main barber: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`);
+        console.log(
+          `Found main barber: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`,
+        );
       } catch (error) {
         console.error("Error fetching team members:", error);
         setError("Failed to load barber information");
         return;
       }
     } else {
-      console.log(`Found main barber in allBarbers: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`);
+      console.log(
+        `Found main barber in allBarbers: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`,
+      );
     }
 
     try {
       // Calculate when the LAST added service ends (sequential logic for all services)
       let lastServiceEndTime;
-      
+
       if (additionalServices.length === 0) {
         // No additional services yet, schedule after main service
         lastServiceEndTime = new Date(selectedTime.start_at);
-        const mainServiceDuration = selectedService.duration > 10000 
-          ? selectedService.duration / 60000 
-          : selectedService.duration;
-        lastServiceEndTime.setMinutes(lastServiceEndTime.getMinutes() + mainServiceDuration);
+        const mainServiceDuration =
+          selectedService.duration > 10000
+            ? selectedService.duration / 60000
+            : selectedService.duration;
+        lastServiceEndTime.setMinutes(
+          lastServiceEndTime.getMinutes() + mainServiceDuration,
+        );
       } else {
         // Schedule after the last added service (most recent in the array)
-        const lastAddedService = additionalServices[additionalServices.length - 1];
+        const lastAddedService =
+          additionalServices[additionalServices.length - 1];
         lastServiceEndTime = new Date(lastAddedService.timeSlot.start_at);
-        const lastServiceDuration = lastAddedService.service.duration > 10000 
-          ? lastAddedService.service.duration / 60000 
-          : lastAddedService.service.duration;
-        lastServiceEndTime.setMinutes(lastServiceEndTime.getMinutes() + lastServiceDuration);
+        const lastServiceDuration =
+          lastAddedService.service.duration > 10000
+            ? lastAddedService.service.duration / 60000
+            : lastAddedService.service.duration;
+        lastServiceEndTime.setMinutes(
+          lastServiceEndTime.getMinutes() + lastServiceDuration,
+        );
       }
-      
+
       // Round up to next 30-minute increment if not already on one
       const minutes = lastServiceEndTime.getMinutes();
       const remainder = minutes % 30;
       if (remainder !== 0) {
         lastServiceEndTime.setMinutes(minutes + (30 - remainder));
       }
-      
-      const endTimeFormatted = dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A");
-      console.log(`Last service ends at: ${lastServiceEndTime.toISOString()} (${endTimeFormatted})`);
+
+      const endTimeFormatted = dayjs(lastServiceEndTime)
+        .tz("Australia/Melbourne")
+        .format("h:mm A");
+      console.log(
+        `Last service ends at: ${lastServiceEndTime.toISOString()} (${endTimeFormatted})`,
+      );
 
       // Check if this is the same service as main service
       const isSameService = service.id === selectedService.id;
@@ -888,31 +975,58 @@ export default function AppointmentBooking() {
 
       if (isSameService) {
         // Same service - use cached availability data for same date
-        const selectedTimeDate = dayjs(selectedTime.start_at).format("YYYY-MM-DD");
-        const availableTimesForDate = availabilityData?.availabilities_by_date?.[selectedTimeDate] || [];
-        
-        console.log("Same service - using cached data for date:", selectedTimeDate);
-        console.log("Available times:", availableTimesForDate.map(slot => ({
-          time: slot.start_at,
-          formatted: dayjs(slot.start_at).tz("Australia/Melbourne").format("h:mm A")
-        })));
-        
+        const selectedTimeDate = dayjs(selectedTime.start_at).format(
+          "YYYY-MM-DD",
+        );
+        const availableTimesForDate =
+          availabilityData?.availabilities_by_date?.[selectedTimeDate] || [];
+
+        console.log(
+          "Same service - using cached data for date:",
+          selectedTimeDate,
+        );
+        console.log(
+          "Available times:",
+          availableTimesForDate.map((slot) => ({
+            time: slot.start_at,
+            formatted: dayjs(slot.start_at)
+              .tz("Australia/Melbourne")
+              .format("h:mm A"),
+          })),
+        );
+
         // Check if the exact rounded time slot is available and valid
-        const exactMatchSlot = availableTimesForDate.find(slot => {
+        const exactMatchSlot = availableTimesForDate.find((slot) => {
           const slotTime = new Date(slot.start_at);
-          const isExactTime = Math.abs(slotTime.getTime() - lastServiceEndTime.getTime()) < 60000; // Within 1 minute
-          const isSameBarber = slot.appointment_segments?.[0]?.team_member_id === mainBarber;
-          const noConflict = !isServiceTimeConflict(service.id, mainBarber, slot.start_at);
-          
+          const isExactTime =
+            Math.abs(slotTime.getTime() - lastServiceEndTime.getTime()) < 60000; // Within 1 minute
+          const isSameBarber =
+            slot.appointment_segments?.[0]?.team_member_id === mainBarber;
+          const noConflict = !isServiceTimeConflict(
+            service.id,
+            mainBarber,
+            slot.start_at,
+          );
+
           return isExactTime && isSameBarber && noConflict;
         });
 
         if (exactMatchSlot) {
           assignedTimeSlot = exactMatchSlot;
-          console.log(`Using exact match slot at ${dayjs(exactMatchSlot.start_at).tz("Australia/Melbourne").format("h:mm A")}`);
+          console.log(
+            `Using exact match slot at ${dayjs(exactMatchSlot.start_at)
+              .tz("Australia/Melbourne")
+              .format("h:mm A")}`,
+          );
         } else {
           // Always use the calculated rounded time, create custom slot
-          console.log(`No exact match found, creating slot at calculated time ${dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A")}`);
+          console.log(
+            `No exact match found, creating slot at calculated time ${dayjs(
+              lastServiceEndTime,
+            )
+              .tz("Australia/Melbourne")
+              .format("h:mm A")}`,
+          );
           assignedTimeSlot = {
             start_at: lastServiceEndTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
@@ -940,32 +1054,57 @@ export default function AppointmentBooking() {
         );
 
         // Get all available slots and filter for same barber and after last service end time
-        const allAvailableSlots = Object.values(response.availabilities_by_date).flat();
-        console.log("All available slots for different service:", allAvailableSlots.map(slot => ({
-          time: slot.start_at,
-          formatted: dayjs(slot.start_at).tz("Australia/Melbourne").format("h:mm A")
-        })));
+        const allAvailableSlots = Object.values(
+          response.availabilities_by_date,
+        ).flat();
+        console.log(
+          "All available slots for different service:",
+          allAvailableSlots.map((slot) => ({
+            time: slot.start_at,
+            formatted: dayjs(slot.start_at)
+              .tz("Australia/Melbourne")
+              .format("h:mm A"),
+          })),
+        );
 
         // Check if the exact rounded time slot is available and valid
-        const exactMatchSlot = allAvailableSlots.find(slot => {
+        const exactMatchSlot = allAvailableSlots.find((slot) => {
           const slotTime = new Date(slot.start_at);
-          const slotDay = dayjs(slot.start_at).tz("Australia/Melbourne").format("YYYY-MM-DD");
+          const slotDay = dayjs(slot.start_at)
+            .tz("Australia/Melbourne")
+            .format("YYYY-MM-DD");
           const selectedDay = dayjs(selectedDate).format("YYYY-MM-DD");
-          
-          const isExactTime = Math.abs(slotTime.getTime() - lastServiceEndTime.getTime()) < 60000; // Within 1 minute
-          const isSameBarber = slot.appointment_segments?.[0]?.team_member_id === mainBarber;
-          const noConflict = !isServiceTimeConflict(service.id, mainBarber, slot.start_at);
+
+          const isExactTime =
+            Math.abs(slotTime.getTime() - lastServiceEndTime.getTime()) < 60000; // Within 1 minute
+          const isSameBarber =
+            slot.appointment_segments?.[0]?.team_member_id === mainBarber;
+          const noConflict = !isServiceTimeConflict(
+            service.id,
+            mainBarber,
+            slot.start_at,
+          );
           const isSameDay = slotDay === selectedDay;
-          
+
           return isExactTime && isSameBarber && noConflict && isSameDay;
         });
 
         if (exactMatchSlot) {
           assignedTimeSlot = exactMatchSlot;
-          console.log(`Using exact match slot at ${dayjs(exactMatchSlot.start_at).tz("Australia/Melbourne").format("h:mm A")}`);
+          console.log(
+            `Using exact match slot at ${dayjs(exactMatchSlot.start_at)
+              .tz("Australia/Melbourne")
+              .format("h:mm A")}`,
+          );
         } else {
           // Always use the calculated rounded time, create custom slot
-          console.log(`No exact match found, creating slot at calculated time ${dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A")}`);
+          console.log(
+            `No exact match found, creating slot at calculated time ${dayjs(
+              lastServiceEndTime,
+            )
+              .tz("Australia/Melbourne")
+              .format("h:mm A")}`,
+          );
           assignedTimeSlot = {
             start_at: lastServiceEndTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
@@ -982,20 +1121,36 @@ export default function AppointmentBooking() {
       }
 
       if (assignedTimeSlot) {
-        const selectedFormatted = dayjs(assignedTimeSlot.start_at).tz("Australia/Melbourne").format("h:mm A");
-        const selectedDay = dayjs(assignedTimeSlot.start_at).tz("Australia/Melbourne").format("dddd, MMM D");
-        console.log(`Selected next slot: ${selectedFormatted} on ${selectedDay} (${assignedTimeSlot.start_at})`);
+        const selectedFormatted = dayjs(assignedTimeSlot.start_at)
+          .tz("Australia/Melbourne")
+          .format("h:mm A");
+        const selectedDay = dayjs(assignedTimeSlot.start_at)
+          .tz("Australia/Melbourne")
+          .format("dddd, MMM D");
+        console.log(
+          `Selected next slot: ${selectedFormatted} on ${selectedDay} (${assignedTimeSlot.start_at})`,
+        );
       } else {
         console.log("No available slot found, using fallback time");
         // Check if the fallback time is still on the same day
-        const fallbackDay = dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("YYYY-MM-DD");
+        const fallbackDay = dayjs(lastServiceEndTime)
+          .tz("Australia/Melbourne")
+          .format("YYYY-MM-DD");
         const selectedDay = dayjs(selectedDate).format("YYYY-MM-DD");
-        
+
         if (fallbackDay !== selectedDay) {
           console.log("Fallback time would be on different day, rejecting");
           // Show error or handle appropriately - for now, let's try to find the last possible slot of the day
-          const endOfDay = dayjs(selectedDate).endOf('day').toDate();
-          const lastPossibleTime = new Date(Math.min(endOfDay.getTime() - (service.duration > 10000 ? service.duration / 1000 : service.duration * 60 * 1000), endOfDay.getTime()));
+          const endOfDay = dayjs(selectedDate).endOf("day").toDate();
+          const lastPossibleTime = new Date(
+            Math.min(
+              endOfDay.getTime() -
+                (service.duration > 10000
+                  ? service.duration / 1000
+                  : service.duration * 60 * 1000),
+              endOfDay.getTime(),
+            ),
+          );
           assignedTimeSlot = {
             start_at: lastPossibleTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
@@ -1034,7 +1189,6 @@ export default function AppointmentBooking() {
 
       setAdditionalServices((prev) => [...prev, newAdditionalService]);
       setShowServiceDialog(false);
-
     } catch (error) {
       console.error("Error adding additional service:", error);
       setError("Failed to add additional service. Please try again.");
@@ -1115,6 +1269,15 @@ export default function AppointmentBooking() {
             isLoading={isLoading}
           />
 
+          <div className="overflow-hidden whitespace-nowrap md:hidden block">
+            <div className="flex animate-marquee">
+              {/* First set of images */}
+              <MarqueeItems />
+              {/* Duplicate set for seamless loop */}
+              <MarqueeItems />
+            </div>
+          </div>
+
           {/* Right column - Booking summary and payment */}
           <div className="bg-white rounded-lg shadow-sm p-4">
             <h2 className="text-base font-semibold mb-3">SUMMARY</h2>
@@ -1152,11 +1315,22 @@ export default function AppointmentBooking() {
                     className="w-full bg-black text-white hover:bg-gray-800 border-black disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed"
                     disabled={!selectedTime}
                   >
-                    {selectedTime ? "Add Additional Service" : "Select Time First"}
+                    {selectedTime
+                      ? "Add Additional Service"
+                      : "Select Time First"}
                   </Button>
                 </div>
               </>
             )}
+          </div>
+        </div>
+
+        <div className="overflow-hidden whitespace-nowrap mt-4 md:block hidden">
+          <div className="flex animate-marquee">
+            {/* First set of images */}
+            <MarqueeItems />
+            {/* Duplicate set for seamless loop */}
+            <MarqueeItems />
           </div>
         </div>
       </div>
@@ -1172,7 +1346,8 @@ export default function AppointmentBooking() {
               Add Another Service
             </DialogTitle>
             <p className="text-gray-600 text-center mt-2">
-              Select an additional service with your current barber. Same services will be scheduled consecutively.
+              Select an additional service with your current barber. Same
+              services will be scheduled consecutively.
             </p>
           </DialogHeader>
 
@@ -1183,7 +1358,9 @@ export default function AppointmentBooking() {
                   .filter((service) => {
                     // Show all services - we'll assign them to the same barber automatically
                     // The barber matching will be handled in the booking creation logic
-                    console.log(`Showing service: ${service.name} (will use main barber for booking)`);
+                    console.log(
+                      `Showing service: ${service.name} (will use main barber for booking)`,
+                    );
                     return true;
                   })
                   .map((service) => {
@@ -1284,7 +1461,6 @@ export default function AppointmentBooking() {
           </div>
         </DialogContent>
       </Dialog>
-
     </main>
   );
 }

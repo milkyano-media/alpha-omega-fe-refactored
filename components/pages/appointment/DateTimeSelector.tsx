@@ -7,7 +7,6 @@ import React from "react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { MarqueeItems } from "@/components/navbar";
 
 // Configure dayjs with timezone support
 dayjs.extend(utc);
@@ -153,15 +152,6 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       <div className="mt-5">
         <h3 className="text-base font-semibold mb-3">Available Times</h3>
         {isLoading ? renderTimeSlotsSkeleton() : renderAvailableTimes()}
-
-        <div className="overflow-hidden whitespace-nowrap">
-          <div className="flex animate-marquee">
-            {/* First set of images */}
-            <MarqueeItems />
-            {/* Duplicate set for seamless loop */}
-            <MarqueeItems />
-          </div>
-        </div>
       </div>
     </div>
   );

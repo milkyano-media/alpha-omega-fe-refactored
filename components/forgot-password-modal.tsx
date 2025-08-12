@@ -45,7 +45,7 @@ const passwordSchema = z.object({
     .min(6, { message: "Password must be at least 6 characters long" }),
   confirm_password: z.string(),
 }).refine((data) => data.new_password === data.confirm_password, {
-  message: "Passwords don't match",
+  message: "Passwords don&apos;t match",
   path: ["confirm_password"],
 });
 
@@ -112,7 +112,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess }: ForgotPasswo
     }
   }
 
-  async function onOtpSubmit(values: OtpFormValues) {
+  async function onOtpSubmit() {
     setStep('password');
   }
 
@@ -122,7 +122,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess }: ForgotPasswo
 
     try {
       const otpCode = otpForm.getValues().otp_code;
-      const result = await API.post('/auth/reset-password', {
+      await API.post('/auth/reset-password', {
         phone_number: phoneNumber,
         otp_code: otpCode,
         new_password: values.new_password,
@@ -184,7 +184,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess }: ForgotPasswo
     <Form {...otpForm}>
       <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-6">
         <div className="text-sm text-gray-600 text-center">
-          We've sent a 6-digit code to {phoneNumber}
+          We&apos;ve sent a 6-digit code to {phoneNumber}
         </div>
         
         <FormField
