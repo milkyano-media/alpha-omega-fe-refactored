@@ -46,9 +46,13 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
     return total + (additional.service.price_amount / 100);
   }, 0);
 
-  // Total amounts
-  const totalAmount = mainServicePrice + additionalServicesPrice;
-  const depositAmount = totalAmount * 0.5; // 50% of total amount
+  // Calculate card fee from full subtotal, entire fee goes to deposit
+  const subtotalAmount = mainServicePrice + additionalServicesPrice;
+  const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
+  const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
+  const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
+  const totalAmount = subtotalAmount + cardFee; // Total including card fee
+  const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
 
   // Format time for display in Melbourne timezone
   const formatTime = (isoTime: string) => {
@@ -115,8 +119,16 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
         {/* Totals */}
         <div className="p-3 flex justify-between items-center">
-          <p className="text-sm">Total</p>
-          <p className="font-medium">${totalAmount.toFixed(2)}</p>
+          <p className="text-sm">Subtotal</p>
+          <p className="font-medium">${subtotalAmount.toFixed(2)}</p>
+        </div>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center">
+          <p className="text-sm">Card Payment Fee (2.2%)</p>
+          <p className="font-medium">${cardFee.toFixed(2)}</p>
+        </div>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center">
+          <p className="text-sm font-semibold">Total</p>
+          <p className="font-semibold">${totalAmount.toFixed(2)}</p>
         </div>
         <div className="p-3 border-t border-gray-100 flex justify-between items-center">
           <p className="text-sm">Deposit (50%)</p>
@@ -124,7 +136,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
         <div className="p-3 border-t border-gray-100 flex justify-between items-center text-gray-500 text-sm">
           <p>Balance due at appointment</p>
-          <p>${(totalAmount - depositAmount).toFixed(2)}</p>
+          <p>${balanceAmount.toFixed(2)}</p>
         </div>
       </div>
 

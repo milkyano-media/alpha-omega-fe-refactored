@@ -166,8 +166,17 @@ export default function AppointmentBooking() {
           total + additionalService.service.price_amount,
         0,
       );
-      const totalAmount = mainServicePrice + additionalServicesPrice;
-      const depositAmount = Math.round(totalAmount * 0.5); // 50% deposit, rounded to avoid decimal cents
+      const subtotalAmount = mainServicePrice + additionalServicesPrice;
+      
+      // Calculate 2.2% card fee from full subtotal
+      const cardFee = Math.round(subtotalAmount * 0.022); // 2.2% fee on full subtotal
+      
+      // Deposit = 50% of subtotal + entire card fee
+      const baseDepositAmount = Math.round(subtotalAmount * 0.5); // 50% deposit of services
+      const depositAmount = baseDepositAmount + cardFee; // Deposit includes entire card fee
+      
+      // Total amount is subtotal + card fee
+      const totalAmount = subtotalAmount + cardFee;
       const formattedAmount = (depositAmount / 100).toFixed(2);
 
       // Create a unique idempotency key for this transaction
@@ -275,21 +284,23 @@ export default function AppointmentBooking() {
         selectedTime.appointment_segments?.[0]?.service_variation_version;
 
       bookingsToCreate.push({
-        service_variation_id: selectedService.service_variation_id,
-        team_member_id: selectedTime.appointment_segments?.[0]?.team_member_id || "",
+        service_variation_id: String(selectedService.service_variation_id),
+        team_member_id: String(selectedTime.appointment_segments?.[0]?.team_member_id || ""),
         start_at: selectedTime.start_at,
         customer_note: `Main service: ${selectedService.name}`,
-        service_variation_version: mainServiceVariationVersion,
+        service_variation_version: mainServiceVariationVersion ? Number(mainServiceVariationVersion) : 1,
       });
 
       // Additional services bookings
       additionalServices.forEach((additionalService, index) => {
+        const additionalServiceVariationVersion = additionalService.timeSlot.appointment_segments?.[0]?.service_variation_version;
+        
         bookingsToCreate.push({
-          service_variation_id: additionalService.service.service_variation_id,
-          team_member_id: additionalService.timeSlot.appointment_segments?.[0]?.team_member_id || "",
+          service_variation_id: String(additionalService.service.service_variation_id),
+          team_member_id: String(additionalService.timeSlot.appointment_segments?.[0]?.team_member_id || ""),
           start_at: additionalService.timeSlot.start_at,
           customer_note: `Additional service ${index + 1}: ${additionalService.service.name}`,
-          service_variation_version: additionalService.timeSlot.appointment_segments?.[0]?.service_variation_version,
+          service_variation_version: additionalServiceVariationVersion ? Number(additionalServiceVariationVersion) : 1,
         });
       });
 
@@ -357,15 +368,24 @@ export default function AppointmentBooking() {
     if (!selectedService || !selectedTime) return;
 
     try {
-      // Calculate total amounts including additional services
+      // Calculate total amounts including additional services and card fee
       const mainServicePrice = selectedService.price_amount;
       const additionalServicesPrice = additionalServices.reduce(
         (total, additionalService) =>
           total + additionalService.service.price_amount,
         0,
       );
-      const totalAmount = mainServicePrice + additionalServicesPrice;
-      const totalDeposit = Math.round(totalAmount * 0.5); // 50% deposit
+      const subtotalAmount = mainServicePrice + additionalServicesPrice;
+      
+      // Calculate 2.2% card fee from full subtotal
+      const cardFee = Math.round(subtotalAmount * 0.022); // 2.2% fee on full subtotal
+      
+      // Deposit = 50% of subtotal + entire card fee
+      const baseDepositAmount = Math.round(subtotalAmount * 0.5); // 50% deposit of services
+      const totalDeposit = baseDepositAmount + cardFee; // Deposit includes entire card fee
+      
+      // Total amount is subtotal + card fee
+      const totalAmount = subtotalAmount + cardFee;
 
       // Create service list including additional services
       const servicesList = [selectedService.name];
@@ -897,12 +917,12 @@ export default function AppointmentBooking() {
             start_at: lastServiceEndTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
             appointment_segments: [{
-              team_member_id: mainBarber,
-              service_variation_id: service.service_variation_id,
+              team_member_id: String(mainBarber),
+              service_variation_id: String(service.service_variation_id),
               duration_minutes: service.duration > 10000 
                 ? Math.round(service.duration / 60000) 
                 : service.duration,
-              service_variation_version: 1 // Add required field
+              service_variation_version: Number(1) // Add required field
             }]
           };
         }
@@ -950,12 +970,12 @@ export default function AppointmentBooking() {
             start_at: lastServiceEndTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
             appointment_segments: [{
-              team_member_id: mainBarber,
-              service_variation_id: service.service_variation_id,
+              team_member_id: String(mainBarber),
+              service_variation_id: String(service.service_variation_id),
               duration_minutes: service.duration > 10000 
                 ? Math.round(service.duration / 60000) 
                 : service.duration,
-              service_variation_version: 1 // Add required field
+              service_variation_version: Number(1) // Add required field
             }]
           };
         }
@@ -980,12 +1000,12 @@ export default function AppointmentBooking() {
             start_at: lastPossibleTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
             appointment_segments: [{
-              team_member_id: mainBarber,
-              service_variation_id: service.service_variation_id,
+              team_member_id: String(mainBarber),
+              service_variation_id: String(service.service_variation_id),
               duration_minutes: service.duration > 10000 
                 ? Math.round(service.duration / 60000) 
                 : service.duration,
-              service_variation_version: 1 // Add required field
+              service_variation_version: Number(1) // Add required field
             }]
           };
         } else {
@@ -994,12 +1014,12 @@ export default function AppointmentBooking() {
             start_at: lastServiceEndTime.toISOString(),
             location_id: selectedTime.location_id, // Use the same location as the main service
             appointment_segments: [{
-              team_member_id: mainBarber,
-              service_variation_id: service.service_variation_id,
+              team_member_id: String(mainBarber),
+              service_variation_id: String(service.service_variation_id),
               duration_minutes: service.duration > 10000 
                 ? Math.round(service.duration / 60000) 
                 : service.duration,
-              service_variation_version: 1 // Add required field
+              service_variation_version: Number(1) // Add required field
             }]
           };
         }
