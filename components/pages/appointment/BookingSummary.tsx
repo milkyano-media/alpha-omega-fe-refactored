@@ -90,10 +90,10 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           <div key={index} className="p-3 border-b border-gray-200 bg-blue-50 flex justify-between items-center">
             <div className="flex-1">
               <p className="text-sm font-medium">{additional.service.name}</p>
-              <p className="text-xs text-gray-600">
+              {/* <p className="text-xs text-gray-600">
                 with {additional.barber.first_name} {additional.barber.last_name} • {" "}
                 {formatTime(additional.timeSlot.start_at)} on {formatDate(additional.timeSlot.start_at)}
-              </p>
+              </p> */}
             </div>
             <div className="flex items-center gap-2">
               <div className="flex gap-3 text-xs text-gray-600">
