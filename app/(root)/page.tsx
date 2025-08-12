@@ -125,41 +125,11 @@ export default function Home() {
           <div className="flex flex-nowrap gap-4 px-4">
             <div className="w-64 flex-shrink-0">
               <Image
-                src={"/assets/main-carousel-1.png"}
+                src={"/logo/main.png"}
                 width={500}
                 height={500}
                 alt="Precision haircut service"
-                className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300"
-              />
-            </div>
-
-            <div className="w-64 flex-shrink-0">
-              <Image
-                src={"/assets/main-carousel-2.png"}
-                width={500}
-                height={500}
-                alt="Beard styling service"
-                className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300"
-              />
-            </div>
-
-            <div className="w-64 flex-shrink-0">
-              <Image
-                src={"/assets/main-carousel-3.png"}
-                width={500}
-                height={500}
-                alt="Hair washing service"
-                className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300"
-              />
-            </div>
-
-            <div className="w-64 flex-shrink-0">
-              <Image
-                src={"/assets/main-carousel-4.png"}
-                width={500}
-                height={500}
-                alt="Complete grooming service"
-                className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300"
+                className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 bg-black"
               />
             </div>
           </div>
@@ -253,7 +223,14 @@ export default function Home() {
 
       <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+            <Image
+              src={"/assets/ao-pixelate-black.png"}
+              width={300}
+              height={300}
+              alt=""
+            />
+          </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block mt-6">
             EXPERT BARBERS
           </h4>
@@ -326,7 +303,14 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+            <Image
+              src={"/assets/ao-pixelate-black.png"}
+              width={300}
+              height={300}
+              alt=""
+            />
+          </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block mt-6">
             CREATIVE AND MODERN
           </h4>

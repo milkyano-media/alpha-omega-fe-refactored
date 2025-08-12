@@ -66,9 +66,9 @@ export default function ServicesPage() {
                 Complete Grooming Experience
               </h2>
               <p className="text-gray-300 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed">
-                We offer a full range of services, including expert haircuts to beard
-                sculpting. Each service is tailored to suit your style, ensuring you
-                leave feeling your best.
+                We offer a full range of services, including expert haircuts to
+                beard sculpting. Each service is tailored to suit your style,
+                ensuring you leave feeling your best.
               </p>
             </div>
 
@@ -80,11 +80,11 @@ export default function ServicesPage() {
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
                     Premium Haircut
                   </h3>
-                  
+
                   <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">
-                    A precision-crafted haircut tailored to your style, ensuring sharp
-                    lines, clean fades, or classic trims that leave you looking your
-                    best.
+                    A precision-crafted haircut tailored to your style, ensuring
+                    sharp lines, clean fades, or classic trims that leave you
+                    looking your best.
                   </p>
 
                   <div className="relative w-full mb-4 sm:mb-6">
@@ -98,16 +98,16 @@ export default function ServicesPage() {
                   </div>
 
                   <div className="space-y-3 sm:space-y-4">
-                    <Button 
-                      variant={"secondary"} 
+                    <Button
+                      variant={"secondary"}
                       onClick={handleBookBarber}
                       className="w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-gray-800 transition-colors min-h-[44px]"
                     >
                       BOOK NOW
                     </Button>
-                    
-                    <a 
-                      href="#" 
+
+                    <a
+                      href="#"
                       className="block text-center text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors py-2"
                     >
                       Learn More →
@@ -122,10 +122,11 @@ export default function ServicesPage() {
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
                     Haircut + Beard Styling
                   </h3>
-                  
+
                   <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">
-                    A complete grooming package that combines a tailored haircut with
-                    expert beard shaping and styling for a polished, cohesive look.
+                    A complete grooming package that combines a tailored haircut
+                    with expert beard shaping and styling for a polished,
+                    cohesive look.
                   </p>
 
                   <div className="relative w-full mb-4 sm:mb-6">
@@ -139,16 +140,16 @@ export default function ServicesPage() {
                   </div>
 
                   <div className="space-y-3 sm:space-y-4">
-                    <Button 
-                      variant={"secondary"} 
+                    <Button
+                      variant={"secondary"}
                       onClick={handleBookBarber}
                       className="w-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold hover:bg-gray-800 transition-colors min-h-[44px]"
                     >
                       BOOK NOW
                     </Button>
-                    
-                    <a 
-                      href="#" 
+
+                    <a
+                      href="#"
                       className="block text-center text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors py-2"
                     >
                       Learn More →
@@ -162,7 +163,7 @@ export default function ServicesPage() {
       </section>
 
       {/* Gallery Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
+      {/* <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex flex-col gap-8 sm:gap-12 items-center">
             <div className="text-center space-y-4">
@@ -185,7 +186,7 @@ export default function ServicesPage() {
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-all duration-300"></div>
               </div>
-              
+
               <div className="relative group overflow-hidden rounded-xl shadow-lg">
                 <Image
                   src={"/bg/services-1.png"}
@@ -199,7 +200,7 @@ export default function ServicesPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Reviews Section */}
       <section className="py-12 sm:py-16 lg:py-20">
@@ -210,20 +211,21 @@ export default function ServicesPage() {
                 Why Choose Our Services
               </h2>
               <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-                A precision-crafted haircut tailored to your style, ensuring sharp
-                lines, clean fades, or classic trims that leave you looking your best.
-                Our haircuts are more than just a trim—they&apos;re crafted to match your
-                unique style and personality. Whether it&apos;s a classic cut or a modern
-                look, we deliver precision, detail, and confidence every time.
+                A precision-crafted haircut tailored to your style, ensuring
+                sharp lines, clean fades, or classic trims that leave you
+                looking your best. Our haircuts are more than just a
+                trim—they&apos;re crafted to match your unique style and
+                personality. Whether it&apos;s a classic cut or a modern look,
+                we deliver precision, detail, and confidence every time.
               </p>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+            {/* <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
               Customer Experiences
-            </h3>
+            </h3> */}
 
             {/* Horizontal Scroll on Mobile, Grid on Desktop */}
-            <div className="w-full">
+            {/* <div className="w-full">
               <div className="flex md:justify-center gap-6 overflow-x-auto pb-4 md:pb-0 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-8">
                 {[1, 2, 3].map((index) => (
                   <div key={index} className="flex-shrink-0 w-72 sm:w-80 md:w-full snap-center">
@@ -252,7 +254,7 @@ export default function ServicesPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Call to Action */}
             <div className="bg-gradient-to-r from-gray-900 to-black rounded-xl p-6 sm:p-8 text-center text-white w-full max-w-2xl shadow-xl">
@@ -260,10 +262,11 @@ export default function ServicesPage() {
                 Ready to Experience Premium Grooming?
               </h3>
               <p className="text-gray-300 text-sm sm:text-base mb-6">
-                Book your appointment today and discover the difference professional care makes.
+                Book your appointment today and discover the difference
+                professional care makes.
               </p>
-              <Button 
-                variant={"secondary"} 
+              <Button
+                variant={"secondary"}
                 onClick={handleBookBarber}
                 className="px-8 py-3 text-base font-semibold bg-white text-black hover:bg-gray-100 transition-colors"
               >

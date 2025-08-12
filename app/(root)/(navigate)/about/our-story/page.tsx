@@ -17,7 +17,14 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+            <Image
+              src={"/assets/ao-pixelate-black.png"}
+              width={300}
+              height={300}
+              alt=""
+            />
+          </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">
             HOW IT BEGINS
           </h4>
@@ -46,7 +53,14 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full" />
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+            <Image
+              src={"/assets/ao-pixelate-black.png"}
+              width={300}
+              height={300}
+              alt=""
+            />
+          </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">
             WHY WE CREATES BARBERSHOP
           </h4>
