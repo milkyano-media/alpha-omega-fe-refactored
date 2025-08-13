@@ -19,6 +19,14 @@ export default function RootLayout({
   const squareSDKUrl = isProduction 
     ? 'https://web.squarecdn.com/v1/square.js'
     : 'https://sandbox.web.squarecdn.com/v1/square.js';
+  
+  // Debug logging for production issues
+  console.log('🔧 Layout environment check:', {
+    NEXT_PUBLIC_SQUARE_ENVIRONMENT: process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT,
+    isProduction,
+    squareSDKUrl,
+    NODE_ENV: process.env.NODE_ENV
+  });
 
   return (
     <html lang='en' suppressHydrationWarning>
@@ -27,6 +35,28 @@ export default function RootLayout({
         <script
           type='text/javascript'
           src={squareSDKUrl}
+        />
+        {/* Add immediate check for Square SDK loading */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Check Square SDK loading with timeout
+              setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                  if (window.Square) {
+                    console.log('✅ Square SDK loaded and available');
+                  } else {
+                    console.error('❌ Square SDK not available after timeout');
+                    console.error('📋 Debug info:', {
+                      url: '${squareSDKUrl}',
+                      userAgent: navigator.userAgent,
+                      location: window.location.href
+                    });
+                  }
+                }
+              }, 2000);
+            `,
+          }}
         />
       </head>
       <body
