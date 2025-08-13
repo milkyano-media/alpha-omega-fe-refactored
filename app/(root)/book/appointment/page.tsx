@@ -148,6 +148,16 @@ export default function AppointmentBooking() {
     });
   }, [showPaymentForm, processingPayment, creatingBooking, paymentInProgress, timeAutoSelected, selectedTime, selectedService]);
 
+  // Memoized cancel payment callback
+  const cancelPaymentCallback = useCallback(() => {
+    // Don't allow canceling during payment processing
+    if (processingPayment || creatingBooking) {
+      console.log('Cannot cancel during payment processing');
+      return;
+    }
+    setShowPaymentFormSafely(false);
+  }, [processingPayment, creatingBooking, setShowPaymentFormSafely]);
+
   // Handle payment process
   const handlePayment = async () => {
     // Immediate check to prevent double clicks
@@ -944,7 +954,8 @@ export default function AppointmentBooking() {
             <h2 className="text-base font-semibold mb-3">SUMMARY</h2>
             {renderBookingStatus()}
 
-            {showPaymentForm ? (
+            {/* Always render PaymentForm but control visibility with CSS to prevent unmounting */}
+            <div style={{ display: showPaymentForm ? 'block' : 'none' }}>
               <PaymentForm
                 key="payment-form-stable"
                 squareCard={squareCard}
@@ -954,30 +965,22 @@ export default function AppointmentBooking() {
                 creatingBooking={creatingBooking}
                 paymentError={paymentError}
                 handlePayment={handlePayment}
-                onCancelPayment={() => {
-                  // Don't allow canceling during payment processing
-                  if (processingPayment || creatingBooking) {
-                    console.log('Cannot cancel during payment processing');
-                    return;
-                  }
-                  setShowPaymentFormSafely(false);
-                }}
+                onCancelPayment={cancelPaymentCallback}
                 selectedServices={selectedServices}
                 onSquareCardReady={handleSquareCardReady}
                 onSquareCardError={handleSquareCardError}
               />
-            ) : (
-              <>
-                <BookingSummary
-                  selectedService={selectedService}
-                  selectedTime={selectedTime}
-                  error={error}
-                  onProceedToPayment={handleShowPaymentForm}
-                  showPaymentForm={showPaymentForm}
-                  selectedServices={selectedServices}
-                />
-
-              </>
+            </div>
+            
+            {!showPaymentForm && (
+              <BookingSummary
+                selectedService={selectedService}
+                selectedTime={selectedTime}
+                error={error}
+                onProceedToPayment={handleShowPaymentForm}
+                showPaymentForm={showPaymentForm}
+                selectedServices={selectedServices}
+              />
             )}
           </div>
         </div>
