@@ -90,6 +90,26 @@ export default function AppointmentBooking() {
   // Track used idempotency keys to prevent reuse within session
   const [usedIdempotencyKeys, setUsedIdempotencyKeys] = useState<Set<string>>(new Set());
 
+  // Protected function to prevent hiding payment form during payment processing
+  const setShowPaymentFormSafely = useCallback((show: boolean) => {
+    // If trying to hide payment form during payment, prevent it
+    if (!show && (processingPayment || creatingBooking || paymentInProgress)) {
+      console.error('🚨 BLOCKED: Attempted to hide payment form during payment processing');
+      console.error('Payment states:', { processingPayment, creatingBooking, paymentInProgress });
+      return;
+    }
+    console.log('💡 Setting showPaymentForm to:', show);
+    setShowPaymentForm(show);
+  }, [processingPayment, creatingBooking, paymentInProgress]);
+
+  // Monitor payment form state changes during payment
+  useEffect(() => {
+    if ((processingPayment || creatingBooking || paymentInProgress) && !showPaymentForm) {
+      console.error('CRITICAL: Payment form hidden during payment processing - restoring');
+      setShowPaymentForm(true);
+    }
+  }, [showPaymentForm, processingPayment, creatingBooking, paymentInProgress]);
+
   // Handle payment process
   const handlePayment = async () => {
     // Immediate check to prevent double clicks
@@ -477,8 +497,10 @@ export default function AppointmentBooking() {
           // Mark that time was auto-selected
           setTimeAutoSelected(true);
           
-          // Auto-show payment form since time is already selected
-          setShowPaymentForm(true);
+          // Auto-show payment form since time is already selected (only if not processing payment)
+          if (!processingPayment && !creatingBooking && !paymentInProgress) {
+            setShowPaymentFormSafely(true);
+          }
           
           // Clean up the auto-selection flags
           localStorage.removeItem("selectedTimeSlot");
@@ -490,7 +512,7 @@ export default function AppointmentBooking() {
         }
       }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, processingPayment, creatingBooking, paymentInProgress, setShowPaymentFormSafely]);
 
   // Services and barbers are now fetched when "Add Additional Service" button is clicked
 
@@ -717,7 +739,14 @@ export default function AppointmentBooking() {
       setError("Please select a service and time first");
       return;
     }
-    setShowPaymentForm(true);
+    
+    // Don't allow showing payment form during payment processing
+    if (processingPayment || creatingBooking || paymentInProgress) {
+      console.log('Cannot show payment form during payment processing');
+      return;
+    }
+    
+    setShowPaymentFormSafely(true);
   };
 
 
@@ -802,7 +831,7 @@ export default function AppointmentBooking() {
                     }
                     
                     setTimeAutoSelected(false);
-                    setShowPaymentForm(false);
+                    setShowPaymentFormSafely(false);
                     setSelectedTime(null);
                     // Clear any payment form errors
                     setPaymentError(null);
@@ -843,7 +872,7 @@ export default function AppointmentBooking() {
 
             {showPaymentForm ? (
               <PaymentForm
-                key="payment-form"
+                key="payment-form-stable"
                 squareCard={squareCard}
                 selectedService={selectedService}
                 selectedTime={selectedTime}
@@ -857,7 +886,7 @@ export default function AppointmentBooking() {
                     console.log('Cannot cancel during payment processing');
                     return;
                   }
-                  setShowPaymentForm(false);
+                  setShowPaymentFormSafely(false);
                 }}
                 selectedServices={selectedServices}
                 onSquareCardReady={handleSquareCardReady}
