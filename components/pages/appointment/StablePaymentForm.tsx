@@ -128,7 +128,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
         console.log('✅ Square payments instance created');
         
         // Retry card creation with timeout handling
-        let card;
+        let card: Square.Card | undefined;
         let cardRetries = 0;
         const maxCardRetries = 3;
         
@@ -138,7 +138,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
             
             // Create card with timeout
             const cardPromise = payments.card();
-            const timeoutPromise = new Promise((_, reject) =>
+            const timeoutPromise = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('Card creation timeout after 10 seconds')), 10000)
             );
             
@@ -157,6 +157,10 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
             console.log(`⏳ Retrying card creation in 2 seconds...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
+        }
+        
+        if (!card) {
+          throw new Error('Failed to create Square card');
         }
         
         // Wait for DOM element
@@ -184,7 +188,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
         while (attachRetries < maxAttachRetries) {
           try {
             const attachPromise = card.attach(`#${containerId.current}`);
-            const attachTimeoutPromise = new Promise((_, reject) =>
+            const attachTimeoutPromise = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('Card attach timeout after 8 seconds')), 8000)
             );
             
