@@ -55,9 +55,23 @@ export default function AppointmentBooking() {
 
   // Square Payment SDK states
   const [squareCard, setSquareCard] = useState<Square.Card | null>(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [_showPaymentForm, _setShowPaymentForm] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  // Wrapper to track all direct calls to setShowPaymentForm
+  const setShowPaymentForm = useCallback((show: boolean) => {
+    const stack = new Error().stack;
+    console.log('🔍 DIRECT setShowPaymentForm called:', { 
+      show, 
+      currentValue: _showPaymentForm,
+      caller: stack?.split('\n')[2]?.trim() || 'unknown'
+    });
+    _setShowPaymentForm(show);
+  }, [_showPaymentForm]);
+
+  // Use the internal state value
+  const showPaymentForm = _showPaymentForm;
 
   // Handle Square card ready callback from PaymentForm
   const handleSquareCardReady = useCallback((card: Square.Card) => {
@@ -92,23 +106,47 @@ export default function AppointmentBooking() {
 
   // Protected function to prevent hiding payment form during payment processing
   const setShowPaymentFormSafely = useCallback((show: boolean) => {
+    // Get stack trace to see who's calling this
+    const stack = new Error().stack;
+    console.log('💡 setShowPaymentFormSafely called:', { 
+      show, 
+      processingPayment, 
+      creatingBooking, 
+      paymentInProgress,
+      caller: stack?.split('\n')[2]?.trim() || 'unknown'
+    });
+    
     // If trying to hide payment form during payment, prevent it
     if (!show && (processingPayment || creatingBooking || paymentInProgress)) {
       console.error('🚨 BLOCKED: Attempted to hide payment form during payment processing');
       console.error('Payment states:', { processingPayment, creatingBooking, paymentInProgress });
+      console.error('Call stack:', stack);
       return;
     }
-    console.log('💡 Setting showPaymentForm to:', show);
+    
     setShowPaymentForm(show);
-  }, [processingPayment, creatingBooking, paymentInProgress]);
+  }, [processingPayment, creatingBooking, paymentInProgress, setShowPaymentForm]);
 
   // Monitor payment form state changes during payment
   useEffect(() => {
     if ((processingPayment || creatingBooking || paymentInProgress) && !showPaymentForm) {
       console.error('CRITICAL: Payment form hidden during payment processing - restoring');
+      console.log('🔧 Restoring payment form during payment processing');
       setShowPaymentForm(true);
     }
-  }, [showPaymentForm, processingPayment, creatingBooking, paymentInProgress]);
+  }, [showPaymentForm, processingPayment, creatingBooking, paymentInProgress, setShowPaymentForm]);
+
+  // Debug: Monitor showPaymentForm changes
+  useEffect(() => {
+    console.log('🔍 showPaymentForm changed to:', showPaymentForm, {
+      processingPayment,
+      creatingBooking,
+      paymentInProgress,
+      timeAutoSelected,
+      selectedTime: !!selectedTime,
+      selectedService: !!selectedService
+    });
+  }, [showPaymentForm, processingPayment, creatingBooking, paymentInProgress, timeAutoSelected, selectedTime, selectedService]);
 
   // Handle payment process
   const handlePayment = async () => {
@@ -672,6 +710,15 @@ export default function AppointmentBooking() {
   // Use local date formatting to prevent timezone conversion issues
   const selectedDateString = dayjs(selectedDate).format("YYYY-MM-DD");
 
+  // Debug: Track selectedDateString changes
+  useEffect(() => {
+    console.log('📅 selectedDateString changed to:', selectedDateString, {
+      showPaymentForm,
+      timeAutoSelected,
+      selectedTime: !!selectedTime
+    });
+  }, [selectedDateString, showPaymentForm, timeAutoSelected, selectedTime]);
+
   // Debug: Log the selected date conversion
   console.log("Selected date (local):", selectedDate);
   console.log("Selected date string:", selectedDateString);
@@ -680,8 +727,20 @@ export default function AppointmentBooking() {
   useEffect(() => {
     if (!availabilityData) return;
 
+    // CRITICAL: Don't modify times when payment form is active to prevent component unmounting
+    if (showPaymentForm) {
+      console.log('⚠️ Skipping date change processing - payment form is active');
+      return;
+    }
+
     // Get the key for the selected date
     const dateKey = selectedDateString;
+
+    console.log('📅 Processing date change for:', dateKey, {
+      timeAutoSelected,
+      showPaymentForm,
+      selectedTime: !!selectedTime
+    });
 
     // Get available times for this date from the existing data
     const availabilities =
@@ -699,10 +758,11 @@ export default function AppointmentBooking() {
     
     // Only reset selected time if it's not auto-selected from closest-time barber
     if (!timeAutoSelected) {
+      console.log('🔄 Resetting selectedTime due to date change');
       setSelectedTime(null); // Reset selected time when date changes
     }
     // Note: We use selectedDateString instead of selectedDate to avoid complex expression warning
-  }, [availabilityData, selectedDateString, timeAutoSelected]);
+  }, [availabilityData, selectedDateString, timeAutoSelected, showPaymentForm, selectedTime]);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
