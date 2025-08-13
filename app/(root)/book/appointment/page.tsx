@@ -61,15 +61,28 @@ export default function AppointmentBooking() {
 
   // Handle Square card ready callback from PaymentForm
   const handleSquareCardReady = useCallback((card: Square.Card) => {
+    // Don't update Square card during payment processing
+    if (processingPayment || creatingBooking) {
+      console.log('Prevented Square card update during payment processing');
+      return;
+    }
+    
     setSquareCard(card);
     setPaymentError(null); // Clear any previous errors
-  }, []);
+  }, [processingPayment, creatingBooking]);
 
   // Handle Square card error callback from PaymentForm
   const handleSquareCardError = useCallback((error: string) => {
     setPaymentError(error);
+    
+    // Don't clear Square card during payment processing
+    if (processingPayment || creatingBooking) {
+      console.log('Prevented Square card clearing during payment processing');
+      return;
+    }
+    
     setSquareCard(null);
-  }, []);
+  }, [processingPayment, creatingBooking]);
 
   // Track if payment is in progress to prevent double submissions
   const [paymentInProgress, setPaymentInProgress] = useState(false);
@@ -108,6 +121,10 @@ export default function AppointmentBooking() {
     setPaymentError(null);
 
     try {
+      // Check if Square card is still valid before proceeding
+      if (!squareCard || typeof squareCard.tokenize !== 'function') {
+        throw new Error('Square payment form is not available. Please refresh the page and try again.');
+      }
       // Calculate total amount and 50% deposit for all selected services
       const subtotalAmount = selectedServices.reduce(
         (total, service) => total + service.price_amount,
@@ -156,8 +173,23 @@ export default function AppointmentBooking() {
         sellerKeyedIn: false, // Adding the missing required field
       };
 
-      // Tokenize the payment method
-      const tokenResult = await squareCard.tokenize(verificationDetails);
+      // Tokenize the payment method with additional error handling
+      let tokenResult;
+      try {
+        // Double-check card is still valid right before tokenization
+        if (!squareCard || typeof squareCard.tokenize !== 'function') {
+          throw new Error('Square card became invalid before tokenization');
+        }
+        
+        console.log('Starting Square card tokenization...');
+        tokenResult = await squareCard.tokenize(verificationDetails);
+        console.log('Square tokenization completed:', tokenResult.status);
+      } catch (tokenizeError: any) {
+        if (tokenizeError.message?.includes('destroyed') || tokenizeError.name?.includes('Destroyed')) {
+          throw new Error('Payment form was reset during processing. Please try again.');
+        }
+        throw tokenizeError;
+      }
 
       if (tokenResult.status === "OK") {
         // Process the payment with the token
@@ -763,13 +795,20 @@ export default function AppointmentBooking() {
               <div className="text-center">
                 <button 
                   onClick={() => {
+                    // Don't allow changing time during payment processing
+                    if (processingPayment || creatingBooking) {
+                      console.log('Cannot change time during payment processing');
+                      return;
+                    }
+                    
                     setTimeAutoSelected(false);
                     setShowPaymentForm(false);
                     setSelectedTime(null);
                     // Clear any payment form errors
                     setPaymentError(null);
                   }}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={processingPayment || creatingBooking}
                 >
                   Choose a different time instead
                 </button>
@@ -812,7 +851,14 @@ export default function AppointmentBooking() {
                 creatingBooking={creatingBooking}
                 paymentError={paymentError}
                 handlePayment={handlePayment}
-                onCancelPayment={() => setShowPaymentForm(false)}
+                onCancelPayment={() => {
+                  // Don't allow canceling during payment processing
+                  if (processingPayment || creatingBooking) {
+                    console.log('Cannot cancel during payment processing');
+                    return;
+                  }
+                  setShowPaymentForm(false);
+                }}
                 selectedServices={selectedServices}
                 onSquareCardReady={handleSquareCardReady}
                 onSquareCardError={handleSquareCardError}
