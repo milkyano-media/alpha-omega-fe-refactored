@@ -20,7 +20,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col gap-20">
-      <section className="bg-[url('/bg/main-1.png')] bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white md:pt-20">
+      <section className="bg-black bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white md:pt-20">
         <div className="w-full md:w-max">
           <Image
             src={"/logo/main.png"}
@@ -45,11 +45,12 @@ export default function Home() {
           BOOK NOW
         </Button>
 
-        <div className="flex gap-8 p-8">
+        <div className="flex justify-center items-center gap-8 p-8">
           <a
             href="https://www.instagram.com/alpha.omega_mens.grooming"
             target="_blank"
             rel="noopener noreferrer"
+            className="justify-center items-center flex"
           >
             <button>
               <svg
