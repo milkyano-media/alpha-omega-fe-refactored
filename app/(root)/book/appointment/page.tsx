@@ -3,12 +3,21 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Service, TimeSlot, BookingService, AvailabilityResponse } from "@/lib/booking-service";
+import {
+  Service,
+  TimeSlot,
+  BookingService,
+  AvailabilityResponse,
+} from "@/lib/booking-service";
 import { StablePaymentForm } from "@/components/pages/appointment/StablePaymentForm";
-import { BookingSummary, DateTimeSelector } from "@/components/pages/appointment";
+import {
+  BookingSummary,
+  DateTimeSelector,
+} from "@/components/pages/appointment";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { MarqueeItems } from "@/components/navbar";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -16,7 +25,7 @@ dayjs.extend(timezone);
 export default function CleanAppointmentPage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
-  
+
   // Core states
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
@@ -28,11 +37,14 @@ export default function CleanAppointmentPage() {
 
   // Availability states
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [availabilityData, setAvailabilityData] = useState<AvailabilityResponse | null>(null);
+  const [availabilityData, setAvailabilityData] =
+    useState<AvailabilityResponse | null>(null);
   const [availableTimes, setAvailableTimes] = useState<TimeSlot[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
-  const [monthCache, setMonthCache] = useState<Record<string, AvailabilityResponse>>({});
+  const [monthCache, setMonthCache] = useState<
+    Record<string, AvailabilityResponse>
+  >({});
   const [showManualTimeSelection, setShowManualTimeSelection] = useState(false);
 
   // Redirect if not authenticated
@@ -69,25 +81,28 @@ export default function CleanAppointmentPage() {
     // Check for auto-selected time from closest-time barber selection
     const autoSelectedTimeFlag = localStorage.getItem("autoSelectedTime");
     const selectedBarberId = localStorage.getItem("selectedBarberId");
-    
+
     if (autoSelectedTimeFlag === "true") {
       const savedTimeSlot = localStorage.getItem("selectedTimeSlot");
       if (savedTimeSlot) {
         try {
           const parsedTimeSlot = JSON.parse(savedTimeSlot);
           console.log("Loading auto-selected time slot:", parsedTimeSlot);
-          
+
           setSelectedTime(parsedTimeSlot);
           setTimeAutoSelected(true);
           setShowPaymentForm(true);
-          
+
           // Update selectedDate to match the auto-selected time's date
           if (parsedTimeSlot.start_at) {
             const autoSelectedDate = new Date(parsedTimeSlot.start_at);
             setSelectedDate(autoSelectedDate);
-            console.log("Updated selectedDate to match auto-selected time:", autoSelectedDate.toISOString());
+            console.log(
+              "Updated selectedDate to match auto-selected time:",
+              autoSelectedDate.toISOString(),
+            );
           }
-          
+
           // Clean up the auto-selection flags
           localStorage.removeItem("selectedTimeSlot");
           localStorage.removeItem("autoSelectedTime");
@@ -99,15 +114,18 @@ export default function CleanAppointmentPage() {
       }
     } else if (selectedBarberId && autoSelectedTimeFlag !== "true") {
       // Manual barber selection - show manual time selection immediately
-      console.log("Manual barber selection detected, enabling manual time selection", {
-        selectedBarberId,
-        autoSelectedTimeFlag
-      });
+      console.log(
+        "Manual barber selection detected, enabling manual time selection",
+        {
+          selectedBarberId,
+          autoSelectedTimeFlag,
+        },
+      );
       setShowManualTimeSelection(true);
     } else {
       console.log("No manual selection triggered", {
         hasSelectedBarberId: !!selectedBarberId,
-        autoSelectedTimeFlag
+        autoSelectedTimeFlag,
       });
     }
   }, [isAuthenticated, router]);
@@ -129,16 +147,16 @@ export default function CleanAppointmentPage() {
 
   // Fetch availability when service changes or when manual selection is requested
   useEffect(() => {
-    console.log('🔍 Availability useEffect check:', {
+    console.log("🔍 Availability useEffect check:", {
       selectedService: !!selectedService,
       showManualTimeSelection,
-      serviceVariationId: selectedService?.service_variation_id
+      serviceVariationId: selectedService?.service_variation_id,
     });
-    
+
     if (!selectedService || !showManualTimeSelection) {
-      console.log('⏭️ Skipping availability fetch:', {
+      console.log("⏭️ Skipping availability fetch:", {
         noService: !selectedService,
-        noManualSelection: !showManualTimeSelection
+        noManualSelection: !showManualTimeSelection,
       });
       return;
     }
@@ -150,7 +168,10 @@ export default function CleanAppointmentPage() {
       try {
         const selectedMonth = selectedDate.getMonth() + 1;
         const selectedYear = selectedDate.getFullYear();
-        const cacheKey = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
+        const cacheKey = `${selectedYear}-${String(selectedMonth).padStart(
+          2,
+          "0",
+        )}`;
 
         // Check cache first
         if (monthCache[cacheKey]) {
@@ -164,30 +185,48 @@ export default function CleanAppointmentPage() {
 
           // Update time slots for selected date
           const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
-          const availabilities = cachedData.availabilities_by_date?.[dateKey] || [];
-          availabilities.sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+          const availabilities =
+            cachedData.availabilities_by_date?.[dateKey] || [];
+          availabilities.sort(
+            (a, b) =>
+              new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+          );
           setAvailableTimes(availabilities);
           return;
         }
 
         // Fetch new data - get full month range, but only future dates
-        console.log('Raw date inputs:', { selectedYear, selectedMonth });
-        
+        console.log("Raw date inputs:", { selectedYear, selectedMonth });
+
         // Create dates in UTC to avoid timezone conversion issues
         // But ensure startDate is not in the past - Square only allows future bookings
         const today = new Date();
-        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0));
-        
-        const monthStart = new Date(Date.UTC(selectedYear, selectedMonth - 1, 1, 0, 0, 0, 0));
+        const todayUTC = new Date(
+          Date.UTC(
+            today.getFullYear(),
+            today.getMonth(),
+            today.getDate(),
+            0,
+            0,
+            0,
+            0,
+          ),
+        );
+
+        const monthStart = new Date(
+          Date.UTC(selectedYear, selectedMonth - 1, 1, 0, 0, 0, 0),
+        );
         const startDate = monthStart < todayUTC ? todayUTC : monthStart;
-        const endDate = new Date(Date.UTC(selectedYear, selectedMonth, 0, 23, 59, 59, 999));
-        
-        console.log('UTC dates created:', {
+        const endDate = new Date(
+          Date.UTC(selectedYear, selectedMonth, 0, 23, 59, 59, 999),
+        );
+
+        console.log("UTC dates created:", {
           startDate: startDate.toISOString(),
-          endDate: endDate.toISOString()
+          endDate: endDate.toISOString(),
         });
 
-        console.log('Date calculation debug:', {
+        console.log("Date calculation debug:", {
           selectedDate: selectedDate.toISOString(),
           selectedMonth,
           selectedYear,
@@ -195,19 +234,23 @@ export default function CleanAppointmentPage() {
           todayUTC: todayUTC.toISOString(),
           monthStart: monthStart.toISOString(),
           startDate: startDate.toISOString(),
-          endDate: endDate.toISOString()
+          endDate: endDate.toISOString(),
         });
 
-        console.log(`Fetching availability for ${selectedService.service_variation_id} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        console.log(
+          `Fetching availability for ${
+            selectedService.service_variation_id
+          } from ${startDate.toISOString()} to ${endDate.toISOString()}`,
+        );
 
         const data = await BookingService.searchAvailability(
           selectedService.service_variation_id,
           startDate,
-          endDate
+          endDate,
         );
 
         // Cache the result
-        setMonthCache(prev => ({ ...prev, [cacheKey]: data }));
+        setMonthCache((prev) => ({ ...prev, [cacheKey]: data }));
         setAvailabilityData(data);
 
         // Extract available dates
@@ -217,9 +260,11 @@ export default function CleanAppointmentPage() {
         // Update time slots for selected date
         const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
         const availabilities = data.availabilities_by_date?.[dateKey] || [];
-        availabilities.sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+        availabilities.sort(
+          (a, b) =>
+            new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+        );
         setAvailableTimes(availabilities);
-
       } catch (err: any) {
         console.error("Error fetching availability:", err);
         setError("Failed to load available time slots. Please try again.");
@@ -236,8 +281,11 @@ export default function CleanAppointmentPage() {
     if (!availabilityData || !showManualTimeSelection) return;
 
     const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
-    const availabilities = availabilityData.availabilities_by_date?.[dateKey] || [];
-    availabilities.sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+    const availabilities =
+      availabilityData.availabilities_by_date?.[dateKey] || [];
+    availabilities.sort(
+      (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+    );
     setAvailableTimes(availabilities);
   }, [selectedDate, availabilityData, showManualTimeSelection]);
 
@@ -255,7 +303,6 @@ export default function CleanAppointmentPage() {
     setTimeAutoSelected(false);
   };
 
-
   const handleShowPaymentForm = () => {
     if (!selectedService || !selectedTime || !user) {
       setError("Please select a service and time first");
@@ -270,9 +317,12 @@ export default function CleanAppointmentPage() {
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-medium text-green-800">Closest Available Time Selected</p>
+              <p className="font-medium text-green-800">
+                Closest Available Time Selected
+              </p>
               <p className="text-sm text-green-600 mt-1">
-                Your appointment is automatically selected for the earliest available time
+                Your appointment is automatically selected for the earliest
+                available time
               </p>
               <div className="mt-2 p-2 bg-white rounded border">
                 <p className="text-sm font-medium">
@@ -282,9 +332,9 @@ export default function CleanAppointmentPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="text-center mt-3">
-            <button 
+            <button
               onClick={() => router.push("/book/barbers")}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
@@ -309,10 +359,14 @@ export default function CleanAppointmentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto mt-28">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Book Your Appointment</h1>
-          <p className="mt-2 text-gray-600">Complete your booking and payment</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Book Your Appointment
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Complete your booking and payment
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -320,16 +374,22 @@ export default function CleanAppointmentPage() {
           <div className="space-y-6">
             {timeAutoSelected && !showManualTimeSelection ? (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold mb-4">Your Selected Time</h2>
+                <h2 className="text-xl font-semibold mb-4">
+                  Your Selected Time
+                </h2>
                 {renderBookingStatus()}
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold mb-4">Select Your Preferred Time</h2>
-                
+                <h2 className="text-xl font-semibold mb-4">
+                  Select Your Preferred Time
+                </h2>
+
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-gray-600">Select your preferred date and time</span>
+                    <span className="text-sm text-gray-600">
+                      Select your preferred date and time
+                    </span>
                     <button
                       onClick={() => router.push("/book/barbers")}
                       className="text-sm text-blue-600 hover:text-blue-800"
@@ -337,7 +397,7 @@ export default function CleanAppointmentPage() {
                       Back to Barber Selection
                     </button>
                   </div>
-                  
+
                   <DateTimeSelector
                     selectedDate={selectedDate}
                     onDateChange={handleDateChange}
@@ -353,21 +413,30 @@ export default function CleanAppointmentPage() {
             )}
           </div>
 
+          <div className="overflow-hidden whitespace-nowrap md:hidden -mx-6">
+            <div className="flex animate-marquee">
+              {/* First set of images */}
+              <MarqueeItems />
+              {/* Duplicate set for seamless loop */}
+              <MarqueeItems />
+            </div>
+          </div>
+
           {/* Right column - Booking summary and payment */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-base font-semibold mb-3">BOOKING SUMMARY</h2>
-            
+
             {showPaymentForm ? (
               <StablePaymentForm
                 selectedService={selectedService}
                 selectedTime={selectedTime}
                 selectedServices={selectedServices}
                 onPaymentComplete={() => {
-                  console.log('✅ Payment completed successfully');
+                  console.log("✅ Payment completed successfully");
                   setBookingConfirmed(true);
                 }}
                 onCancel={() => {
-                  console.log('❌ Payment cancelled');
+                  console.log("❌ Payment cancelled");
                   setShowPaymentForm(false);
                 }}
               />
@@ -381,6 +450,15 @@ export default function CleanAppointmentPage() {
                 selectedServices={selectedServices}
               />
             )}
+          </div>
+        </div>
+
+        <div className="overflow-hidden whitespace-nowrap hidden md:block mt-4">
+          <div className="flex animate-marquee">
+            {/* First set of images */}
+            <MarqueeItems />
+            {/* Duplicate set for seamless loop */}
+            <MarqueeItems />
           </div>
         </div>
       </div>
