@@ -3,10 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Service, TimeSlot } from "@/lib/booking-service";
+import { Service, TimeSlot, BookingService, AvailabilityResponse } from "@/lib/booking-service";
 import { StablePaymentForm } from "@/components/pages/appointment/StablePaymentForm";
-import { BookingSummary } from "@/components/pages/appointment";
+import { BookingSummary, DateTimeSelector } from "@/components/pages/appointment";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export default function CleanAppointmentPage() {
   const router = useRouter();
@@ -20,6 +25,15 @@ export default function CleanAppointmentPage() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+
+  // Availability states
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [availabilityData, setAvailabilityData] = useState<AvailabilityResponse | null>(null);
+  const [availableTimes, setAvailableTimes] = useState<TimeSlot[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [monthCache, setMonthCache] = useState<Record<string, AvailabilityResponse>>({});
+  const [showManualTimeSelection, setShowManualTimeSelection] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -54,6 +68,8 @@ export default function CleanAppointmentPage() {
 
     // Check for auto-selected time from closest-time barber selection
     const autoSelectedTimeFlag = localStorage.getItem("autoSelectedTime");
+    const selectedBarberId = localStorage.getItem("selectedBarberId");
+    
     if (autoSelectedTimeFlag === "true") {
       const savedTimeSlot = localStorage.getItem("selectedTimeSlot");
       if (savedTimeSlot) {
@@ -74,6 +90,10 @@ export default function CleanAppointmentPage() {
           localStorage.removeItem("autoSelectedTime");
         }
       }
+    } else if (selectedBarberId && !autoSelectedTimeFlag) {
+      // Manual barber selection - show manual time selection immediately
+      console.log("Manual barber selection detected, enabling manual time selection");
+      setShowManualTimeSelection(true);
     }
   }, [isAuthenticated, router]);
 
@@ -91,6 +111,107 @@ export default function CleanAppointmentPage() {
       }, 500);
     }
   }, [bookingConfirmed, router]);
+
+  // Fetch availability when service changes or when manual selection is requested
+  useEffect(() => {
+    if (!selectedService || !showManualTimeSelection) return;
+
+    const fetchAvailabilityData = async () => {
+      setIsLoadingAvailability(true);
+      setError(null);
+
+      try {
+        const selectedMonth = selectedDate.getMonth() + 1;
+        const selectedYear = selectedDate.getFullYear();
+        const cacheKey = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
+
+        // Check cache first
+        if (monthCache[cacheKey]) {
+          console.log(`Using cached availability data for ${cacheKey}`);
+          const cachedData = monthCache[cacheKey];
+          setAvailabilityData(cachedData);
+
+          // Extract available dates
+          const dates = Object.keys(cachedData.availabilities_by_date || {});
+          setAvailableDates(dates);
+
+          // Update time slots for selected date
+          const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
+          const availabilities = cachedData.availabilities_by_date?.[dateKey] || [];
+          availabilities.sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+          setAvailableTimes(availabilities);
+          return;
+        }
+
+        // Fetch new data
+        const startDate = new Date(selectedYear, selectedMonth - 1, 1);
+        const endDate = new Date(selectedYear, selectedMonth, 0);
+
+        console.log(`Fetching availability for ${selectedService.service_variation_id} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+        const data = await BookingService.searchAvailability(
+          selectedService.service_variation_id,
+          startDate,
+          endDate
+        );
+
+        // Cache the result
+        setMonthCache(prev => ({ ...prev, [cacheKey]: data }));
+        setAvailabilityData(data);
+
+        // Extract available dates
+        const dates = Object.keys(data.availabilities_by_date || {});
+        setAvailableDates(dates);
+
+        // Update time slots for selected date
+        const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
+        const availabilities = data.availabilities_by_date?.[dateKey] || [];
+        availabilities.sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+        setAvailableTimes(availabilities);
+
+      } catch (err: any) {
+        console.error("Error fetching availability:", err);
+        setError("Failed to load available time slots. Please try again.");
+      } finally {
+        setIsLoadingAvailability(false);
+      }
+    };
+
+    fetchAvailabilityData();
+  }, [selectedService, selectedDate, showManualTimeSelection, monthCache]);
+
+  // Update available times when selected date changes
+  useEffect(() => {
+    if (!availabilityData || !showManualTimeSelection) return;
+
+    const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
+    const availabilities = availabilityData.availabilities_by_date?.[dateKey] || [];
+    availabilities.sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+    setAvailableTimes(availabilities);
+  }, [selectedDate, availabilityData, showManualTimeSelection]);
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(null);
+  };
+
+  const handleMonthChange = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleTimeSelection = (time: TimeSlot | null) => {
+    setSelectedTime(time);
+    setTimeAutoSelected(false);
+  };
+
+  const handleToggleManualSelection = () => {
+    setShowManualTimeSelection(!showManualTimeSelection);
+    if (!showManualTimeSelection) {
+      // When switching to manual, clear the auto-selected time
+      setSelectedTime(null);
+      setTimeAutoSelected(false);
+    }
+  };
 
   const handleShowPaymentForm = () => {
     if (!selectedService || !selectedTime || !user) {
@@ -121,11 +242,7 @@ export default function CleanAppointmentPage() {
           
           <div className="text-center mt-3">
             <button 
-              onClick={() => {
-                setTimeAutoSelected(false);
-                setShowPaymentForm(false);
-                setSelectedTime(null);
-              }}
+              onClick={handleToggleManualSelection}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               Choose a different time instead
@@ -158,24 +275,59 @@ export default function CleanAppointmentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left column - Time selection or selected time display */}
           <div className="space-y-6">
-            {timeAutoSelected ? (
+            {timeAutoSelected && !showManualTimeSelection ? (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-xl font-semibold mb-4">Your Selected Time</h2>
                 {renderBookingStatus()}
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold mb-4">Select Time</h2>
-                <p className="text-gray-600">
-                  Manual time selection is not implemented in this simplified version.
-                  Please use the closest-time barber selection from the barbers page.
-                </p>
-                <button
-                  onClick={() => router.push("/book/barbers")}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Go Back to Select Barber
-                </button>
+                <h2 className="text-xl font-semibold mb-4">Select Your Preferred Time</h2>
+                
+                {!showManualTimeSelection ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">
+                      Would you like to choose a specific time slot?
+                    </p>
+                    <button
+                      onClick={handleToggleManualSelection}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Choose Time Manually
+                    </button>
+                    <div className="mt-4">
+                      <button
+                        onClick={() => router.push("/book/barbers")}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Back to Barber Selection
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm text-gray-600">Select your preferred date and time</span>
+                      <button
+                        onClick={() => setShowManualTimeSelection(false)}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Cancel Manual Selection
+                      </button>
+                    </div>
+                    
+                    <DateTimeSelector
+                      selectedDate={selectedDate}
+                      onDateChange={handleDateChange}
+                      onMonthChange={handleMonthChange}
+                      onTimeSelect={handleTimeSelection}
+                      selectedTime={selectedTime}
+                      availableTimes={availableTimes}
+                      availableDates={availableDates}
+                      isLoading={isLoadingAvailability}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
