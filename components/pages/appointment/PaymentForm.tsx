@@ -31,6 +31,26 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   onSquareCardReady,
   onSquareCardError,
 }) => {
+  // Debug: Track component mounting/unmounting
+  React.useEffect(() => {
+    console.log('🔄 PaymentForm component mounted');
+    return () => {
+      console.log('💀 PaymentForm component unmounted');
+    };
+  }, []);
+
+  // Debug: Track prop changes that might cause re-renders
+  React.useEffect(() => {
+    console.log('🔍 PaymentForm props changed:', {
+      selectedService: selectedService?.id,
+      selectedTime: selectedTime?.start_at,
+      selectedServices: selectedServices.length,
+      processingPayment,
+      creatingBooking,
+      squareCard: !!squareCard
+    });
+  }, [selectedService, selectedTime, selectedServices, processingPayment, creatingBooking, squareCard]);
+
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const squareCardRef = useRef<Square.Card | null>(null);
   const initializationAttempted = useRef(false);
