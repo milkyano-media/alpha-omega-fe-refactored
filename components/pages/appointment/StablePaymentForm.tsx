@@ -76,18 +76,39 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     const initializeSquare = async () => {
       try {
         console.log('🔄 Starting Square initialization...');
+        console.log('📋 Environment debug:', {
+          NEXT_PUBLIC_SQUARE_ENVIRONMENT: process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT,
+          NEXT_PUBLIC_SQUARE_APP_ID: process.env.NEXT_PUBLIC_SQUARE_APP_ID?.substring(0, 20) + '...',
+          NEXT_PUBLIC_SQUARE_LOCATION_ID: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID,
+          windowSquare: typeof window !== 'undefined' ? !!window.Square : 'not in browser',
+          documentReadyState: typeof document !== 'undefined' ? document.readyState : 'not in browser'
+        });
         
-        // Wait for Square SDK
+        // Wait for Square SDK with extended timeout for sandbox
         let retries = 0;
-        while (!window.Square && retries < 10) {
-          console.log(`⏳ Waiting for Square SDK... attempt ${retries + 1}/10`);
-          await new Promise(resolve => setTimeout(resolve, 500));
+        const maxRetries = 20; // Increased from 10 to 20
+        const retryDelay = 750; // Increased from 500ms to 750ms
+        
+        while (!window.Square && retries < maxRetries) {
+          console.log(`⏳ Waiting for Square SDK... attempt ${retries + 1}/${maxRetries}`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
           retries++;
         }
 
         if (!window.Square) {
-          console.error('❌ Square SDK not available after 10 retries');
-          throw new Error('Square SDK failed to load');
+          const environment = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT;
+          const expectedUrl = environment === 'production' 
+            ? 'https://web.squarecdn.com/v1/square.js'
+            : 'https://sandbox.web.squarecdn.com/v1/square.js';
+          
+          console.error('❌ Square SDK not available after retries:', {
+            retries: maxRetries,
+            totalWaitTime: `${(maxRetries * retryDelay) / 1000}s`,
+            environment,
+            expectedUrl,
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+          });
+          throw new Error(`Square SDK failed to load after ${(maxRetries * retryDelay) / 1000} seconds. Check network connection and environment configuration.`);
         }
         
         console.log('✅ Square SDK detected, proceeding with initialization');
@@ -106,8 +127,37 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
         const payments = window.Square.payments(appId, locationId);
         console.log('✅ Square payments instance created');
         
-        const card = await payments.card();
-        console.log('✅ Square card instance created');
+        // Retry card creation with timeout handling
+        let card;
+        let cardRetries = 0;
+        const maxCardRetries = 3;
+        
+        while (cardRetries < maxCardRetries) {
+          try {
+            console.log(`🔄 Creating Square card instance... attempt ${cardRetries + 1}/${maxCardRetries}`);
+            
+            // Create card with timeout
+            const cardPromise = payments.card();
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Card creation timeout after 10 seconds')), 10000)
+            );
+            
+            card = await Promise.race([cardPromise, timeoutPromise]);
+            console.log('✅ Square card instance created');
+            break;
+          } catch (error: any) {
+            cardRetries++;
+            console.error(`❌ Card creation attempt ${cardRetries} failed:`, error.message);
+            
+            if (cardRetries >= maxCardRetries) {
+              throw new Error(`Failed to create Square card after ${maxCardRetries} attempts: ${error.message}`);
+            }
+            
+            // Wait before retry
+            console.log(`⏳ Retrying card creation in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
         
         // Wait for DOM element
         let domRetries = 0;
@@ -126,8 +176,33 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
         }
 
         console.log(`🔗 Attaching Square card to container: #${containerId.current}`);
-        await card.attach(`#${containerId.current}`);
-        console.log('✅ Square card attached to DOM');
+        
+        // Retry card attach with timeout
+        let attachRetries = 0;
+        const maxAttachRetries = 2;
+        
+        while (attachRetries < maxAttachRetries) {
+          try {
+            const attachPromise = card.attach(`#${containerId.current}`);
+            const attachTimeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Card attach timeout after 8 seconds')), 8000)
+            );
+            
+            await Promise.race([attachPromise, attachTimeoutPromise]);
+            console.log('✅ Square card attached to DOM');
+            break;
+          } catch (error: any) {
+            attachRetries++;
+            console.error(`❌ Card attach attempt ${attachRetries} failed:`, error.message);
+            
+            if (attachRetries >= maxAttachRetries) {
+              throw new Error(`Failed to attach Square card after ${maxAttachRetries} attempts: ${error.message}`);
+            }
+            
+            console.log(`⏳ Retrying card attach in 1 second...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
         
         setSquareCard(card);
         setSquareInitialized(true);
@@ -163,76 +238,84 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     };
   }, [squareCard]);
 
-  const createSingleBookingWithSegments = async (idempotencyKey: string, paymentInfo: any) => {
-    setCreatingBooking(true);
+  const createBookingWithoutPayment = async (idempotencyKey: string) => {
+    console.log('📅 Creating booking without payment first...');
+    
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Booking creation timeout after 30 seconds')), 30000)
+    );
+    
+    if (!selectedTime?.appointment_segments?.[0]?.team_member_id) {
+      throw new Error('No barber selected for the appointment');
+    }
+
+    // Prepare booking request for single booking with multiple segments
+    const appointmentSegments = selectedServices.map((service, index) => {
+      const segmentStartTime = index === 0 ? selectedTime.start_at : 
+        dayjs(selectedTime.start_at).add(
+          selectedServices.slice(0, index).reduce((total, s) => total + s.duration, 0), 
+          'minute'
+        ).toISOString();
+
+      return {
+        service_variation_id: service.service_variation_id,
+        team_member_id: selectedTime.appointment_segments[0].team_member_id,
+        duration_minutes: service.duration > 10000 ? service.duration / 60000 : service.duration,
+        start_at: segmentStartTime,
+        service_variation_version: 1,
+      };
+    });
+
+    const bookingRequest = {
+      start_at: selectedTime.start_at,
+      appointment_segments: appointmentSegments,
+      customerNote: `Multi-service booking - payment to be processed separately`,
+      idempotencyKey: idempotencyKey,
+      // No payment_info - create booking first
+    };
+
+    console.log('📋 Booking request (no payment):', JSON.stringify(bookingRequest, null, 2));
+    
+    // Create the booking using segments API with timeout
+    console.log('🔄 Calling BookingService.createBookingWithSegments...');
+    const bookingPromise = BookingService.createBookingWithSegments(bookingRequest);
+    const response = await Promise.race([bookingPromise, timeoutPromise]) as any;
+    console.log('📨 Booking API response:', JSON.stringify(response, null, 2));
+    
+    // Check the correct success field in the response
+    if (response.data?.success) {
+      console.log('✅ Booking created successfully (without payment)');
+      return response.data; // Return the data object which contains success and booking
+    } else {
+      console.error('❌ Booking creation failed - API returned success: false');
+      console.error('Response error:', response.data?.error || response.error);
+      throw new Error(response.data?.error || response.error || 'Failed to create booking');
+    }
+  };
+
+  const attachPaymentToBooking = async (bookingResponse: any, paymentInfo: any) => {
+    console.log('💳 Attaching payment to existing booking...');
     
     try {
-      console.log('📅 Creating booking with segments...');
-      
-      if (!selectedTime?.appointment_segments?.[0]?.team_member_id) {
-        throw new Error('No barber selected for the appointment');
-      }
-
-      // Prepare booking request for single booking with multiple segments
-      const appointmentSegments = selectedServices.map((service, index) => {
-        const segmentStartTime = index === 0 ? selectedTime.start_at : 
-          dayjs(selectedTime.start_at).add(
-            selectedServices.slice(0, index).reduce((total, s) => total + s.duration, 0), 
-            'minute'
-          ).toISOString();
-
-        return {
-          service_variation_id: service.service_variation_id,
-          team_member_id: selectedTime.appointment_segments[0].team_member_id,
-          duration_minutes: service.duration > 10000 ? service.duration / 60000 : service.duration,
-          start_at: segmentStartTime,
-          service_variation_version: 1,
-        };
-      });
-
-      const bookingRequest = {
-        start_at: selectedTime.start_at,
-        appointment_segments: appointmentSegments,
-        customerNote: `Payment ID: ${paymentInfo.paymentId} | Multi-service booking with segments`,
-        idempotencyKey: idempotencyKey,
-        payment_info: {
-          paymentId: paymentInfo.paymentId,
-          amount: paymentInfo.amount,
-          currency: paymentInfo.currency,
-          receiptUrl: paymentInfo.receiptUrl || "",
-        },
+      // Store successful booking information with payment
+      const bookingInfo = {
+        bookingId: bookingResponse.booking?.data?.id,
+        squareBookingId: bookingResponse.booking?.data?.square_booking_id,
+        paymentInfo: paymentInfo,
+        services: selectedServices,
+        teamMemberId: selectedTime?.appointment_segments?.[0]?.team_member_id,
+        startAt: selectedTime?.start_at,
       };
-
-      console.log('Booking request:', bookingRequest);
       
-      // Create the booking using segments API
-      const response = await BookingService.createBookingWithSegments(bookingRequest);
+      localStorage.setItem("completedBooking", JSON.stringify(bookingInfo));
+      localStorage.setItem("paymentReceipt", JSON.stringify(paymentInfo));
       
-      if (response.success) {
-        console.log('✅ Booking created successfully');
-        
-        // Store successful booking information
-        const bookingInfo = {
-          bookingId: response.booking?.data?.id,
-          squareBookingId: response.booking?.data?.square_booking_id,
-          paymentInfo: paymentInfo,
-          services: selectedServices,
-          teamMemberId: selectedTime.appointment_segments[0].team_member_id,
-          startAt: selectedTime.start_at,
-        };
-        
-        localStorage.setItem("completedBooking", JSON.stringify(bookingInfo));
-        localStorage.setItem("paymentReceipt", JSON.stringify(paymentInfo));
-        
-        onPaymentComplete();
-      } else {
-        throw new Error(response.error || 'Failed to create booking');
-      }
+      console.log('✅ Payment attached to booking successfully');
+      return bookingInfo;
     } catch (error: any) {
-      console.error('❌ Booking creation failed:', error);
+      console.error('❌ Failed to attach payment to booking:', error);
       throw error;
-    } finally {
-      setCreatingBooking(false);
     }
   };
 
@@ -242,22 +325,12 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     }
 
     setProcessingPayment(true);
+    setCreatingBooking(true);
     setPaymentError(null);
 
     try {
-      console.log('💳 Starting stable payment process');
+      console.log('🔄 Starting NEW booking-first flow');
       
-      // Calculate amounts (same logic as old payment form)
-      const subtotalAmount = selectedServices.reduce(
-        (total, service) => total + service.price_amount,
-        0,
-      );
-      
-      const cardFee = Math.round(subtotalAmount * 0.022); // 2.2% fee on full subtotal
-      const baseDepositAmount = Math.round(subtotalAmount * 0.5); // 50% deposit
-      const depositAmount = baseDepositAmount + cardFee; // Deposit includes entire card fee
-      const formattedAmount = (depositAmount / 100).toFixed(2);
-
       // Generate unique idempotency key
       let idempotencyKey: string;
       let attempts = 0;
@@ -272,6 +345,34 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       // Add to used keys immediately to prevent reuse
       setUsedIdempotencyKeys(prev => new Set([...prev, idempotencyKey]));
       console.log('Generated idempotency key:', idempotencyKey);
+
+      // STEP 1: Create booking without payment
+      console.log('📅 Step 1: Creating booking without payment...');
+      const bookingResponse = await createBookingWithoutPayment(idempotencyKey + '-booking');
+      console.log('✅ Booking created successfully, now processing payment...');
+
+      // STEP 2: Process payment
+      console.log('💳 Step 2: Processing payment...');
+      
+      // Extract updated customer ID from booking response if available
+      const updatedCustomerId = bookingResponse.updatedCustomerId || bookingResponse.booking?.user?.square_up_id || user.square_up_id;
+      console.log('💳 Using customer ID for payment:', { 
+        originalUserId: user.square_up_id, 
+        updatedFromBookingResponse: bookingResponse.updatedCustomerId,
+        updatedFromBookingUser: bookingResponse.booking?.user?.square_up_id,
+        finalCustomerId: updatedCustomerId 
+      });
+      
+      // Calculate amounts
+      const subtotalAmount = selectedServices.reduce(
+        (total, service) => total + service.price_amount,
+        0,
+      );
+      
+      const cardFee = Math.round(subtotalAmount * 0.022); // 2.2% fee on full subtotal
+      const baseDepositAmount = Math.round(subtotalAmount * 0.5); // 50% deposit
+      const depositAmount = baseDepositAmount + cardFee; // Deposit includes entire card fee
+      const formattedAmount = (depositAmount / 100).toFixed(2);
 
       // Prepare verification details for tokenization
       const verificationDetails = {
@@ -294,7 +395,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       if (tokenResult.status === 'OK' && tokenResult.token) {
         console.log('✅ Card tokenization successful');
         
-        // Process payment
+        // Process payment with the updated customer ID from booking response
         const paymentResponse = await fetch("/api/process-payment", {
           method: "POST",
           headers: {
@@ -303,10 +404,10 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
           body: JSON.stringify({
             sourceId: tokenResult.token,
             amount: depositAmount,
-            idempotencyKey: idempotencyKey,
+            idempotencyKey: idempotencyKey + '-payment',
             locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "",
             customerDetails: {
-              squareCustomerId: user.square_up_id,
+              squareCustomerId: updatedCustomerId,
             },
           }),
         });
@@ -324,8 +425,26 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
             idempotencyKey: idempotencyKey,
           };
 
-          // Create booking with the payment information
-          await createSingleBookingWithSegments(idempotencyKey, paymentInfo);
+          // STEP 3: Attach payment to booking
+          console.log('🔗 Step 3: Attaching payment to booking...');
+          await attachPaymentToBooking(bookingResponse, paymentInfo);
+
+          // Store payment success for debugging
+          localStorage.setItem("paymentSuccessful", JSON.stringify({
+            paymentId: paymentData.payment?.id,
+            amount: formattedAmount,
+            timestamp: new Date().toISOString(),
+            idempotencyKey,
+            bookingId: bookingResponse.booking?.data?.id
+          }));
+          
+          console.log('✅ Complete NEW booking-first flow finished successfully');
+          
+          // Call completion callback
+          console.log('🎯 Calling onPaymentComplete callback...');
+          onPaymentComplete();
+          console.log('✅ onPaymentComplete callback executed');
+          
         } else {
           const errorData = await paymentResponse.json();
           throw new Error(errorData.message || 'Payment processing failed');
@@ -334,10 +453,11 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
         throw new Error(tokenResult.errors?.[0]?.detail || 'Card tokenization failed');
       }
     } catch (error: any) {
-      console.error('❌ Stable payment failed:', error);
-      setPaymentError(error.message || 'Payment failed');
+      console.error('❌ NEW booking-first flow failed:', error);
+      setPaymentError(error.message || 'Booking and payment flow failed');
     } finally {
       setProcessingPayment(false);
+      setCreatingBooking(false);
     }
   };
 
@@ -436,7 +556,16 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
 
         {paymentError && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600 font-medium">Payment Error:</p>
             <p className="text-sm text-red-600">{paymentError}</p>
+            {paymentError.includes('Payment successful') && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-xs text-yellow-800">
+                  ⚠️ Your payment was processed but booking creation failed. 
+                  Please contact support with payment ID from your bank statement.
+                </p>
+              </div>
+            )}
             <button 
               onClick={() => {
                 setPaymentError(null);

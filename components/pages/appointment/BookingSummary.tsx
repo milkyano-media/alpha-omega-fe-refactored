@@ -40,14 +40,14 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   const totalAmount = subtotalAmount + cardFee; // Total including card fee
   const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
 
-  // Format time for display in Melbourne timezone
+  // Format time for display in Melbourne timezone (for Australian users)
   const formatTime = (isoTime: string) => {
     // Convert UTC time to Melbourne time
     const melbourneTime = dayjs(isoTime).tz("Australia/Melbourne");
     return melbourneTime.format("h:mm A");
   };
 
-  // Format date for display in Melbourne timezone
+  // Format date for display in Melbourne timezone (for Australian users)
   const formatDate = (isoTime: string) => {
     // Convert UTC time to Melbourne time
     const melbourneDate = dayjs(isoTime).tz("Australia/Melbourne");

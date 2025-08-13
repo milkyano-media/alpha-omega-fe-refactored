@@ -424,9 +424,14 @@ export const BookingService = {
    */
   async createBookingWithSegments(bookingRequest: SingleBookingRequest): Promise<SingleBookingResponse> {
     try {
+      console.log('🔄 BookingService making API call to /bookings/segments');
       const response = await API.post('/bookings/segments', bookingRequest);
-      return response.data;
+      console.log('📨 Raw API response:', JSON.stringify(response, null, 2));
+      
+      // API.post already returns response.data, so response is the actual data
+      return response;
     } catch (error: any) {
+      console.error('❌ BookingService API call failed:', error);
       throw new Error(error.message || "Failed to create booking with segments");
     }
   },

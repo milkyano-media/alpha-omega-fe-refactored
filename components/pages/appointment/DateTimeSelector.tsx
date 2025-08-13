@@ -33,7 +33,7 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   availableDates,
   isLoading,
 }) => {
-  // Format time for display in Melbourne timezone
+  // Format time for display in Melbourne timezone (for Australian users)
   const formatTime = (isoTime: string) => {
     // Convert UTC time to Melbourne time
     const melbourneTime = dayjs(isoTime).tz("Australia/Melbourne");
