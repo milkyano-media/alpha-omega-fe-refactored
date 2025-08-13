@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { TimeSlot, Service } from "@/lib/booking-service";
-import React, { useLayoutEffect, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface PaymentFormProps {
   squareCard: Square.Card | null;
@@ -52,12 +52,18 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         throw new Error("Square.js failed to load");
       }
 
-      // Check environment variables
+      // Check environment variables with fallbacks
       const appId = process.env.NEXT_PUBLIC_SQUARE_APP_ID || "";
       const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "";
 
+      console.log('Square credentials check:', { 
+        appId: appId ? `${appId.substring(0, 10)}...` : 'MISSING', 
+        locationId: locationId ? `${locationId.substring(0, 10)}...` : 'MISSING',
+        environment: process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT || 'MISSING'
+      });
+
       if (!appId || !locationId) {
-        throw new Error("Missing Square credentials in environment variables");
+        throw new Error(`Missing Square credentials: appId=${!!appId}, locationId=${!!locationId}`);
       }
 
       // Ensure DOM element exists and is ready
@@ -115,26 +121,37 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     }
   }, [onSquareCardReady, onSquareCardError]);
 
-  // Use useLayoutEffect to ensure DOM is ready before initializing Square
-  useLayoutEffect(() => {
+  // Use useEffect with delay and window check for production compatibility
+  useEffect(() => {
+    // Skip if not in browser environment (SSR)
+    if (typeof window === 'undefined') {
+      console.log('Skipping Square initialization - not in browser environment');
+      return;
+    }
+    
     // Prevent multiple initialization attempts
     if (initializationAttempted.current || squareInitialized) {
       return;
     }
     
     initializationAttempted.current = true;
-    console.log('PaymentForm useLayoutEffect - DOM is ready, initializing Square payment');
+    console.log('PaymentForm useEffect - initializing Square payment');
     
     // Capture container ID value at effect creation to avoid ref staleness warning
     const currentContainerIdForCleanup = containerId.current;
     
-    // Execute initialization immediately since DOM is ready
-    initializeSquarePayment();
+    // Add delay for production compatibility (SSR/hydration + DOM stability)
+    const initTimer = setTimeout(() => {
+      if (isMountedRef.current && typeof window !== 'undefined') {
+        initializeSquarePayment();
+      }
+    }, 200); // Slightly longer delay for production
     
     // Cleanup function
     return () => {
       console.log('PaymentForm cleanup triggered');
       isMountedRef.current = false;
+      clearTimeout(initTimer);
       
       // Prevent duplicate cleanup attempts
       if (cleanupAttempted.current) {
