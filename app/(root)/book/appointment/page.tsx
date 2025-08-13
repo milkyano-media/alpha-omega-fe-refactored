@@ -552,12 +552,15 @@ export default function AppointmentBooking() {
           console.log("Loading auto-selected time slot:", parsedTimeSlot);
           setSelectedTime(parsedTimeSlot);
           
-          // Set the date to match the time slot
+          // CRITICAL: Set the date to match the time slot BEFORE setting other states to prevent multiple re-renders
           const slotDate = new Date(parsedTimeSlot.start_at);
-          setSelectedDate(slotDate);
           
-          // Mark that time was auto-selected
+          // Mark that time was auto-selected FIRST to prevent interference
           setTimeAutoSelected(true);
+          
+          // Set date in a way that doesn't trigger calendar chaos
+          console.log("🗓️ Setting selectedDate to auto-selected date:", slotDate);
+          setSelectedDate(slotDate);
           
           // Auto-show payment form since time is already selected (only if not processing payment)
           if (!processingPayment && !creatingBooking && !paymentInProgress) {
@@ -603,6 +606,12 @@ export default function AppointmentBooking() {
   // Fetch availability data when month changes or service changes
   useEffect(() => {
     if (!selectedService) return;
+
+    // CRITICAL: Don't reload availability when auto-selected time is being loaded to prevent disruption
+    if (timeAutoSelected && selectedTime && showPaymentForm) {
+      console.log('⚠️ Skipping availability reload - auto-selected appointment is active');
+      return;
+    }
 
     // Extract month and year for dependency tracking and caching
     const currentMonth = selectedMonth;
@@ -714,7 +723,7 @@ export default function AppointmentBooking() {
     };
 
     fetchAvailabilityData();
-  }, [selectedMonth, selectedYear, selectedService, selectedDate, monthCache]);
+  }, [selectedMonth, selectedYear, selectedService, selectedDate, monthCache, timeAutoSelected, selectedTime, showPaymentForm]);
 
   // Extract date string to avoid complex expression in dependency array
   // Use local date formatting to prevent timezone conversion issues
@@ -740,6 +749,12 @@ export default function AppointmentBooking() {
     // CRITICAL: Don't modify times when payment form is active to prevent component unmounting
     if (showPaymentForm) {
       console.log('⚠️ Skipping date change processing - payment form is active');
+      return;
+    }
+
+    // CRITICAL: Don't modify times when auto-selected time is being loaded to prevent interference
+    if (timeAutoSelected && selectedTime) {
+      console.log('⚠️ Skipping date change processing - auto-selected time is active');
       return;
     }
 
