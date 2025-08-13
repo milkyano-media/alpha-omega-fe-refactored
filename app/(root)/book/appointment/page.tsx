@@ -143,9 +143,19 @@ export default function CleanAppointmentPage() {
           return;
         }
 
-        // Fetch new data
+        // Fetch new data - get full month range
+        // Get first day of selected month
         const startDate = new Date(selectedYear, selectedMonth - 1, 1);
-        const endDate = new Date(selectedYear, selectedMonth, 0);
+        // Get first day of next month and subtract 1ms to get end of current month
+        const endDate = new Date(selectedYear, selectedMonth, 1);
+
+        console.log('Date calculation debug:', {
+          selectedDate: selectedDate.toISOString(),
+          selectedMonth,
+          selectedYear,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        });
 
         console.log(`Fetching availability for ${selectedService.service_variation_id} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 

@@ -327,11 +327,24 @@ export const BookingService = {
     startDate: Date,
     endDate: Date
   ): Promise<AvailabilityResponse> {
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      throw new Error("Authentication required. Please log in again.");
+    }
+
+    console.log("Making availability request:", {
+      serviceVariationId,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      hasToken: !!token
+    });
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/services/availability/search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token") || null}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         service_variation_id: serviceVariationId,
@@ -341,7 +354,15 @@ export const BookingService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch availability");
+      let errorMessage = "Failed to fetch availability";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+        console.error("Availability API error details:", errorData);
+      } catch {
+        console.error("Failed to parse error response");
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
