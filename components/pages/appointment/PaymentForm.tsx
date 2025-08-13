@@ -1,14 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TimeSlot, Service, TeamMember } from "@/lib/booking-service";
-import React from "react";
-
-interface AdditionalService {
-  service: Service;
-  barber: TeamMember;
-  timeSlot: TimeSlot;
-}
+import { TimeSlot, Service } from "@/lib/booking-service";
+import React, { useLayoutEffect, useEffect, useRef, useState } from "react";
 
 interface PaymentFormProps {
   squareCard: Square.Card | null;
@@ -19,7 +13,9 @@ interface PaymentFormProps {
   paymentError: string | null;
   handlePayment: () => Promise<void>;
   onCancelPayment: () => void;
-  additionalServices?: AdditionalService[];
+  selectedServices?: Service[];
+  onSquareCardReady?: (card: Square.Card) => void;
+  onSquareCardError?: (error: string) => void;
 }
 
 export const PaymentForm: React.FC<PaymentFormProps> = ({
@@ -31,17 +27,182 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   paymentError,
   handlePayment,
   onCancelPayment,
-  additionalServices = [],
+  selectedServices = [],
+  onSquareCardReady,
+  onSquareCardError,
 }) => {
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const squareCardRef = useRef<Square.Card | null>(null);
+  const initializationAttempted = useRef(false);
+  const cleanupAttempted = useRef(false);
+  const [squareInitialized, setSquareInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
+  
+  // Use a static container ID that doesn't change on re-renders
+  const containerId = useRef(`square-card-container-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  
+  // Track if component is mounted to prevent cleanup conflicts
+  const isMountedRef = useRef(true);
+
+  // Memoized initialization function to prevent unnecessary re-runs
+  const initializeSquarePayment = React.useCallback(async () => {
+    try {
+      // Ensure Square SDK is loaded
+      if (!window.Square) {
+        throw new Error("Square.js failed to load");
+      }
+
+      // Check environment variables
+      const appId = process.env.NEXT_PUBLIC_SQUARE_APP_ID || "";
+      const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "";
+
+      if (!appId || !locationId) {
+        throw new Error("Missing Square credentials in environment variables");
+      }
+
+      // Ensure DOM element exists and is ready
+      if (!cardContainerRef.current) {
+        throw new Error('Card container ref not available');
+      }
+
+      // Set the container ID immediately
+      const currentContainerId = containerId.current;
+      cardContainerRef.current.id = currentContainerId;
+      
+      console.log('Setting up Square payments with container ID:', currentContainerId);
+      
+      // Verify the element is in the DOM and stable
+      if (!document.body.contains(cardContainerRef.current)) {
+        throw new Error('Card container not in DOM');
+      }
+      
+      // Initialize Square payments
+      const payments = window.Square.payments(appId, locationId);
+      const card = await payments.card();
+
+      // Final verification before attachment
+      const domElement = document.getElementById(currentContainerId);
+      if (!domElement || domElement !== cardContainerRef.current || !document.body.contains(domElement)) {
+        throw new Error('DOM element verification failed or element not in DOM');
+      }
+      
+      console.log('Attaching Square card to container:', currentContainerId);
+      
+      // Use a try-catch specifically for the attach operation
+      try {
+        await card.attach(`#${currentContainerId}`);
+      } catch (attachError: any) {
+        console.error('Square card attachment failed:', attachError);
+        // Clean up the card object if attachment failed
+        try {
+          card.destroy();
+        } catch {
+          // Ignore destroy errors during attachment failure
+        }
+        throw new Error(`Square card attachment failed: ${attachError.message}`);
+      }
+      
+      // Store the card reference
+      squareCardRef.current = card;
+      setSquareInitialized(true);
+      setInitError(null);
+      onSquareCardReady?.(card);
+      console.log('✅ Square payment form initialized successfully');
+    } catch (error: any) {
+      console.error("Error initializing Square Payment:", error);
+      setInitError(error.message);
+      onSquareCardError?.(error.message || "Failed to initialize payment form. Please try again.");
+    }
+  }, [onSquareCardReady, onSquareCardError]);
+
+  // Use useLayoutEffect to ensure DOM is ready before initializing Square
+  useLayoutEffect(() => {
+    // Prevent multiple initialization attempts
+    if (initializationAttempted.current || squareInitialized) {
+      return;
+    }
+    
+    initializationAttempted.current = true;
+    console.log('PaymentForm useLayoutEffect - DOM is ready, initializing Square payment');
+    
+    // Capture container ID value at effect creation to avoid ref staleness warning
+    const currentContainerIdForCleanup = containerId.current;
+    
+    // Execute initialization immediately since DOM is ready
+    initializeSquarePayment();
+    
+    // Cleanup function
+    return () => {
+      console.log('PaymentForm cleanup triggered');
+      isMountedRef.current = false;
+      
+      // Prevent duplicate cleanup attempts
+      if (cleanupAttempted.current) {
+        console.log('Cleanup already attempted, skipping');
+        return;
+      }
+      cleanupAttempted.current = true;
+      
+      if (squareCardRef.current) {
+        try {
+          console.log('Destroying Square payment form');
+          
+          // Check if the DOM element still exists before Square cleanup
+          const domElement = document.getElementById(currentContainerIdForCleanup);
+          if (domElement && document.body.contains(domElement)) {
+            console.log('DOM element found, proceeding with Square cleanup');
+            squareCardRef.current.destroy();
+          } else {
+            console.log('DOM element not found, skipping Square cleanup to prevent React conflict');
+          }
+          
+          squareCardRef.current = null;
+        } catch (e: any) {
+          console.error("Error destroying Square payment form:", e);
+          // Don't rethrow - let cleanup continue
+        }
+      }
+      
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setSquareInitialized(false);
+        initializationAttempted.current = false;
+      }
+    };
+  }, [initializeSquarePayment, squareInitialized]);
+
+  // Additional cleanup effect to handle component unmounting
+  useEffect(() => {
+    // Capture container ID for cleanup
+    const containerIdForUnmount = containerId.current;
+    
+    return () => {
+      console.log('PaymentForm component unmounting');
+      isMountedRef.current = false;
+      
+      // If Square card still exists, clean it up safely
+      if (squareCardRef.current && !cleanupAttempted.current) {
+        try {
+          const domElement = document.getElementById(containerIdForUnmount);
+          if (domElement && document.body.contains(domElement)) {
+            squareCardRef.current.destroy();
+          }
+          squareCardRef.current = null;
+        } catch (e) {
+          console.error("Error in unmount cleanup:", e);
+        }
+        cleanupAttempted.current = true;
+      }
+    };
+  }, []); // Empty dependency array - only run on unmount
+
   if (!selectedService || !selectedTime) return null;
 
   // Calculate card fee from full subtotal, entire fee goes to deposit
-  const mainServicePrice = selectedService.price_amount / 100;
-  const additionalServicesPrice = additionalServices.reduce(
-    (total, additionalService) => total + (additionalService.service.price_amount / 100),
+  const subtotalAmount = selectedServices.reduce(
+    (total, service) => total + (service.price_amount / 100),
     0
   );
-  const subtotalAmount = mainServicePrice + additionalServicesPrice;
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
   const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
@@ -81,22 +242,47 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         )}
 
         <div
-          id="card-container"
-          className="mb-5 border rounded-md p-3 min-h-[140px]"
-        ></div>
+          ref={cardContainerRef}
+          id={containerId.current}
+          className="mb-5 border rounded-md p-3 min-h-[140px] relative"
+        >
+          {!squareInitialized && !initError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-md">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-gray-600">Loading payment form...</span>
+              </div>
+            </div>
+          )}
+          {initError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-red-50 rounded-md">
+              <div className="text-center p-4">
+                <p className="text-sm text-red-600 mb-2">Payment form failed to load</p>
+                <button 
+                  onClick={() => {
+                    setInitError(null);
+                    setSquareInitialized(false);
+                    initializationAttempted.current = false;
+                    cleanupAttempted.current = false;
+                    // This will trigger re-initialization on next render
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-col space-y-3">
-          {/* Main Service */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">{selectedService.name}:</span>
-            <span className="font-medium">${mainServicePrice.toFixed(2)} AUD</span>
-          </div>
-          
-          {/* Additional Services */}
-          {additionalServices.map((additionalService, index) => (
-            <div key={index} className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">{additionalService.service.name}:</span>
-              <span className="font-medium">${(additionalService.service.price_amount / 100).toFixed(2)} AUD</span>
+          {/* Selected Services */}
+          {selectedServices.map((service, index) => (
+            <div key={service.id} className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">
+                {service.name}{index === 0 && selectedServices.length > 1 ? ' (Primary)' : ''}:
+              </span>
+              <span className="font-medium">${(service.price_amount / 100).toFixed(2)} AUD</span>
             </div>
           ))}
           
@@ -124,9 +310,13 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         <Button
           className="w-full py-3 text-base bg-blue-500 hover:bg-blue-600 text-white rounded-md font-normal mt-4"
           onClick={handlePayment}
-          disabled={processingPayment || !squareCard || creatingBooking}
+          disabled={processingPayment || !squareCard || creatingBooking || !squareInitialized || !!initError}
         >
-          {processingPayment ? "Processing Payment..." : creatingBooking ? "Creating Booking..." : "Pay Deposit Now"}
+          {processingPayment ? "Processing Payment..." : 
+           creatingBooking ? "Creating Booking..." : 
+           !squareInitialized ? "Initializing Payment..." :
+           initError ? "Payment System Error" :
+           "Pay Deposit Now"}
         </Button>
 
         <p className="text-xs text-gray-500 mt-2 text-center">

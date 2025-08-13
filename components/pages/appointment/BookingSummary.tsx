@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { TimeSlot, Service, TeamMember } from "@/lib/booking-service";
+import { TimeSlot, Service } from "@/lib/booking-service";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -11,20 +11,13 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-interface AdditionalService {
-  service: Service;
-  barber: TeamMember;
-  timeSlot: TimeSlot;
-}
-
 interface BookingSummaryProps {
   selectedService: Service | null;
   selectedTime: TimeSlot | null;
   error: string | null;
   onProceedToPayment: () => void;
   showPaymentForm: boolean;
-  additionalServices?: AdditionalService[];
-  onRemoveAdditionalService?: (index: number) => void;
+  selectedServices?: Service[];
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -33,21 +26,14 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   error,
   onProceedToPayment,
   showPaymentForm,
-  additionalServices = [],
-  onRemoveAdditionalService,
+  selectedServices = [],
 }) => {
   if (!selectedService) return null;
 
-  // Calculate main service pricing
-  const mainServicePrice = selectedService.price_amount / 100;
-
-  // Calculate additional services pricing
-  const additionalServicesPrice = additionalServices.reduce((total, additional) => {
-    return total + (additional.service.price_amount / 100);
+  // Calculate total pricing for all selected services
+  const subtotalAmount = selectedServices.reduce((total, service) => {
+    return total + (service.price_amount / 100);
   }, 0);
-
-  // Calculate card fee from full subtotal, entire fee goes to deposit
-  const subtotalAmount = mainServicePrice + additionalServicesPrice;
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
   const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
@@ -71,48 +57,28 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   return (
     <div className="mb-4">
       <div className="border border-gray-200 rounded-lg overflow-hidden">
-        {/* Main Service */}
-        <div className="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-          <p className="text-sm font-medium">{selectedService.name}</p>
-          <div className="flex gap-3 text-xs text-gray-600">
-            <span>${mainServicePrice.toFixed(2)}</span>
-            <span>
-              {selectedService.duration > 10000
-                ? Math.round(selectedService.duration / 60000)
-                : selectedService.duration}{" "}
-              min
-            </span>
-          </div>
-        </div>
-
-        {/* Additional Services */}
-        {additionalServices.map((additional, index) => (
-          <div key={index} className="p-3 border-b border-gray-200 bg-blue-50 flex justify-between items-center">
+        {/* Selected Services */}
+        {selectedServices.map((service, index) => (
+          <div key={service.id} className={`p-3 border-b border-gray-200 flex justify-between items-center ${
+            index === 0 ? 'bg-gray-50' : 'bg-blue-50'
+          }`}>
             <div className="flex-1">
-              <p className="text-sm font-medium">{additional.service.name}</p>
-              {/* <p className="text-xs text-gray-600">
-                with {additional.barber.first_name} {additional.barber.last_name} • {" "}
-                {formatTime(additional.timeSlot.start_at)} on {formatDate(additional.timeSlot.start_at)}
-              </p> */}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-3 text-xs text-gray-600">
-                <span>${(additional.service.price_amount / 100).toFixed(2)}</span>
-                <span>
-                  {additional.service.duration > 10000
-                    ? Math.round(additional.service.duration / 60000)
-                    : additional.service.duration}{" "}
-                  min
-                </span>
-              </div>
-              {onRemoveAdditionalService && (
-                <button
-                  onClick={() => onRemoveAdditionalService(index)}
-                  className="text-red-600 hover:text-red-800 text-sm ml-2"
-                >
-                  ✕
-                </button>
+              <p className="text-sm font-medium">{service.name}</p>
+              {index === 0 && selectedServices.length > 1 && (
+                <p className="text-xs text-gray-600">Primary service</p>
               )}
+              {index > 0 && (
+                <p className="text-xs text-gray-600">Additional service</p>
+              )}
+            </div>
+            <div className="flex gap-3 text-xs text-gray-600">
+              <span>${(service.price_amount / 100).toFixed(2)}</span>
+              <span>
+                {service.duration > 10000
+                  ? Math.round(service.duration / 60000)
+                  : service.duration}{" "}
+                min
+              </span>
             </div>
           </div>
         ))}

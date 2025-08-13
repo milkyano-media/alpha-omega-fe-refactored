@@ -17,12 +17,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 function BarberSelectionContent() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<TeamMember[]>([]);
   const [selectedBarber, setSelectedBarber] = useState<TeamMember | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [findingClosestTime, setFindingClosestTime] = useState(false);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<any>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,29 +41,49 @@ function BarberSelectionContent() {
     // Get service from URL params or localStorage
     const serviceIdParam = searchParams.get("serviceId");
     let serviceData: Service | null = null;
+    let servicesData: Service[] = [];
 
     if (serviceIdParam) {
-      // Try to get service from localStorage first
-      const storedService = localStorage.getItem("selectedService");
-      if (storedService) {
+      // Try to get from new multiple services flow first
+      const storedServices = localStorage.getItem("selectedServices");
+      if (storedServices) {
         try {
-          const parsed = JSON.parse(storedService);
-          if (parsed.id.toString() === serviceIdParam) {
-            serviceData = parsed;
+          const parsed = JSON.parse(storedServices) as Service[];
+          servicesData = parsed;
+          const matchingService = parsed.find(s => s.id.toString() === serviceIdParam);
+          if (matchingService) {
+            serviceData = matchingService;
           }
         } catch (e) {
-          console.error("Error parsing stored service:", e);
+          console.error("Error parsing stored services:", e);
+        }
+      }
+      
+      // Fallback to old single service flow
+      if (!serviceData) {
+        const storedService = localStorage.getItem("selectedService");
+        if (storedService) {
+          try {
+            const parsed = JSON.parse(storedService);
+            if (parsed.id.toString() === serviceIdParam) {
+              serviceData = parsed;
+              servicesData = [parsed];
+            }
+          } catch (e) {
+            console.error("Error parsing stored service:", e);
+          }
         }
       }
     }
 
-    if (!serviceData) {
+    if (!serviceData || servicesData.length === 0) {
       // Redirect back to services if no service selected
       router.push("/book/services");
       return;
     }
 
     setSelectedService(serviceData);
+    setSelectedServices(servicesData);
 
     // Fetch barbers for the selected service
     const fetchBarbers = async () => {
@@ -93,20 +116,167 @@ function BarberSelectionContent() {
     setShowTermsModal(true);
   };
 
-  const handleSelectRandomBarber = () => {
-    if (barbers.length > 0) {
-      // Randomly select a barber from available barbers
-      const randomIndex = Math.floor(Math.random() * barbers.length);
-      const randomBarber = barbers[randomIndex];
-      setSelectedBarber(randomBarber);
-      setShowTermsModal(true);
+  const handleSelectRandomBarber = async () => {
+    if (barbers.length === 0 || !selectedService) return;
+    
+    setFindingClosestTime(true);
+    setError(null);
+    
+    try {
+      // Find the closest available time across all barbers
+      const closestTimeResult = await findClosestAvailableTime();
+      
+      if (closestTimeResult) {
+        console.log('Setting selected barber and time slot:', closestTimeResult);
+        setSelectedBarber(closestTimeResult.barber);
+        setSelectedTimeSlot(closestTimeResult.timeSlot);
+        setShowTermsModal(true);
+      } else {
+        console.log('No closest time result found');
+        setError("No available time slots found for any barber in the next 14 days. Please try selecting a specific barber or contact us directly.");
+      }
+    } catch (err: any) {
+      console.error("Error finding closest available time:", err);
+      setError("Failed to find available time slots. Please try selecting a specific barber.");
+    } finally {
+      setFindingClosestTime(false);
     }
+  };
+
+  const findClosestAvailableTime = async () => {
+    if (!selectedService) return null;
+    
+    const now = new Date();
+    const endDate = new Date();
+    endDate.setDate(now.getDate() + 14); // Search for next 14 days to reduce API calls
+    
+    let closestTime: Date | null = null;
+    let closestBarber: TeamMember | null = null;
+    let closestTimeSlot: any = null;
+    
+    // Get general availability first (this searches across all barbers)
+    try {
+      console.log('Searching for general availability across all barbers...');
+      console.log('Available barbers:', barbers.map(b => ({ id: b.id, name: `${b.first_name} ${b.last_name}` })));
+      
+      const availabilityResponse = await BookingService.searchAvailability(
+        selectedService.service_variation_id,
+        now,
+        endDate
+      );
+      
+      console.log('Availability response received:', availabilityResponse);
+      
+      // Find the earliest available time slot across all dates and barbers
+      if (availabilityResponse?.availabilities_by_date) {
+        const allDates = Object.keys(availabilityResponse.availabilities_by_date).sort();
+        console.log('Available dates:', allDates);
+        
+        for (const dateKey of allDates) {
+          const timeSlots = availabilityResponse.availabilities_by_date[dateKey];
+          console.log(`Time slots for ${dateKey}:`, timeSlots?.length || 0);
+          
+          if (timeSlots && timeSlots.length > 0) {
+            // Sort time slots by start time
+            const sortedSlots = timeSlots.sort(
+              (a: any, b: any) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+            );
+            
+            // Check each slot until we find one with a matching barber
+            for (const slot of sortedSlots) {
+              const slotTime = new Date(slot.start_at);
+              
+              // Find which barber this slot belongs to
+              const teamMemberId = slot.appointment_segments?.[0]?.team_member_id;
+              console.log(`Checking slot ${slot.start_at} with team_member_id: ${teamMemberId}`);
+              
+              if (teamMemberId) {
+                // Try both string and number matching
+                const matchingBarber = barbers.find(b => 
+                  b.id.toString() === teamMemberId.toString() ||
+                  b.square_up_id === teamMemberId.toString()
+                );
+                
+                if (matchingBarber) {
+                  closestTime = slotTime;
+                  closestBarber = matchingBarber;
+                  closestTimeSlot = slot;
+                  
+                  console.log(`✅ Found closest available time: ${closestTime.toISOString()} with ${closestBarber.first_name} ${closestBarber.last_name}`);
+                  break;
+                } else {
+                  console.log(`⚠️ No matching barber found for team_member_id: ${teamMemberId}`);
+                }
+              } else {
+                console.log('⚠️ No team_member_id found in appointment segment');
+              }
+            }
+            
+            // If we found a match, break from date loop
+            if (closestTime && closestBarber && closestTimeSlot) {
+              break;
+            }
+          }
+        }
+      } else {
+        console.log('❌ No availabilities_by_date in response');
+      }
+    } catch (err) {
+      console.error('❌ Error searching for general availability:', err);
+      // If general search fails, fall back to random selection
+      if (barbers.length > 0) {
+        const randomIndex = Math.floor(Math.random() * barbers.length);
+        closestBarber = barbers[randomIndex];
+        console.log(`🎲 Falling back to random barber: ${closestBarber.first_name} ${closestBarber.last_name}`);
+      }
+    }
+    
+    if (closestTime && closestBarber && closestTimeSlot) {
+      console.log('✅ Returning complete result with time slot');
+      return {
+        barber: closestBarber,
+        timeSlot: closestTimeSlot,
+        time: closestTime
+      };
+    } else if (closestBarber) {
+      console.log('⚠️ Returning barber without specific time slot');
+      // Return barber without specific time slot (will be selected in appointment page)
+      return {
+        barber: closestBarber,
+        timeSlot: null,
+        time: null
+      };
+    }
+    
+    console.log('❌ No result found');
+    return null;
   };
 
   const handleBookService = () => {
     if (selectedService && selectedBarber && agreed) {
+      // Maintain both old and new formats for compatibility
       localStorage.setItem("selectedService", JSON.stringify(selectedService));
+      
+      // If selectedServices exists, keep it for the new multiple services flow
+      const storedServices = localStorage.getItem("selectedServices");
+      if (storedServices) {
+        // Keep selectedServices for the appointment page
+        // No need to modify it since it already contains all selected services
+      }
+      
       localStorage.setItem("selectedBarberId", selectedBarber.id.toString());
+      
+      // If we have a pre-selected time slot (from closest time search), store it
+      if (selectedTimeSlot) {
+        localStorage.setItem("selectedTimeSlot", JSON.stringify(selectedTimeSlot));
+        localStorage.setItem("autoSelectedTime", "true"); // Flag to indicate time was auto-selected
+        console.log("Stored auto-selected time slot:", selectedTimeSlot);
+      } else {
+        // If no specific time slot but we selected the closest available barber
+        localStorage.setItem("autoSelectedTime", "false");
+        localStorage.removeItem("selectedTimeSlot");
+      }
+      
       router.push("/book/appointment");
     }
   };
@@ -183,21 +353,75 @@ function BarberSelectionContent() {
             Choose Your Barber
           </h1>
 
-          {selectedService && (
-            <div className="mt-6 bg-white rounded-lg shadow-sm border p-4 max-w-md mx-auto">
-              <h3 className="font-semibold text-gray-900 text-base md:text-2xl">
-                {selectedService.name}
-              </h3>
-              <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
-                <span>${(selectedService.price_amount / 100).toFixed(2)}</span>
-                <span>•</span>
-                <span>
-                  {selectedService.duration > 10000
-                    ? Math.round(selectedService.duration / 60000)
-                    : selectedService.duration}{" "}
-                  min
-                </span>
-              </div>
+          {selectedServices.length > 0 && (
+            <div className="mt-6 bg-white rounded-lg shadow-sm border p-4 max-w-2xl mx-auto">
+              {selectedServices.length === 1 ? (
+                // Single service display
+                <>
+                  <h3 className="font-semibold text-gray-900 text-base md:text-2xl text-center">
+                    {selectedServices[0].name}
+                  </h3>
+                  <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
+                    <span>${(selectedServices[0].price_amount / 100).toFixed(2)}</span>
+                    <span>•</span>
+                    <span>
+                      {selectedServices[0].duration > 10000
+                        ? Math.round(selectedServices[0].duration / 60000)
+                        : selectedServices[0].duration}{" "}
+                      min
+                    </span>
+                  </div>
+                </>
+              ) : (
+                // Multiple services display
+                <>
+                  <h3 className="font-semibold text-gray-900 text-base md:text-xl text-center mb-3">
+                    {selectedServices.length} Services Selected
+                  </h3>
+                  <div className="space-y-2 mb-3">
+                    {selectedServices.map((service, index) => (
+                      <div key={service.id} className={`p-2 rounded border-l-4 ${
+                        index === 0 ? 'border-gray-900 bg-gray-50' : 'border-blue-500 bg-blue-50'
+                      }`}>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-sm">{service.name}</p>
+                            {index === 0 && selectedServices.length > 1 && (
+                              <p className="text-xs text-gray-600">Primary service</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2 text-xs text-gray-600">
+                            <span>${(service.price_amount / 100).toFixed(2)}</span>
+                            <span>•</span>
+                            <span>
+                              {service.duration > 10000
+                                ? Math.round(service.duration / 60000)
+                                : service.duration} min
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-semibold">Total:</span>
+                      <div className="flex gap-4">
+                        <span className="font-semibold">
+                          ${(selectedServices.reduce((total, service) => total + service.price_amount, 0) / 100).toFixed(2)}
+                        </span>
+                        <span>•</span>
+                        <span className="font-semibold">
+                          {selectedServices.reduce((total, service) => {
+                            const duration = service.duration > 10000 ? Math.round(service.duration / 60000) : service.duration;
+                            return total + duration;
+                          }, 0)} min
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -275,16 +499,28 @@ function BarberSelectionContent() {
                     <div className="p-6 space-y-4">
                       {/* Review Text */}
                       <p className="text-black text-md leading-relaxed font-medium">
-                        &quot;Save time by choosing our next available
-                        barber&quot; <br />
-                        Choose the next available Barber
+                        {findingClosestTime ? (
+                          <>
+                            <span className="inline-block animate-spin mr-2">⏳</span>
+                            Finding your next available appointment...
+                          </>
+                        ) : (
+                          <>
+                            &quot;Save time by choosing our next available
+                            barber&quot; <br />
+                            Choose the next available Barber
+                          </>
+                        )}
                       </p>
                     </div>
 
                     {/* Book Button */}
                     <div className="p-2 md:px-6 pt-6 md:pt-16 md:pb-6">
-                      <button className="w-full text-base sm:text-lg bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105">
-                        Click Here
+                      <button 
+                        className="w-full text-base sm:text-lg bg-black hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition-all duration-200 group-hover:shadow-lg transform group-hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={findingClosestTime}
+                      >
+                        {findingClosestTime ? "Finding..." : "Click Here"}
                       </button>
                     </div>
                   </div>
@@ -490,15 +726,42 @@ function BarberSelectionContent() {
             </DialogTitle>
           </DialogHeader>
 
-          {selectedService && selectedBarber && (
+          {selectedServices.length > 0 && selectedBarber && (
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h4 className="font-semibold">{selectedService.name}</h4>
-              <p className="text-sm text-gray-600 mb-1">
-                with {selectedBarber.first_name} {selectedBarber.last_name}
-              </p>
-              <p className="text-2xl font-bold mt-1">
-                ${(selectedService.price_amount / 100).toFixed(2)}
-              </p>
+              {selectedServices.length === 1 ? (
+                // Single service display
+                <>
+                  <h4 className="font-semibold">{selectedServices[0].name}</h4>
+                  <p className="text-sm text-gray-600 mb-1">
+                    with {selectedBarber.first_name} {selectedBarber.last_name}
+                  </p>
+                  <p className="text-2xl font-bold mt-1">
+                    ${(selectedServices[0].price_amount / 100).toFixed(2)}
+                  </p>
+                </>
+              ) : (
+                // Multiple services display
+                <>
+                  <h4 className="font-semibold mb-2">
+                    {selectedServices.length} Services with {selectedBarber.first_name} {selectedBarber.last_name}
+                  </h4>
+                  <div className="space-y-1 mb-2">
+                    {selectedServices.map((service, index) => (
+                      <div key={service.id} className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {service.name}{index === 0 && selectedServices.length > 1 ? ' (Primary)' : ''}
+                        </span>
+                        <span className="font-medium">${(service.price_amount / 100).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t pt-1">
+                    <p className="text-xl font-bold">
+                      Total: ${(selectedServices.reduce((total, service) => total + service.price_amount, 0) / 100).toFixed(2)}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
