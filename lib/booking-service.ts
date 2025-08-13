@@ -357,10 +357,24 @@ export const BookingService = {
       let errorMessage = "Failed to fetch availability";
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
         console.error("Availability API error details:", errorData);
+        
+        // Handle different error response formats
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          // If error is an object, stringify it properly
+          if (typeof errorData.error === 'object') {
+            errorMessage = JSON.stringify(errorData.error);
+          } else {
+            errorMessage = errorData.error;
+          }
+        } else if (errorData.errors && Array.isArray(errorData.errors)) {
+          errorMessage = errorData.errors.map((err: any) => err.message || err).join(', ');
+        }
       } catch {
         console.error("Failed to parse error response");
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
       throw new Error(errorMessage);
     }

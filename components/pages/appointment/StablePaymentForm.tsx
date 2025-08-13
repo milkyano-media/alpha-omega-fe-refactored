@@ -37,55 +37,97 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
   const mountedRef = useRef(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Generate stable container ID once
   const containerId = useRef(`stable-square-card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
+  // Set mounted flag
+  useEffect(() => {
+    setIsMounted(true);
+    mountedRef.current = true;
+    return () => {
+      setIsMounted(false);
+      mountedRef.current = false;
+    };
+  }, []);
+
   // Initialize Square payment form once and only once
   useEffect(() => {
-    if (initializationAttempted.current || !mountedRef.current) {
+    console.log('🔄 StablePaymentForm useEffect triggered', {
+      initializationAttempted: initializationAttempted.current,
+      mounted: mountedRef.current,
+      isMounted,
+      squareInitialized
+    });
+    
+    if (!isMounted || initializationAttempted.current || squareInitialized) {
+      console.log('⏭️ Skipping initialization:', { 
+        isMounted,
+        alreadyAttempted: initializationAttempted.current,
+        alreadyInitialized: squareInitialized
+      });
       return;
     }
 
     initializationAttempted.current = true;
+    console.log('🚀 Starting Square initialization process');
 
     const initializeSquare = async () => {
       try {
+        console.log('🔄 Starting Square initialization...');
+        
         // Wait for Square SDK
         let retries = 0;
         while (!window.Square && retries < 10) {
+          console.log(`⏳ Waiting for Square SDK... attempt ${retries + 1}/10`);
           await new Promise(resolve => setTimeout(resolve, 500));
           retries++;
         }
 
         if (!window.Square) {
+          console.error('❌ Square SDK not available after 10 retries');
           throw new Error('Square SDK failed to load');
         }
+        
+        console.log('✅ Square SDK detected, proceeding with initialization');
 
         const appId = process.env.NEXT_PUBLIC_SQUARE_APP_ID || "";
         const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "";
 
         if (!appId || !locationId) {
+          console.error('❌ Missing Square credentials:', { appId: !!appId, locationId: !!locationId });
           throw new Error('Missing Square credentials');
         }
 
         console.log('🔄 Initializing stable Square payment form');
+        console.log('📋 Square credentials:', { appId, locationId });
         
         const payments = window.Square.payments(appId, locationId);
+        console.log('✅ Square payments instance created');
+        
         const card = await payments.card();
+        console.log('✅ Square card instance created');
         
         // Wait for DOM element
         let domRetries = 0;
         while (!containerRef.current && domRetries < 20) {
+          console.log(`⏳ Waiting for DOM container... attempt ${domRetries + 1}/20`);
           await new Promise(resolve => setTimeout(resolve, 100));
           domRetries++;
         }
 
         if (!containerRef.current || !mountedRef.current) {
+          console.error('❌ Container not found or component unmounted', {
+            containerExists: !!containerRef.current,
+            componentMounted: mountedRef.current
+          });
           throw new Error('Container not found or component unmounted');
         }
 
+        console.log(`🔗 Attaching Square card to container: #${containerId.current}`);
         await card.attach(`#${containerId.current}`);
+        console.log('✅ Square card attached to DOM');
         
         setSquareCard(card);
         setSquareInitialized(true);
@@ -99,12 +141,12 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     };
 
     // Initialize after a brief delay for production compatibility
-    const timer = setTimeout(initializeSquare, 1000);
+    const timer = setTimeout(initializeSquare, 300);
     
     return () => {
       clearTimeout(timer);
     };
-  }, []); // Empty dependency array - initialize only once
+  }, [isMounted, squareInitialized]); // Depend on mounted state and initialization status
 
   // Cleanup on unmount
   useEffect(() => {
@@ -299,34 +341,75 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     }
   };
 
-  // Calculate pricing
+  // Calculate pricing (matching BookingSummary logic)
   const subtotalAmount = selectedServices.reduce((total, service) => {
     return total + (service.price_amount / 100);
   }, 0);
-  const cardFee = subtotalAmount * 0.022;
-  const baseDepositAmount = subtotalAmount * 0.5;
-  const depositAmount = baseDepositAmount + cardFee;
+  const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
+  const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
+  const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
+  const totalAmount = subtotalAmount + cardFee; // Total including card fee
+  const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
+
+  // Debug logging for render state
+  console.log('🎨 StablePaymentForm render state:', {
+    squareInitialized,
+    paymentError,
+    processingPayment,
+    creatingBooking,
+    containerIdValue: containerId.current
+  });
 
   return (
     <div className="space-y-4">
       {/* Services Summary */}
       <div className="border border-gray-200 rounded-lg overflow-hidden">
+        {/* Selected Services */}
         {selectedServices.map((service, index) => (
           <div key={service.id} className={`p-3 border-b border-gray-200 flex justify-between items-center ${
             index === 0 ? 'bg-gray-50' : 'bg-blue-50'
           }`}>
             <div className="flex-1">
               <p className="text-sm font-medium">{service.name}</p>
+              {index === 0 && selectedServices.length > 1 && (
+                <p className="text-xs text-gray-600">Primary service</p>
+              )}
+              {index > 0 && (
+                <p className="text-xs text-gray-600">Additional service</p>
+              )}
             </div>
             <div className="flex gap-3 text-xs text-gray-600">
               <span>${(service.price_amount / 100).toFixed(2)}</span>
+              <span>
+                {service.duration > 10000
+                  ? Math.round(service.duration / 60000)
+                  : service.duration}{" "}
+                min
+              </span>
             </div>
           </div>
         ))}
 
+        {/* Pricing Breakdown */}
         <div className="p-3 flex justify-between items-center">
+          <p className="text-sm">Subtotal</p>
+          <p className="font-medium">${subtotalAmount.toFixed(2)}</p>
+        </div>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center">
+          <p className="text-sm">Card Payment Fee (2.2%)</p>
+          <p className="font-medium">${cardFee.toFixed(2)}</p>
+        </div>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center">
+          <p className="text-sm font-semibold">Total</p>
+          <p className="font-semibold">${totalAmount.toFixed(2)}</p>
+        </div>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center">
           <p className="text-sm">Deposit (50%)</p>
           <p className="font-medium">${depositAmount.toFixed(2)}</p>
+        </div>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center text-gray-500 text-sm">
+          <p>Balance due at appointment</p>
+          <p>${balanceAmount.toFixed(2)}</p>
         </div>
       </div>
 
@@ -377,6 +460,15 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
             display: squareInitialized ? 'block' : 'none'
           }}
         />
+
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="p-2 bg-gray-100 text-xs rounded text-gray-600">
+            Debug: Container ID = {containerId.current}<br/>
+            Initialized: {squareInitialized ? 'Yes' : 'No'}<br/>
+            Error: {paymentError || 'None'}
+          </div>
+        )}
 
         {/* Payment Button */}
         {squareInitialized && (
