@@ -17,6 +17,7 @@ interface StablePaymentFormProps {
   selectedServices: Service[];
   onPaymentComplete: () => void;
   onCancel: () => void;
+  onAddAdditionalService?: () => void; // Optional callback to add additional services
 }
 
 export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
@@ -25,6 +26,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
   selectedServices,
   onPaymentComplete,
   onCancel,
+  onAddAdditionalService,
 }) => {
   const { user } = useAuth();
   const [squareInitialized, setSquareInitialized] = useState(false);
@@ -601,6 +603,17 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
             Initialized: {squareInitialized ? 'Yes' : 'No'}<br/>
             Error: {paymentError || 'None'}
           </div>
+        )}
+
+        {/* Add Additional Service Button */}
+        {onAddAdditionalService && squareInitialized && !processingPayment && !creatingBooking && (
+          <Button
+            onClick={onAddAdditionalService}
+            variant="outline"
+            className="w-full py-2 text-sm border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600"
+          >
+            + Add Another Service
+          </Button>
         )}
 
         {/* Payment Button */}
