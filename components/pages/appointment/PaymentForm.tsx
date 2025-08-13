@@ -65,6 +65,15 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   // Track if component is mounted to prevent cleanup conflicts
   const isMountedRef = useRef(true);
 
+  // Store callbacks in refs to prevent dependency changes
+  const onSquareCardReadyRef = useRef(onSquareCardReady);
+  const onSquareCardErrorRef = useRef(onSquareCardError);
+  
+  useEffect(() => {
+    onSquareCardReadyRef.current = onSquareCardReady;
+    onSquareCardErrorRef.current = onSquareCardError;
+  }, [onSquareCardReady, onSquareCardError]);
+
   // Memoized initialization function to prevent unnecessary re-runs
   const initializeSquarePayment = React.useCallback(async () => {
     try {
@@ -146,14 +155,14 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
       squareCardRef.current = card;
       setSquareInitialized(true);
       setInitError(null);
-      onSquareCardReady?.(card);
+      onSquareCardReadyRef.current?.(card);
       console.log('✅ Square payment form initialized successfully');
     } catch (error: any) {
       console.error("Error initializing Square Payment:", error);
       setInitError(error.message);
-      onSquareCardError?.(error.message || "Failed to initialize payment form. Please try again.");
+      onSquareCardErrorRef.current?.(error.message || "Failed to initialize payment form. Please try again.");
     }
-  }, [onSquareCardReady, onSquareCardError]);
+  }, []); // Empty dependency array - stable function
 
   // Use useEffect with delay and window check for production compatibility
   useEffect(() => {
@@ -163,8 +172,13 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
       return;
     }
     
-    // Prevent multiple initialization attempts
-    if (initializationAttempted.current || squareInitialized) {
+    // CRITICAL: Prevent re-initialization if Square is already initialized successfully
+    if (initializationAttempted.current || squareInitialized || squareCardRef.current) {
+      console.log('⚠️ Skipping Square initialization - already initialized', {
+        initializationAttempted: initializationAttempted.current,
+        squareInitialized,
+        hasSquareCard: !!squareCardRef.current
+      });
       return;
     }
     
