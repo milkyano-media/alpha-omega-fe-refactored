@@ -35,6 +35,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   const squareCardRef = useRef<Square.Card | null>(null);
   const initializationAttempted = useRef(false);
   const cleanupAttempted = useRef(false);
+  const paymentInProgressRef = useRef(false); // Track if payment is in progress
   const [squareInitialized, setSquareInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   
@@ -162,6 +163,24 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
       
       if (squareCardRef.current) {
         try {
+          // Check if payment is in progress - if so, delay cleanup
+          if (paymentInProgressRef.current) {
+            console.log('Payment in progress, delaying Square card cleanup');
+            // Schedule cleanup for later
+            setTimeout(() => {
+              if (squareCardRef.current && !paymentInProgressRef.current) {
+                try {
+                  console.log('Delayed cleanup: Destroying Square payment form');
+                  squareCardRef.current.destroy();
+                  squareCardRef.current = null;
+                } catch (e: any) {
+                  console.error("Error in delayed Square cleanup:", e);
+                }
+              }
+            }, 1000);
+            return;
+          }
+          
           console.log('Destroying Square payment form');
           
           // Check if the DOM element still exists before Square cleanup
@@ -197,9 +216,15 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
       console.log('PaymentForm component unmounting');
       isMountedRef.current = false;
       
-      // If Square card still exists, clean it up safely
+      // If Square card still exists, clean it up safely (only if payment not in progress)
       if (squareCardRef.current && !cleanupAttempted.current) {
         try {
+          // Don't destroy card if payment is in progress
+          if (paymentInProgressRef.current) {
+            console.log('Payment in progress during unmount, skipping card destruction');
+            return;
+          }
+          
           const domElement = document.getElementById(containerIdForUnmount);
           if (domElement && document.body.contains(domElement)) {
             squareCardRef.current.destroy();
@@ -212,6 +237,11 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
       }
     };
   }, []); // Empty dependency array - only run on unmount
+
+  // Track payment status to prevent cleanup during payment
+  useEffect(() => {
+    paymentInProgressRef.current = processingPayment || creatingBooking || false;
+  }, [processingPayment, creatingBooking]);
 
   if (!selectedService || !selectedTime) return null;
 
@@ -326,7 +356,11 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
 
         <Button
           className="w-full py-3 text-base bg-blue-500 hover:bg-blue-600 text-white rounded-md font-normal mt-4"
-          onClick={handlePayment}
+          onClick={() => {
+            // Mark payment as starting to prevent card destruction
+            paymentInProgressRef.current = true;
+            handlePayment();
+          }}
           disabled={processingPayment || !squareCard || creatingBooking || !squareInitialized || !!initError}
         >
           {processingPayment ? "Processing Payment..." : 
