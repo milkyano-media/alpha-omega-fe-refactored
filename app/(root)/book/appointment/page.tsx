@@ -118,8 +118,22 @@ export default function AppointmentBooking() {
       return;
     }
 
-    if (!squareCard || !selectedService) {
-      setPaymentError("Payment form not initialized properly");
+    if (!selectedService) {
+      setPaymentError("Service not selected");
+      return;
+    }
+
+    if (!squareCard) {
+      console.error('❌ Square card not available. Payment form initialization status:', {
+        squareCard: !!squareCard,
+        windowSquare: typeof window !== 'undefined' ? !!window.Square : 'unknown',
+        environment: process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT,
+        appId: process.env.NEXT_PUBLIC_SQUARE_APP_ID ? 'set' : 'missing',
+        locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ? 'set' : 'missing'
+      });
+      setPaymentError(
+        "Payment form is not ready. Please wait a moment and try again, or refresh the page if the issue persists."
+      );
       return;
     }
 

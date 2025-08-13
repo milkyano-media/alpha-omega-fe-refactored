@@ -48,19 +48,32 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   // Memoized initialization function to prevent unnecessary re-runs
   const initializeSquarePayment = React.useCallback(async () => {
     try {
+      // Wait for Square SDK to load in production with retries
+      let retries = 0;
+      const maxRetries = 10;
+      while (!window.Square && retries < maxRetries) {
+        console.log(`Waiting for Square SDK to load (attempt ${retries + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries++;
+      }
+      
       // Ensure Square SDK is loaded
       if (!window.Square) {
-        throw new Error("Square.js failed to load");
+        throw new Error(`Square.js failed to load after ${maxRetries} attempts. Check network connection and environment.`);
       }
+      
+      console.log('✅ Square SDK loaded successfully');
 
       // Check environment variables with fallbacks
       const appId = process.env.NEXT_PUBLIC_SQUARE_APP_ID || "";
       const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || "";
 
-      console.log('Square credentials check:', { 
+      console.log('🔑 Square credentials check:', { 
         appId: appId ? `${appId.substring(0, 10)}...` : 'MISSING', 
         locationId: locationId ? `${locationId.substring(0, 10)}...` : 'MISSING',
-        environment: process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT || 'MISSING'
+        environment: process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT || 'MISSING',
+        isProduction: process.env.NODE_ENV === 'production',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
       });
 
       if (!appId || !locationId) {
@@ -142,11 +155,17 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     const currentContainerIdForCleanup = containerId.current;
     
     // Add delay for production compatibility (SSR/hydration + DOM stability)
+    // Use longer delay in production to ensure everything is ready
+    const isProduction = process.env.NODE_ENV === 'production';
+    const initDelay = isProduction ? 1000 : 200; // Longer delay for production
+    
+    console.log(`🚀 Initializing Square payment in ${isProduction ? 'production' : 'development'} mode with ${initDelay}ms delay`);
+    
     const initTimer = setTimeout(() => {
       if (isMountedRef.current && typeof window !== 'undefined') {
         initializeSquarePayment();
       }
-    }, 200); // Slightly longer delay for production
+    }, initDelay);
     
     // Cleanup function
     return () => {
@@ -305,17 +324,32 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
             <div className="absolute inset-0 flex items-center justify-center bg-red-50 rounded-md">
               <div className="text-center p-4">
                 <p className="text-sm text-red-600 mb-2">Payment form failed to load</p>
+                <p className="text-xs text-gray-600 mb-3">
+                  {initError.includes('Square.js failed to load') 
+                    ? 'The payment system is not available. This might be a network issue.'
+                    : 'There was an issue initializing the payment form.'
+                  }
+                </p>
                 <button 
                   onClick={() => {
+                    console.log('🔄 Retrying Square payment initialization');
                     setInitError(null);
                     setSquareInitialized(false);
                     initializationAttempted.current = false;
                     cleanupAttempted.current = false;
+                    // Reset the mounted ref to allow re-initialization
+                    isMountedRef.current = true;
                     // This will trigger re-initialization on next render
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  className="text-xs text-blue-600 hover:text-blue-800 underline mr-2"
                 >
                   Try again
+                </button>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="text-xs text-gray-600 hover:text-gray-800 underline"
+                >
+                  Refresh page
                 </button>
               </div>
             </div>
