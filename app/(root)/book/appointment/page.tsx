@@ -81,6 +81,13 @@ export default function CleanAppointmentPage() {
           setTimeAutoSelected(true);
           setShowPaymentForm(true);
           
+          // Update selectedDate to match the auto-selected time's date
+          if (parsedTimeSlot.start_at) {
+            const autoSelectedDate = new Date(parsedTimeSlot.start_at);
+            setSelectedDate(autoSelectedDate);
+            console.log("Updated selectedDate to match auto-selected time:", autoSelectedDate.toISOString());
+          }
+          
           // Clean up the auto-selection flags
           localStorage.removeItem("selectedTimeSlot");
           localStorage.removeItem("autoSelectedTime");
@@ -90,10 +97,18 @@ export default function CleanAppointmentPage() {
           localStorage.removeItem("autoSelectedTime");
         }
       }
-    } else if (selectedBarberId && !autoSelectedTimeFlag) {
+    } else if (selectedBarberId && autoSelectedTimeFlag !== "true") {
       // Manual barber selection - show manual time selection immediately
-      console.log("Manual barber selection detected, enabling manual time selection");
+      console.log("Manual barber selection detected, enabling manual time selection", {
+        selectedBarberId,
+        autoSelectedTimeFlag
+      });
       setShowManualTimeSelection(true);
+    } else {
+      console.log("No manual selection triggered", {
+        hasSelectedBarberId: !!selectedBarberId,
+        autoSelectedTimeFlag
+      });
     }
   }, [isAuthenticated, router]);
 
@@ -114,7 +129,19 @@ export default function CleanAppointmentPage() {
 
   // Fetch availability when service changes or when manual selection is requested
   useEffect(() => {
-    if (!selectedService || !showManualTimeSelection) return;
+    console.log('🔍 Availability useEffect check:', {
+      selectedService: !!selectedService,
+      showManualTimeSelection,
+      serviceVariationId: selectedService?.service_variation_id
+    });
+    
+    if (!selectedService || !showManualTimeSelection) {
+      console.log('⏭️ Skipping availability fetch:', {
+        noService: !selectedService,
+        noManualSelection: !showManualTimeSelection
+      });
+      return;
+    }
 
     const fetchAvailabilityData = async () => {
       setIsLoadingAvailability(true);
@@ -143,16 +170,30 @@ export default function CleanAppointmentPage() {
           return;
         }
 
-        // Fetch new data - get full month range
-        // Get first day of selected month
-        const startDate = new Date(selectedYear, selectedMonth - 1, 1);
-        // Get first day of next month and subtract 1ms to get end of current month
-        const endDate = new Date(selectedYear, selectedMonth, 1);
+        // Fetch new data - get full month range, but only future dates
+        console.log('Raw date inputs:', { selectedYear, selectedMonth });
+        
+        // Create dates in UTC to avoid timezone conversion issues
+        // But ensure startDate is not in the past - Square only allows future bookings
+        const today = new Date();
+        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0));
+        
+        const monthStart = new Date(Date.UTC(selectedYear, selectedMonth - 1, 1, 0, 0, 0, 0));
+        const startDate = monthStart < todayUTC ? todayUTC : monthStart;
+        const endDate = new Date(Date.UTC(selectedYear, selectedMonth, 0, 23, 59, 59, 999));
+        
+        console.log('UTC dates created:', {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        });
 
         console.log('Date calculation debug:', {
           selectedDate: selectedDate.toISOString(),
           selectedMonth,
           selectedYear,
+          today: today.toISOString(),
+          todayUTC: todayUTC.toISOString(),
+          monthStart: monthStart.toISOString(),
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString()
         });
@@ -214,14 +255,6 @@ export default function CleanAppointmentPage() {
     setTimeAutoSelected(false);
   };
 
-  const handleToggleManualSelection = () => {
-    setShowManualTimeSelection(!showManualTimeSelection);
-    if (!showManualTimeSelection) {
-      // When switching to manual, clear the auto-selected time
-      setSelectedTime(null);
-      setTimeAutoSelected(false);
-    }
-  };
 
   const handleShowPaymentForm = () => {
     if (!selectedService || !selectedTime || !user) {
@@ -252,10 +285,10 @@ export default function CleanAppointmentPage() {
           
           <div className="text-center mt-3">
             <button 
-              onClick={handleToggleManualSelection}
+              onClick={() => router.push("/book/barbers")}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
-              Choose a different time instead
+              Choose a different barber/time
             </button>
           </div>
         </div>
@@ -294,50 +327,28 @@ export default function CleanAppointmentPage() {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-xl font-semibold mb-4">Select Your Preferred Time</h2>
                 
-                {!showManualTimeSelection ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600 mb-4">
-                      Would you like to choose a specific time slot?
-                    </p>
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm text-gray-600">Select your preferred date and time</span>
                     <button
-                      onClick={handleToggleManualSelection}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      onClick={() => router.push("/book/barbers")}
+                      className="text-sm text-blue-600 hover:text-blue-800"
                     >
-                      Choose Time Manually
+                      Back to Barber Selection
                     </button>
-                    <div className="mt-4">
-                      <button
-                        onClick={() => router.push("/book/barbers")}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-                      >
-                        Back to Barber Selection
-                      </button>
-                    </div>
                   </div>
-                ) : (
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-sm text-gray-600">Select your preferred date and time</span>
-                      <button
-                        onClick={() => setShowManualTimeSelection(false)}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        Cancel Manual Selection
-                      </button>
-                    </div>
-                    
-                    <DateTimeSelector
-                      selectedDate={selectedDate}
-                      onDateChange={handleDateChange}
-                      onMonthChange={handleMonthChange}
-                      onTimeSelect={handleTimeSelection}
-                      selectedTime={selectedTime}
-                      availableTimes={availableTimes}
-                      availableDates={availableDates}
-                      isLoading={isLoadingAvailability}
-                    />
-                  </div>
-                )}
+                  
+                  <DateTimeSelector
+                    selectedDate={selectedDate}
+                    onDateChange={handleDateChange}
+                    onMonthChange={handleMonthChange}
+                    onTimeSelect={handleTimeSelection}
+                    selectedTime={selectedTime}
+                    availableTimes={availableTimes}
+                    availableDates={availableDates}
+                    isLoading={isLoadingAvailability}
+                  />
+                </div>
               </div>
             )}
           </div>
