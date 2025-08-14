@@ -18,6 +18,8 @@ interface StablePaymentFormProps {
   onPaymentComplete: () => void;
   onCancel: () => void;
   onAddAdditionalService?: () => void; // Optional callback to add additional services
+  isLoadingServices?: boolean; // Loading state for additional services
+  onPaymentStateChange?: (processingPayment: boolean, creatingBooking: boolean) => void; // Callback to notify parent of payment states
 }
 
 export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
@@ -27,6 +29,8 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
   onPaymentComplete,
   onCancel,
   onAddAdditionalService,
+  isLoadingServices = false,
+  onPaymentStateChange,
 }) => {
   const { user } = useAuth();
   const [squareInitialized, setSquareInitialized] = useState(false);
@@ -243,6 +247,13 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       }
     };
   }, [squareCard]);
+
+  // Notify parent when payment states change
+  useEffect(() => {
+    if (onPaymentStateChange) {
+      onPaymentStateChange(processingPayment, creatingBooking);
+    }
+  }, [processingPayment, creatingBooking, onPaymentStateChange]);
 
   const createBookingWithoutPayment = async (idempotencyKey: string) => {
     console.log('📅 Creating booking without payment first...');
@@ -610,9 +621,17 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
           <Button
             onClick={onAddAdditionalService}
             variant="outline"
-            className="w-full py-2 text-sm border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600"
+            className="w-full py-2 text-sm border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-500"
+            disabled={isLoadingServices}
           >
-            + Add Another Service
+            {isLoadingServices ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                Loading Services...
+              </div>
+            ) : (
+              "+ Add Another Service"
+            )}
           </Button>
         )}
 
