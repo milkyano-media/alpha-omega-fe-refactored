@@ -71,6 +71,9 @@ export default function CleanAppointmentPage() {
   const [allBarbers, setAllBarbers] = useState<Record<number, TeamMember[]>>(
     {},
   );
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -420,6 +423,7 @@ export default function CleanAppointmentPage() {
     }
 
     try {
+      setIsLoadingServices(true);
       setError(null);
       console.log(
         "Fetching services and barbers for additional service dialog...",
@@ -469,6 +473,8 @@ export default function CleanAppointmentPage() {
     } catch (error) {
       console.error("Error fetching services:", error);
       setError("Failed to load services. Please try again.");
+    } finally {
+      setIsLoadingServices(false);
     }
   };
 
@@ -605,6 +611,11 @@ export default function CleanAppointmentPage() {
     setAdditionalServices((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handlePaymentStateChange = (processingPayment: boolean, creatingBooking: boolean) => {
+    setIsProcessingPayment(processingPayment);
+    setIsCreatingBooking(creatingBooking);
+  };
+
   const renderBookingStatus = () => {
     if (timeAutoSelected && selectedTime) {
       return (
@@ -737,6 +748,8 @@ export default function CleanAppointmentPage() {
                   setShowPaymentForm(false);
                 }}
                 onAddAdditionalService={handleAddAdditionalService}
+                isLoadingServices={isLoadingServices}
+                onPaymentStateChange={handlePaymentStateChange}
               />
             ) : (
               <>
@@ -813,11 +826,18 @@ export default function CleanAppointmentPage() {
                       onClick={handleAddAdditionalService}
                       variant="outline"
                       className="w-full bg-black text-white hover:bg-gray-800 border-black disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed"
-                      disabled={!selectedTime}
+                      disabled={!selectedTime || isLoadingServices}
                     >
-                      {selectedTime
-                        ? "Add Additional Service"
-                        : "Select Time First"}
+                      {isLoadingServices ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Loading Services...
+                        </div>
+                      ) : selectedTime ? (
+                        "Add Additional Service"
+                      ) : (
+                        "Select Time First"
+                      )}
                     </Button>
                   </div>
                 )}
@@ -835,6 +855,25 @@ export default function CleanAppointmentPage() {
           </div>
         </div>
       </div>
+
+      {/* Loading Screen Overlay */}
+      {(isLoadingServices || isProcessingPayment || isCreatingBooking) && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center shadow-lg border">
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {isLoadingServices ? 'Loading Services' : 
+               isProcessingPayment ? 'Processing Payment' :
+               isCreatingBooking ? 'Creating Booking' : 'Loading'}
+            </h3>
+            <p className="text-gray-600">
+              {isLoadingServices ? 'Please wait while we fetch available services...' :
+               isProcessingPayment ? 'Please wait while we process your payment...' :
+               isCreatingBooking ? 'Please wait while we create your booking...' : 'Please wait...'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Additional Service Selection Dialog */}
       <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
