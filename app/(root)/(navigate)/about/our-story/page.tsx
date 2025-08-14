@@ -61,8 +61,8 @@ export default function Home() {
               alt=""
             />
           </div>
-          <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">
-            WHY WE CREATES BARBERSHOP
+          <h4 className="bg-gray-100 text-xl md:text-2xl px-4 py-2 rounded-lg inline-block">
+            WHY WE CREATE BARBERSHOP
           </h4>
           <p>
             As our collaboration grew stronger, we decided it was time to create
