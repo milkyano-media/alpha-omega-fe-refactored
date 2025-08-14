@@ -63,10 +63,14 @@ export default function CleanAppointmentPage() {
   const [showManualTimeSelection, setShowManualTimeSelection] = useState(false);
 
   // Additional services states
-  const [additionalServices, setAdditionalServices] = useState<AdditionalService[]>([]);
+  const [additionalServices, setAdditionalServices] = useState<
+    AdditionalService[]
+  >([]);
   const [showServiceDialog, setShowServiceDialog] = useState(false);
   const [allServices, setAllServices] = useState<Service[]>([]);
-  const [allBarbers, setAllBarbers] = useState<Record<number, TeamMember[]>>({});
+  const [allBarbers, setAllBarbers] = useState<Record<number, TeamMember[]>>(
+    {},
+  );
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -158,7 +162,7 @@ export default function CleanAppointmentPage() {
       localStorage.removeItem("selectedServices");
       localStorage.removeItem("selectedService");
       localStorage.removeItem("selectedBarberId");
-      
+
       // Clear additional services
       setAdditionalServices([]);
 
@@ -337,57 +341,72 @@ export default function CleanAppointmentPage() {
     setShowPaymentForm(true);
   };
 
-
   // Recalculate additional service times when main service time changes
   useEffect(() => {
     if (!selectedTime || !selectedService) {
       return;
     }
 
-    setAdditionalServices(currentServices => {
+    setAdditionalServices((currentServices) => {
       if (currentServices.length === 0) {
         return currentServices;
       }
 
-      console.log("Main service time changed, recalculating additional service times...");
-      
-      const recalculatedServices = currentServices.map((additionalService, index) => {
-        let calculatedStartTime: Date;
-        
-        if (index === 0) {
-          calculatedStartTime = new Date(selectedTime.start_at);
-          const mainServiceDuration = selectedService.duration > 10000 
-            ? selectedService.duration / 60000 
-            : selectedService.duration;
-          calculatedStartTime.setMinutes(calculatedStartTime.getMinutes() + mainServiceDuration);
-        } else {
-          const previousService = currentServices[index - 1];
-          calculatedStartTime = new Date(previousService.timeSlot.start_at);
-          const previousDuration = previousService.service.duration > 10000 
-            ? previousService.service.duration / 60000 
-            : previousService.service.duration;
-          calculatedStartTime.setMinutes(calculatedStartTime.getMinutes() + previousDuration);
-        }
+      console.log(
+        "Main service time changed, recalculating additional service times...",
+      );
 
-        // Apply 30-minute rounding
-        const minutes = calculatedStartTime.getMinutes();
-        const remainder = minutes % 30;
-        if (remainder !== 0) {
-          calculatedStartTime.setMinutes(minutes + (30 - remainder));
-        }
+      const recalculatedServices = currentServices.map(
+        (additionalService, index) => {
+          let calculatedStartTime: Date;
 
-        const newTimeSlot = {
-          ...additionalService.timeSlot,
-          start_at: calculatedStartTime.toISOString()
-        };
+          if (index === 0) {
+            calculatedStartTime = new Date(selectedTime.start_at);
+            const mainServiceDuration =
+              selectedService.duration > 10000
+                ? selectedService.duration / 60000
+                : selectedService.duration;
+            calculatedStartTime.setMinutes(
+              calculatedStartTime.getMinutes() + mainServiceDuration,
+            );
+          } else {
+            const previousService = currentServices[index - 1];
+            calculatedStartTime = new Date(previousService.timeSlot.start_at);
+            const previousDuration =
+              previousService.service.duration > 10000
+                ? previousService.service.duration / 60000
+                : previousService.service.duration;
+            calculatedStartTime.setMinutes(
+              calculatedStartTime.getMinutes() + previousDuration,
+            );
+          }
 
-        console.log(`Recalculated ${additionalService.service.name} to: ${dayjs(calculatedStartTime).tz("Australia/Melbourne").format("h:mm A")}`);
+          // Apply 30-minute rounding
+          const minutes = calculatedStartTime.getMinutes();
+          const remainder = minutes % 30;
+          if (remainder !== 0) {
+            calculatedStartTime.setMinutes(minutes + (30 - remainder));
+          }
 
-        return {
-          ...additionalService,
-          timeSlot: newTimeSlot
-        };
-      });
+          const newTimeSlot = {
+            ...additionalService.timeSlot,
+            start_at: calculatedStartTime.toISOString(),
+          };
+
+          console.log(
+            `Recalculated ${additionalService.service.name} to: ${dayjs(
+              calculatedStartTime,
+            )
+              .tz("Australia/Melbourne")
+              .format("h:mm A")}`,
+          );
+
+          return {
+            ...additionalService,
+            timeSlot: newTimeSlot,
+          };
+        },
+      );
 
       return recalculatedServices;
     });
@@ -402,29 +421,49 @@ export default function CleanAppointmentPage() {
 
     try {
       setError(null);
-      console.log("Fetching services and barbers for additional service dialog...");
-      
+      console.log(
+        "Fetching services and barbers for additional service dialog...",
+      );
+
       const serviceList = await BookingService.getAllServices();
-      console.log(`Fetched ${serviceList.length} services:`, serviceList.map(s => s.name));
+      console.log(
+        `Fetched ${serviceList.length} services:`,
+        serviceList.map((s) => s.name),
+      );
       setAllServices(serviceList);
 
       const barbersByService: Record<number, TeamMember[]> = {};
       for (const service of serviceList) {
         try {
-          const serviceBarbers = await BookingService.getBarbersForService(service.id);
-          const availableBarbers = serviceBarbers.filter(barber => !barber.is_owner);
+          const serviceBarbers = await BookingService.getBarbersForService(
+            service.id,
+          );
+          const availableBarbers = serviceBarbers.filter(
+            (barber) => !barber.is_owner,
+          );
           barbersByService[service.id] = availableBarbers;
-          console.log(`Service ${service.name}: ${availableBarbers.length} available barbers`);
+          console.log(
+            `Service ${service.name}: ${availableBarbers.length} available barbers`,
+          );
         } catch (err) {
-          console.error(`Failed to fetch barbers for service ${service.id} (${service.name}):`, err);
+          console.error(
+            `Failed to fetch barbers for service ${service.id} (${service.name}):`,
+            err,
+          );
           barbersByService[service.id] = [];
         }
       }
 
-      console.log("All barbers by service:", Object.keys(barbersByService).map(id => 
-        `${serviceList.find(s => s.id === parseInt(id))?.name}: ${barbersByService[parseInt(id)].length} barbers`
-      ));
-      
+      console.log(
+        "All barbers by service:",
+        Object.keys(barbersByService).map(
+          (id) =>
+            `${serviceList.find((s) => s.id === parseInt(id))?.name}: ${
+              barbersByService[parseInt(id)].length
+            } barbers`,
+        ),
+      );
+
       setAllBarbers(barbersByService);
       setShowServiceDialog(true);
     } catch (error) {
@@ -434,8 +473,11 @@ export default function CleanAppointmentPage() {
   };
 
   const handleSelectAdditionalService = async (service: Service) => {
-    console.log("🚀 handleSelectAdditionalService called with service:", service.name);
-    
+    console.log(
+      "🚀 handleSelectAdditionalService called with service:",
+      service.name,
+    );
+
     if (!selectedTime || !selectedService) {
       setError("Please select a main service and time first");
       return;
@@ -443,7 +485,7 @@ export default function CleanAppointmentPage() {
 
     const mainBarber = selectedTime.appointment_segments?.[0]?.team_member_id;
     console.log("Main barber ID from selectedTime:", mainBarber);
-    
+
     if (!mainBarber) {
       setError("Cannot determine main service barber");
       return;
@@ -452,25 +494,36 @@ export default function CleanAppointmentPage() {
     console.log("allBarbers structure:", allBarbers);
     const flattenedBarbers = Object.values(allBarbers).flat();
     console.log("Flattened barbers count:", flattenedBarbers.length);
-    
+
     let barberObj = flattenedBarbers.find(
-      barber => barber.square_up_id === mainBarber || barber.square_up_id == mainBarber
+      (barber) =>
+        barber.square_up_id === mainBarber || barber.square_up_id == mainBarber,
     );
-    
+
     if (!barberObj) {
       try {
-        console.log(`Main barber (${mainBarber}) not found in allBarbers, fetching all team members...`);
+        console.log(
+          `Main barber (${mainBarber}) not found in allBarbers, fetching all team members...`,
+        );
         const allTeamMembers = await BookingService.getTeamMembers();
         console.log(`Fetched ${allTeamMembers.length} team members from API`);
-        
-        barberObj = allTeamMembers.find(barber => barber.square_up_id === mainBarber || barber.square_up_id == mainBarber);
-        
+
+        barberObj = allTeamMembers.find(
+          (barber) =>
+            barber.square_up_id === mainBarber ||
+            barber.square_up_id == mainBarber,
+        );
+
         if (!barberObj) {
-          console.error(`Main barber with ID ${mainBarber} not found in ${allTeamMembers.length} team members`);
+          console.error(
+            `Main barber with ID ${mainBarber} not found in ${allTeamMembers.length} team members`,
+          );
           setError("Main service barber not found");
           return;
         }
-        console.log(`Found main barber: ${barberObj.first_name} ${barberObj.last_name} (${barberObj.square_up_id})`);
+        console.log(
+          `Found main barber: ${barberObj.first_name} (${barberObj.square_up_id})`,
+        );
       } catch (error) {
         console.error("Error fetching team members:", error);
         setError("Failed to load barber information");
@@ -481,43 +534,57 @@ export default function CleanAppointmentPage() {
     try {
       // Calculate when the LAST added service ends
       let lastServiceEndTime;
-      
+
       if (additionalServices.length === 0) {
         lastServiceEndTime = new Date(selectedTime.start_at);
-        const mainServiceDuration = selectedService.duration > 10000 
-          ? selectedService.duration / 60000 
-          : selectedService.duration;
-        lastServiceEndTime.setMinutes(lastServiceEndTime.getMinutes() + mainServiceDuration);
+        const mainServiceDuration =
+          selectedService.duration > 10000
+            ? selectedService.duration / 60000
+            : selectedService.duration;
+        lastServiceEndTime.setMinutes(
+          lastServiceEndTime.getMinutes() + mainServiceDuration,
+        );
       } else {
-        const lastAddedService = additionalServices[additionalServices.length - 1];
+        const lastAddedService =
+          additionalServices[additionalServices.length - 1];
         lastServiceEndTime = new Date(lastAddedService.timeSlot.start_at);
-        const lastServiceDuration = lastAddedService.service.duration > 10000 
-          ? lastAddedService.service.duration / 60000 
-          : lastAddedService.service.duration;
-        lastServiceEndTime.setMinutes(lastServiceEndTime.getMinutes() + lastServiceDuration);
+        const lastServiceDuration =
+          lastAddedService.service.duration > 10000
+            ? lastAddedService.service.duration / 60000
+            : lastAddedService.service.duration;
+        lastServiceEndTime.setMinutes(
+          lastServiceEndTime.getMinutes() + lastServiceDuration,
+        );
       }
-      
+
       // Round up to next 30-minute increment
       const minutes = lastServiceEndTime.getMinutes();
       const remainder = minutes % 30;
       if (remainder !== 0) {
         lastServiceEndTime.setMinutes(minutes + (30 - remainder));
       }
-      
-      console.log(`Last service ends at: ${dayjs(lastServiceEndTime).tz("Australia/Melbourne").format("h:mm A")}`);
+
+      console.log(
+        `Last service ends at: ${dayjs(lastServiceEndTime)
+          .tz("Australia/Melbourne")
+          .format("h:mm A")}`,
+      );
 
       // Create the assigned time slot
       const assignedTimeSlot = {
         start_at: lastServiceEndTime.toISOString(),
         location_id: selectedTime.location_id,
-        appointment_segments: [{
-          team_member_id: mainBarber,
-          service_variation_id: service.service_variation_id,
-          duration_minutes: service.duration > 10000 
-            ? Math.round(service.duration / 60000) 
-            : service.duration,
-          service_variation_version: 1
-        }]
+        appointment_segments: [
+          {
+            team_member_id: mainBarber,
+            service_variation_id: service.service_variation_id,
+            duration_minutes:
+              service.duration > 10000
+                ? Math.round(service.duration / 60000)
+                : service.duration,
+            service_variation_version: 1,
+          },
+        ],
       };
 
       const newAdditionalService: AdditionalService = {
@@ -528,7 +595,6 @@ export default function CleanAppointmentPage() {
 
       setAdditionalServices((prev) => [...prev, newAdditionalService]);
       setShowServiceDialog(false);
-
     } catch (error) {
       console.error("Error adding additional service:", error);
       setError("Failed to add additional service. Please try again.");
@@ -536,7 +602,7 @@ export default function CleanAppointmentPage() {
   };
 
   const handleRemoveAdditionalService = (index: number) => {
-    setAdditionalServices(prev => prev.filter((_, i) => i !== index));
+    setAdditionalServices((prev) => prev.filter((_, i) => i !== index));
   };
 
   const renderBookingStatus = () => {
@@ -658,7 +724,10 @@ export default function CleanAppointmentPage() {
               <StablePaymentForm
                 selectedService={selectedService}
                 selectedTime={selectedTime}
-                selectedServices={[...selectedServices, ...additionalServices.map(as => as.service)]}
+                selectedServices={[
+                  ...selectedServices,
+                  ...additionalServices.map((as) => as.service),
+                ]}
                 onPaymentComplete={() => {
                   console.log("✅ Payment completed successfully");
                   setBookingConfirmed(true);
@@ -677,32 +746,55 @@ export default function CleanAppointmentPage() {
                   error={error}
                   onProceedToPayment={handleShowPaymentForm}
                   showPaymentForm={showPaymentForm}
-                  selectedServices={[...selectedServices, ...additionalServices.map(as => as.service)]}
+                  selectedServices={[
+                    ...selectedServices,
+                    ...additionalServices.map((as) => as.service),
+                  ]}
                 />
-                
+
                 {/* Additional Services Section */}
                 {additionalServices.length > 0 && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 className="text-sm font-medium mb-2 text-blue-800">Additional Services</h3>
+                    <h3 className="text-sm font-medium mb-2 text-blue-800">
+                      Additional Services
+                    </h3>
                     <div className="space-y-2">
                       {additionalServices.map((additionalService, index) => (
-                        <div key={index} className="flex justify-between items-center text-xs">
+                        <div
+                          key={index}
+                          className="flex justify-between items-center text-xs"
+                        >
                           <div className="flex-1">
-                            <p className="font-medium">{additionalService.service.name}</p>
+                            <p className="font-medium">
+                              {additionalService.service.name}
+                            </p>
                             <p className="text-gray-600">
-                              {dayjs(additionalService.timeSlot.start_at).tz("Australia/Melbourne").format("h:mm A")} - 
-                              {dayjs(additionalService.timeSlot.start_at).add(
-                                additionalService.service.duration > 10000 
-                                  ? additionalService.service.duration / 60000 
-                                  : additionalService.service.duration, 
-                                'minute'
-                              ).tz("Australia/Melbourne").format("h:mm A")}
+                              {dayjs(additionalService.timeSlot.start_at)
+                                .tz("Australia/Melbourne")
+                                .format("h:mm A")}{" "}
+                              -
+                              {dayjs(additionalService.timeSlot.start_at)
+                                .add(
+                                  additionalService.service.duration > 10000
+                                    ? additionalService.service.duration / 60000
+                                    : additionalService.service.duration,
+                                  "minute",
+                                )
+                                .tz("Australia/Melbourne")
+                                .format("h:mm A")}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">${(additionalService.service.price_amount / 100).toFixed(2)}</span>
+                            <span className="font-medium">
+                              $
+                              {(
+                                additionalService.service.price_amount / 100
+                              ).toFixed(2)}
+                            </span>
                             <button
-                              onClick={() => handleRemoveAdditionalService(index)}
+                              onClick={() =>
+                                handleRemoveAdditionalService(index)
+                              }
                               className="text-red-600 hover:text-red-800 text-xs"
                             >
                               ✕
@@ -723,7 +815,9 @@ export default function CleanAppointmentPage() {
                       className="w-full bg-black text-white hover:bg-gray-800 border-black disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed"
                       disabled={!selectedTime}
                     >
-                      {selectedTime ? "Add Additional Service" : "Select Time First"}
+                      {selectedTime
+                        ? "Add Additional Service"
+                        : "Select Time First"}
                     </Button>
                   </div>
                 )}
@@ -750,7 +844,8 @@ export default function CleanAppointmentPage() {
               Add Another Service
             </DialogTitle>
             <p className="text-gray-600 text-center mt-2">
-              Select an additional service with your current barber. Services will be scheduled consecutively.
+              Select an additional service with your current barber. Services
+              will be scheduled consecutively.
             </p>
           </DialogHeader>
 
@@ -760,7 +855,9 @@ export default function CleanAppointmentPage() {
                 {allServices
                   .filter((service) => {
                     // Show all services - they'll be assigned to the same barber automatically
-                    console.log(`Showing service: ${service.name} (will use main barber for booking)`);
+                    console.log(
+                      `Showing service: ${service.name} (will use main barber for booking)`,
+                    );
                     return true;
                   })
                   .map((service) => (
@@ -794,8 +891,8 @@ export default function CleanAppointmentPage() {
                             min
                           </span>
                           <span className="flex items-center gap-1">
-                            <span className="font-medium">Price:</span>
-                            ${(service.price_amount / 100).toFixed(2)}
+                            <span className="font-medium">Price:</span>$
+                            {(service.price_amount / 100).toFixed(2)}
                           </span>
                         </div>
                       </div>
