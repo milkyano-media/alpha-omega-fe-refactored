@@ -68,35 +68,49 @@ export default function Home() {
             </button>
           </a>
 
-          <button>
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 36 36"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 0C27.9 0 36 8.1 36 18C36 26.9 29.5 34.2998 21 35.7998L20.8984 35.7188C20.9322 35.7122 20.9662 35.7069 21 35.7002V23H25L25.7998 18H21V14.5C21 13.1 21.5002 12 23.7002 12H26V7.40039C24.7 7.20039 23.3 7 22 7C17.9 7 15 9.5 15 14V18H10.5V23H15V35.7002C15.0335 35.7069 15.0671 35.7123 15.1006 35.7188L15 35.7998C6.50002 34.2998 0 26.9 0 18C0 8.1 8.1 0 18 0Z"
-                fill="#808080"
-              />
-            </svg>
-          </button>
+          <a
+            href="https://www.facebook.com/share/16yXf1kBQt/?mibextid=wwXIfr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="justify-center items-center flex"
+          >
+            <button>
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 0C27.9 0 36 8.1 36 18C36 26.9 29.5 34.2998 21 35.7998L20.8984 35.7188C20.9322 35.7122 20.9662 35.7069 21 35.7002V23H25L25.7998 18H21V14.5C21 13.1 21.5002 12 23.7002 12H26V7.40039C24.7 7.20039 23.3 7 22 7C17.9 7 15 9.5 15 14V18H10.5V23H15V35.7002C15.0335 35.7069 15.0671 35.7123 15.1006 35.7188L15 35.7998C6.50002 34.2998 0 26.9 0 18C0 8.1 8.1 0 18 0Z"
+                  fill="white"
+                />
+              </svg>
+            </button>
+          </a>
 
-          <button>
-            <svg
-              width="30"
-              height="32"
-              viewBox="0 0 30 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M10.5328 26.5179C13.2028 26.5179 15.3673 24.6063 15.3673 21.6834V0H21.1652C20.84 3.95446 24.7711 7.77436 29.1064 7.687V13.1389C25.3988 13.1389 22.2461 11.5712 21.1487 10.7012V21.6834C21.1487 26.5179 17.3455 32 10.5328 32C3.72019 32 0 26.5179 0 21.6834C0 14.86 7.22087 10.9027 12.0034 11.8699V17.4231C11.7628 17.338 11.1424 17.2121 10.6139 17.2121C7.92172 17.1129 5.6984 19.2964 5.6984 21.6834C5.6984 24.3534 7.86285 26.5179 10.5328 26.5179Z"
-                fill="#808080"
-              />
-            </svg>
-          </button>
+          <a
+            href="https://www.tiktok.com/@alpha_omega_prahran?_t=ZS-8yt6eG9hAuH&_r=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="justify-center items-center flex"
+          >
+            <button>
+              <svg
+                width="30"
+                height="32"
+                viewBox="0 0 30 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10.5328 26.5179C13.2028 26.5179 15.3673 24.6063 15.3673 21.6834V0H21.1652C20.84 3.95446 24.7711 7.77436 29.1064 7.687V13.1389C25.3988 13.1389 22.2461 11.5712 21.1487 10.7012V21.6834C21.1487 26.5179 17.3455 32 10.5328 32C3.72019 32 0 26.5179 0 21.6834C0 14.86 7.22087 10.9027 12.0034 11.8699V17.4231C11.7628 17.338 11.1424 17.2121 10.6139 17.2121C7.92172 17.1129 5.6984 19.2964 5.6984 21.6834C5.6984 24.3534 7.86285 26.5179 10.5328 26.5179Z"
+                  fill="white"
+                />
+              </svg>
+            </button>
+          </a>
         </div>
       </section>
 
@@ -237,12 +251,12 @@ export default function Home() {
           </h4>
           <div className="flex items-start gap-4">
             <span className="text-6xl font-bold leading-none">A</span>
-            <p>
+            {/* <p>
               <b>
                 Achieving your grooming goals by offering a personalized,
                 stylish look that compliments your individual features.
               </b>
-            </p>
+            </p> */}
           </div>
           <p className="mt-4">
             <b>Our expert barbers</b> are ready to give you recommendations
@@ -270,7 +284,7 @@ export default function Home() {
             </b>
           </p>
 
-          <div className="mt-6 space-y-0">
+          {/* <div className="mt-6 space-y-0">
             <div className="pb-4 border-b border-gray-300">
               <p className="font-bold">01</p>
               <h5 className="font-bold">Personalized</h5>
@@ -300,7 +314,7 @@ export default function Home() {
                 look great and feel confident.
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -316,13 +330,18 @@ export default function Home() {
             CREATIVE AND MODERN
           </h4>
           <div className="flex items-start gap-4">
-            <span className="text-6xl font-bold leading-none">O</span>
-            <p>
+            <Image
+              src={"/assets/ao-pixelate-black.png"}
+              width={80}
+              height={80}
+              alt=""
+            />
+            {/* <p>
               <b>
                 Opening new boundaries between traditional barbering and modern
                 hairdressing.
               </b>
-            </p>
+            </p> */}
           </div>
           <p className="mt-4">
             <b>Alpha Omega mens grooming</b> stands as a{" "}
@@ -338,7 +357,7 @@ export default function Home() {
             <b>today&apos;s salons.</b>
           </p>
 
-          <div className="mt-6 space-y-0">
+          {/* <div className="mt-6 space-y-0">
             <div className="pb-4 border-b border-gray-300">
               <p className="font-bold">01</p>
               <h5 className="font-bold">Innovative</h5>
@@ -365,7 +384,7 @@ export default function Home() {
                 barbershops and the refined elegance of contemporary salons.
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <p className="col-span-2 text-center">
@@ -383,7 +402,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex flex-col container md:flex-row gap-4">
+        {/* <div className="flex flex-col container md:flex-row gap-4">
           <div className="w-full">
             <Image
               src={"/assets/main-client-1.png"}
@@ -416,7 +435,7 @@ export default function Home() {
               alt="Client Feedback"
             />
           </div>
-        </div>
+        </div> */}
       </section>
 
       <section className="flex flex-col items-center gap-8 px-4 container mx-auto">

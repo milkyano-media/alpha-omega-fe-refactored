@@ -522,8 +522,8 @@ function BarberSelectionContent() {
               </p>
             </div> */}
 
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-2 gap-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-2 gap-6 md:gap-0">
                 {/* Random Barber Card - First Position */}
                 {barbers.length > 0 && (
                   <div
@@ -649,7 +649,7 @@ function BarberSelectionContent() {
 
                       {/* Card Content */}
                       <div className="p-2 md:p-6 space-y-4">
-                        <div className="space-y-3 sm:space-y-4 mb-2 sm:mb-6">
+                        <div className="space-y-3 sm:space-y-4">
                           {/* Languages */}
                           <div className="flex items-center gap-2 sm:gap-3">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -840,7 +840,7 @@ function BarberSelectionContent() {
             style={{ whiteSpace: "pre-line" }}
             className="p-4 border rounded-md space-y-4 text-sm text-gray-800 max-h-96 overflow-y-auto"
           >
-            {policy}
+            {renderPolicy(policy)}
           </div>
 
           <div className="flex items-center space-x-2 pt-4">
@@ -890,6 +890,17 @@ By proceeding with the deposit, you acknowledge and agree to the full terms and 
 
 ⸻
 
+Service Selection
+
+To ensure your time is tailored perfectly, please select the service that best matches your needs when booking. Each service is designed with a specific duration and preparation in mind — for example, a clean shave requires more time and preparation than a beard trim, and a scissor cut for long hair differs from a standard haircut.
+Choosing the correct service ensures:
+• The right amount of time is reserved for you.
+• You receive the full experience without feeling rushed.
+• Charges accurately reflect the service provided.
+If you are unsure which option to select, our team is happy to guide you prior to booking.
+
+⸻
+
 Rescheduling
 
 Appointments may be rescheduled with a minimum of 24 hours' notice. Your deposit will be transferred to the new appointment. Rescheduling within 24 hours will result in the deposit being forfeited.
@@ -909,6 +920,7 @@ Clients who miss an appointment without notice will be charged 100% of the sched
 ⸻
 
 Late Arrivals
+
     •    A 10-minute grace period applies.
     •    Arrivals beyond this may lead to a shortened service or loss of your appointment and deposit.
     •    We always strive to run on time to respect every guest's schedule.
@@ -948,6 +960,30 @@ By paying your deposit and booking an appointment, you agree to all terms listed
 Thank you for choosing Alpha Omega — where every detail is designed to elevate your confidence.
 
 `;
+
+const boldWords = [
+  "Legal Notice",
+  "Studio Etiquette",
+  "VIP Privileges",
+  "Confirmation & Communication",
+  "Late Arrivals",
+  "No Shows",
+  "Cancellations",
+  "Rescheduling",
+  "Service Selection",
+  "Booking Deposit",
+];
+
+function renderPolicy(text: any) {
+  return text.split("\n").map((line: any, i: number) => {
+    const match = boldWords.find((word) => line.trim().startsWith(word));
+    return (
+      <p key={i} style={{ whiteSpace: "pre-line" }}>
+        {match ? <strong>{line}</strong> : line}
+      </p>
+    );
+  });
+}
 
 export default function BarberSelection() {
   return (
