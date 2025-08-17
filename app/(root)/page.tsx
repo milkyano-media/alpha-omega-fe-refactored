@@ -90,7 +90,7 @@ export default function Home() {
             </button>
           </a>
 
-          <a
+          {/* <a
             href="https://www.tiktok.com/@alpha_omega_prahran?_t=ZS-8yt6eG9hAuH&_r=1"
             target="_blank"
             rel="noopener noreferrer"
@@ -110,7 +110,7 @@ export default function Home() {
                 />
               </svg>
             </button>
-          </a>
+          </a> */}
         </div>
       </section>
 
@@ -331,7 +331,7 @@ export default function Home() {
           </h4>
           <div className="flex items-start gap-4">
             <Image
-              src={"/assets/ao-pixelate-black.png"}
+              src={"/assets/omega-sign.png"}
               width={80}
               height={80}
               alt=""
@@ -448,8 +448,8 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex justify-evenly items-center w-full md:w-fit md:gap-8">
-          <p>@Alpha_Omega</p>
+        <div className="flex flex-col md:flex-row justify-evenly items-center w-full md:w-fit md:gap-8">
+          <p className="mb-4 md:mb-0">@alpha.omega_mens.grooming</p>
           <svg
             width="40"
             height="40"
@@ -464,30 +464,11 @@ export default function Home() {
               fill="#292929"
             />
           </svg>
-
-          <div className="w-[1px] h-8 bg-black" />
-
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 40 40"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M10 0C4.47715 0 0 4.47715 0 10V30C0 35.5228 4.47715 40 10 40H30C35.5228 40 40 35.5228 40 30V10C40 4.47715 35.5228 0 30 0H10ZM27.0551 13.6554C27.202 13.7507 27.3536 13.8386 27.5094 13.9189C28.5227 14.4225 29.5125 14.5758 30 14.5231V18.4444C30 18.4444 28.6088 18.3869 27.5762 18.1138C26.1369 17.73 25.2144 17.1406 25.2144 17.1406C25.2144 17.1406 24.5741 16.7185 24.526 16.6898V24.793C24.526 25.2434 24.4063 26.3704 24.0477 27.31C23.7334 28.1134 23.2841 28.8576 22.719 29.5107C22.719 29.5107 21.8345 30.6036 20.2808 31.3372C18.9857 31.9489 17.8337 31.9824 17.3761 31.9957C17.3387 31.9968 17.306 31.9977 17.2782 31.9989C17.2782 31.9989 15.151 32.0841 13.2324 30.7847L13.2228 30.7751V30.7847C12.5742 30.3336 11.9957 29.7897 11.5062 29.1705C10.899 28.3986 10.5264 27.4829 10.4303 27.2146V27.205C10.2774 26.7494 9.95679 25.6469 10.0049 24.5827C10.0813 22.7078 10.7125 21.5526 10.8798 21.2651C11.3194 20.4768 11.8936 19.7709 12.5767 19.1794C13.3563 18.528 14.2628 18.0448 15.2391 17.7601C16.2155 17.4754 17.2404 17.3955 18.2492 17.5254L18.2444 21.5473C17.9121 21.4394 17.5647 21.3846 17.2152 21.3849C15.3688 21.3849 13.8723 22.8856 13.8723 24.7389C13.8723 26.5922 15.3688 28.0929 17.2152 28.0929C17.7901 28.0936 18.3553 27.945 18.8549 27.6617C19.3344 27.3902 19.7396 27.0054 20.0348 26.5412C20.33 26.077 20.5063 25.5476 20.548 24.9995V24.9909C20.5505 24.9794 20.5505 24.9679 20.5505 24.9569V24.9569C20.5509 24.9481 20.5515 24.9398 20.5521 24.9317C20.5532 24.9149 20.5543 24.8989 20.5543 24.8821C20.563 24.6819 20.563 24.4793 20.563 24.2743V24.2741V9H24.526C24.5198 9 24.4784 9.37852 24.5784 9.96356H24.5736C24.6933 10.6684 25.0183 11.6751 25.8884 12.6674C26.2361 13.0421 26.6279 13.3738 27.0551 13.6554Z"
-              fill="#292929"
-            />
-          </svg>
-
-          <p>@Alpha_Omega</p>
         </div>
 
         {/* <div className="rounded-xl shadow-xl w-60 md:w-2xl h-96" /> */}
 
-        <p>OR FIND US AT</p>
+        <p className="mt-10 md:mt-0">OR FIND US AT</p>
 
         <div className="w-full md:w-max">
           <Image

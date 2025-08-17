@@ -39,7 +39,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="bg-[#0A0A0A]/15 text-black text-sm">
+    <footer className="bg-[#0A0A0A] text-white text-sm">
       {/* Top Section */}
       {/* <div className="flex flex-col md:flex-row items-center justify-center text-center gap-8 py-10 bg-[#272727]">
         <Button variant={"negative"}>BOOK NOW</Button>
@@ -49,8 +49,8 @@ export function Footer() {
       <div className="container mx-auto px-6 pt-12 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Navigation */}
         <div>
-          <b className="text-black text-base">Navigate</b>
-          <div className="grid grid-cols-2 gap-2 text-black mt-4">
+          <b className="text-white text-base">Navigate</b>
+          <div className="grid grid-cols-2 gap-2 text-white mt-4">
             {navLinks.map((link, index) => (
               <Link key={index} href={link.href} className="hover:text-white">
                 {link.label}
@@ -61,8 +61,8 @@ export function Footer() {
 
         {/* Contact Info */}
         <div>
-          <b className="text-black text-base">Additional Info & Contact</b>
-          <div className="text-black mt-4 space-y-2">
+          <b className="text-white text-base">Additional Info & Contact</b>
+          <div className="text-white mt-4 space-y-2">
             <p>Alpha Omega</p>
             <p>+61 03 9012 5480</p>
             <p>alpha.omega.mens.grooming@gmail.com</p>
@@ -74,8 +74,8 @@ export function Footer() {
 
         {/* Working Hours */}
         <div>
-          <b className="text-black text-base">Working Hours</b>
-          <div className="text-black mt-4 space-y-2">
+          <b className="text-white text-base">Working Hours</b>
+          <div className="text-white mt-4 space-y-2">
             {workingHours.map((item, index) => (
               <div key={index} className="flex justify-between">
                 <p>{item.day}</p>
@@ -87,13 +87,13 @@ export function Footer() {
 
         {/* Locations */}
         <div>
-          <b className="text-black text-base">Location</b>
+          <b className="text-white text-base">Location</b>
           <div className="text-transparent mt-4 space-y-2">
-            <span className="text-black">Prahran</span>
+            <span className="text-white">Prahran</span>
             {locations.map((row, index) => (
               <div key={index} className="flex justify-between">
-                <span className="hover:text-black">{row[0]}</span>
-                <span className="hover:text-black">{row[1]}</span>
+                <span className="hover:text-white">{row[0]}</span>
+                <span className="hover:text-white">{row[1]}</span>
               </div>
             ))}
           </div>
@@ -102,7 +102,7 @@ export function Footer() {
 
       {/* Newsletter */}
       <div className="py-8 px-6 flex flex-col container mx-auto">
-        <p className="text-black mb-4">Want to join our Newsletter?</p>
+        <p className="text-white mb-4">Want to join our Newsletter?</p>
         <div className="flex flex-col items-center gap-4 max-w-md">
           <Input
             className="bg-[#292929] border-none px-4 py-3 w-full text-white"
@@ -116,7 +116,7 @@ export function Footer() {
       </div>
 
       {/* Copyright */}
-      <div className="border-t border-white py-6 text-center text-black">
+      <div className="border-t border-white py-6 text-center text-white">
         Copyright © 2025 Alphaomega.com - All Rights Reserved.
       </div>
     </footer>
