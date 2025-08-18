@@ -7,7 +7,7 @@ import {
   AuthResponse,
   VerifyResponse,
 } from "@/lib/auth-service";
-import { isTokenExpired } from "@/lib/token-utils";
+import { isTokenExpired, decodeToken } from "@/lib/token-utils";
 
 interface AuthContextType {
   user: User | null;
@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = AuthService.getToken();
       if (token) {
         try {
-          const { decodeToken } = require('@/lib/token-utils');
           const payload = decodeToken(token);
           // Create user object from token payload
           const userFromToken: User = {

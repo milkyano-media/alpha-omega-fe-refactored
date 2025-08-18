@@ -29,6 +29,7 @@ export function VerificationForm({
   const [tempPhoneInput, setTempPhoneInput] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { resendOtp } = useAuth();
 
   useEffect(() => {
     // Check if user is already verified
@@ -82,7 +83,7 @@ export function VerificationForm({
         router.push("/signup");
       }
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, resendOtp]);
 
   // Handle OTP input change
   const handleOtpChange = (index: number, value: string) => {
@@ -191,8 +192,6 @@ export function VerificationForm({
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
-
-  const { resendOtp } = useAuth();
 
   const handleResendOtp = async () => {
     if (!phoneNumber) {

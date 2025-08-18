@@ -87,7 +87,7 @@ export function VerificationGuard({
       try {
         const payload = decodeToken(token);
         isVerified = payload.verified;
-      } catch (error) {
+      } catch {
         // Fall back to user data if token decode fails
         isVerified = user.verified;
       }

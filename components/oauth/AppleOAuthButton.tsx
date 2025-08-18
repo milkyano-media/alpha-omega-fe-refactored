@@ -29,27 +29,6 @@ const AppleOAuthButton: React.FC<AppleOAuthButtonProps> = ({
   const appleButtonRef = useRef<HTMLButtonElement>(null);
   const isInitialized = useRef(false);
 
-  useEffect(() => {
-    // Load Apple Sign In script
-    const script = document.createElement("script");
-    script.src =
-      "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
-    script.async = true;
-    script.defer = true;
-
-    script.onload = () => {
-      initializeAppleAuth();
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, []);
-
   const initializeAppleAuth = useCallback(() => {
     if (isInitialized.current || !window.AppleID) return;
 
@@ -79,6 +58,27 @@ const AppleOAuthButton: React.FC<AppleOAuthButtonProps> = ({
       onError?.("Failed to initialize Apple authentication");
     }
   }, [onError]);
+
+  useEffect(() => {
+    // Load Apple Sign In script
+    const script = document.createElement("script");
+    script.src =
+      "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      initializeAppleAuth();
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, [initializeAppleAuth]);
 
   const handleAppleSignIn = useCallback(async () => {
     if (!window.AppleID) {

@@ -18,26 +18,6 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const isInitialized = useRef(false);
 
-  useEffect(() => {
-    // Load Google Identity Services script
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-
-    script.onload = () => {
-      initializeGoogleAuth();
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, []);
-
   const initializeGoogleAuth = useCallback(() => {
     if (isInitialized.current || !window.google) return;
 
@@ -53,7 +33,6 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
       // Initialize Google Identity Services
       window.google.accounts.id.initialize({
         client_id: clientId,
-        use_fedcm_for_prompt: false, // Disable FedCM to avoid browser warnings
         callback: async (response: any) => {
           try {
             console.log("Google OAuth response:", response);
@@ -141,6 +120,26 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
     onError,
     onNeedPhoneNumber,
   ]);
+
+  useEffect(() => {
+    // Load Google Identity Services script
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      initializeGoogleAuth();
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, [initializeGoogleAuth]);
 
   return (
     <div className="google-oauth-container w-full">
