@@ -18,6 +18,27 @@ export default function ServiceSelection() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
+  // Check for Fresha redirect environment variable
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_REDIRECT_TO_FRESHA === 'true') {
+      window.location.href = "https://www.fresha.com/el/a/alpha-omega-mens-grooming-prahran-104-greville-street-hmdf1dt5?pId=2632101#gallery-section";
+      return;
+    }
+  }, []);
+
+  // Show redirect loading if redirect is enabled
+  if (process.env.NEXT_PUBLIC_REDIRECT_TO_FRESHA === 'true') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Redirecting to Fresha...</h2>
+          <p className="text-gray-600">Taking you to our booking platform</p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     // Check if user is authenticated
     if (!isAuthenticated) {
