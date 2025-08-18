@@ -70,7 +70,7 @@ export function Menu() {
             >
               <path
                 d="M24.4706 19.9413H7.5M24.4706 13.9706H7.5M24.4706 7.99994H7.5"
-                stroke="#000000"
+                stroke="white"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
