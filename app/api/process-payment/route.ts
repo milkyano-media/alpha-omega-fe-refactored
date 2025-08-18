@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse request body
     const body = await request.json();
-    const { sourceId, amount, idempotencyKey, locationId, customerDetails } =
+    const { sourceId, amount, idempotencyKey, locationId } =
       body;
 
     if (!sourceId || !amount || !idempotencyKey || !locationId) {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create payment with Square API
+    // Create payment with Square API - v39.1.1 format (camelCase)
     const paymentRequest: any = {
       sourceId,
       amountMoney: {
@@ -38,19 +38,50 @@ export async function POST(request: NextRequest) {
       statementDescriptionIdentifier: 'ALPHAOMEGA'
     };
 
-    // Add customer details if available
-    if (customerDetails?.squareCustomerId) {
-      paymentRequest.customerId = customerDetails.squareCustomerId;
-    }
+    // Temporarily disable customer ID to debug Square API issue
+    // if (customerDetails?.squareCustomerId) {
+    //   paymentRequest.customerId = customerDetails.squareCustomerId;
+    // }
 
     console.log(
       'Payment request:',
-      JSON.stringify(paymentRequest, (key, value) =>
+      JSON.stringify(paymentRequest, (_, value) =>
         typeof value === 'bigint' ? value.toString() : value
       )
     );
 
     const response = await square.paymentsApi.createPayment(paymentRequest);
+
+    // Create local payment record via webhook immediately after payment
+    if (response.result.payment && body.userToken) {
+      try {
+        console.log('🔗 Creating local payment record via webhook...');
+        const webhookResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/webhook/square-payment-success`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${body.userToken}`
+          },
+          body: JSON.stringify({
+            square_payment_id: response.result.payment.id,
+            amount_cents: Number(amount),
+            currency: 'AUD',
+            receipt_url: response.result.payment.receiptUrl || null
+          })
+        });
+
+        if (webhookResponse.ok) {
+          const webhookData = await webhookResponse.json();
+          console.log('✅ Local payment record created successfully:', webhookData);
+        } else {
+          const errorData = await webhookResponse.json();
+          console.error('❌ Webhook failed:', errorData);
+        }
+      } catch (error) {
+        console.error('❌ Error calling payment webhook:', error);
+        // Don't fail the payment if local record creation fails
+      }
+    }
 
     // Return success response with payment details
     return NextResponse.json({

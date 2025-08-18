@@ -59,7 +59,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         {/* Selected Services */}
         {selectedServices.map((service, index) => (
-          <div key={service.id} className={`p-3 border-b border-gray-200 flex justify-between items-center ${
+          <div key={`${service.id}-${index}`} className={`p-3 border-b border-gray-200 flex justify-between items-center ${
             index === 0 ? 'bg-gray-50' : 'bg-blue-50'
           }`}>
             <div className="flex-1">

@@ -396,8 +396,8 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     try {
       // Store successful booking information with payment
       const bookingInfo = {
-        bookingId: bookingResponse.booking?.data?.id,
-        squareBookingId: bookingResponse.booking?.data?.square_booking_id,
+        bookingId: bookingResponse.data?.booking?.id,
+        squareBookingId: bookingResponse.data?.booking?.square_booking_id,
         paymentInfo: paymentInfo,
         services: selectedServices,
         teamMemberId: selectedTime?.appointment_segments?.[0]?.team_member_id,
@@ -517,6 +517,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
             customerDetails: {
               squareCustomerId: updatedCustomerId,
             },
+            userToken: localStorage.getItem('token')
           }),
         });
 
@@ -538,23 +539,18 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
           await attachPaymentToBooking(bookingResponse, paymentInfo);
 
           // Store payment success for debugging
-          localStorage.setItem(
-            "paymentSuccessful",
-            JSON.stringify({
-              paymentId: paymentData.payment?.id,
-              amount: formattedAmount,
-              timestamp: new Date().toISOString(),
-              idempotencyKey,
-              bookingId: bookingResponse.booking?.data?.id,
-            }),
-          );
+          localStorage.setItem("paymentSuccessful", JSON.stringify({
+            paymentId: paymentData.payment?.id,
+            amount: formattedAmount,
+            timestamp: new Date().toISOString(),
+            idempotencyKey,
+            bookingId: bookingResponse.data?.booking?.id
+          }));
+          
+          console.log('✅ Complete NEW booking-first flow finished successfully');
 
-          console.log(
-            "✅ Complete NEW booking-first flow finished successfully",
-          );
-
-          // Call completion callback
-          console.log("🎯 Calling onPaymentComplete callback...");
+          // Call completion callback immediately after payment success
+          console.log('🎯 Calling onPaymentComplete callback after payment success...');
           onPaymentComplete();
           console.log("✅ onPaymentComplete callback executed");
         } else {

@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { VerificationGuard } from "@/components/verification-guard";
 
 // Additional service interface
 interface AdditionalService {
@@ -109,6 +110,7 @@ export default function CleanAppointmentPage() {
     // Check for auto-selected time from closest-time barber selection
     const autoSelectedTimeFlag = localStorage.getItem("autoSelectedTime");
     const selectedBarberId = localStorage.getItem("selectedBarberId");
+    const rescheduleBookingId = localStorage.getItem("rescheduleBookingId");
 
     if (autoSelectedTimeFlag === "true") {
       const savedTimeSlot = localStorage.getItem("selectedTimeSlot");
@@ -140,6 +142,15 @@ export default function CleanAppointmentPage() {
           localStorage.removeItem("autoSelectedTime");
         }
       }
+    } else if (rescheduleBookingId) {
+      // Reschedule scenario - always show manual time selection
+      console.log(
+        "Reschedule detected, enabling manual time selection",
+        {
+          rescheduleBookingId,
+        },
+      );
+      setShowManualTimeSelection(true);
     } else if (selectedBarberId && autoSelectedTimeFlag !== "true") {
       // Manual barber selection - show manual time selection immediately
       console.log(
@@ -154,6 +165,7 @@ export default function CleanAppointmentPage() {
       console.log("No manual selection triggered", {
         hasSelectedBarberId: !!selectedBarberId,
         autoSelectedTimeFlag,
+        hasRescheduleId: !!rescheduleBookingId,
       });
     }
   }, [isAuthenticated, router]);
@@ -165,6 +177,7 @@ export default function CleanAppointmentPage() {
       localStorage.removeItem("selectedServices");
       localStorage.removeItem("selectedService");
       localStorage.removeItem("selectedBarberId");
+      localStorage.removeItem("rescheduleBookingId");
 
       // Clear additional services
       setAdditionalServices([]);
@@ -172,7 +185,7 @@ export default function CleanAppointmentPage() {
       // Redirect to thank you page
       setTimeout(() => {
         router.push("/book/thank-you");
-      }, 500);
+      }, 400);
     }
   }, [bookingConfirmed, router]);
 
@@ -663,7 +676,8 @@ export default function CleanAppointmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <VerificationGuard requireVerification={true}>
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto mt-28">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -946,5 +960,6 @@ export default function CleanAppointmentPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </VerificationGuard>
   );
 }
