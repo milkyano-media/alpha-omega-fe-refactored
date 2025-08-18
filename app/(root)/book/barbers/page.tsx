@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { VerificationGuard } from "@/components/verification-guard";
 
 function BarberSelectionContent() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -370,7 +371,8 @@ function BarberSelectionContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <VerificationGuard requireVerification={true}>
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 pt-20 sm:pt-32 lg:pt-40">
         {/* Header Section */}
         <div className="text-center mb-8 sm:mb-12">
@@ -867,6 +869,7 @@ function BarberSelectionContent() {
         </DialogContent>
       </Dialog>
     </main>
+    </VerificationGuard>
   );
 }
 

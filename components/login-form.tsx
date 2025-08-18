@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -25,11 +26,15 @@ import {
 } from "@/components/ui/form";
 import { useAuth } from "@/lib/auth-context";
 import { ForgotPasswordModal } from "@/components/forgot-password-modal";
+import GoogleOAuthButton from "@/components/oauth/GoogleOAuthButton";
+import AppleOAuthButton from "@/components/oauth/AppleOAuthButton";
+import { PhoneNumberModal } from "@/components/oauth/PhoneNumberModal";
 
 // Define the schema for form validation
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   password: z.string().min(1, { message: "Password is required" }),
+  rememberMe: z.boolean().default(false),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -41,6 +46,10 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [oauthProfile, setOauthProfile] = useState<any>(null);
+  const [oauthIdToken, setOauthIdToken] = useState<string>("");
+  const [oauthProvider, setOauthProvider] = useState<"google" | "apple">("google");
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams?.get('returnUrl') || null;
@@ -50,6 +59,7 @@ export function LoginForm({
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
   });
 
@@ -60,7 +70,7 @@ export function LoginForm({
     setError(null);
 
     try {
-      await login(values.email, values.password);
+      await login(values.email, values.password, values.rememberMe);
 
       // Redirect back to the page the user was trying to access, or homepage if none specified
       if (returnUrl) {
@@ -75,6 +85,37 @@ export function LoginForm({
       setIsLoading(false);
     }
   }
+
+  const handleOAuthSuccess = () => {
+    // Redirect after successful OAuth login
+    if (returnUrl) {
+      router.push(returnUrl);
+    } else {
+      router.push("/");
+    }
+  };
+
+  const handleOAuthError = (error: string) => {
+    setError(error);
+  };
+
+  const handleNeedPhoneNumber = (profile: any, idToken: string, provider: "google" | "apple") => {
+    setOauthProfile(profile);
+    setOauthIdToken(idToken);
+    setOauthProvider(provider);
+    setShowPhoneModal(true);
+  };
+
+  const handlePhoneModalSuccess = () => {
+    setShowPhoneModal(false);
+    handleOAuthSuccess();
+  };
+
+  const handlePhoneModalClose = () => {
+    setShowPhoneModal(false);
+    setOauthProfile(null);
+    setOauthIdToken("");
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -94,6 +135,36 @@ export function LoginForm({
                     {error}
                   </div>
                 )}
+
+                {/* OAuth Buttons */}
+                <div className="grid gap-3">
+                  <GoogleOAuthButton
+                    onSuccess={handleOAuthSuccess}
+                    onError={handleOAuthError}
+                    onNeedPhoneNumber={(profile, idToken) => 
+                      handleNeedPhoneNumber(profile, idToken, "google")
+                    }
+                  />
+                  <AppleOAuthButton
+                    onSuccess={handleOAuthSuccess}
+                    onError={handleOAuthError}
+                    onNeedPhoneNumber={(profile, idToken) => 
+                      handleNeedPhoneNumber(profile, idToken, "apple")
+                    }
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
 
                 <div className="grid gap-6">
                   <FormField
@@ -134,6 +205,26 @@ export function LoginForm({
                           <Input type="password" placeholder="••••••••" className="h-11 px-4" {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal">
+                            Remember me for 30 days
+                          </FormLabel>
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -179,6 +270,16 @@ export function LoginForm({
           // Clear any existing error and show success message
           setError(null);
         }}
+      />
+
+      <PhoneNumberModal
+        isOpen={showPhoneModal}
+        onClose={handlePhoneModalClose}
+        profile={oauthProfile}
+        idToken={oauthIdToken}
+        provider={oauthProvider}
+        onSuccess={handlePhoneModalSuccess}
+        onError={handleOAuthError}
       />
     </div>
   );

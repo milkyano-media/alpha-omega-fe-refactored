@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             customerId: customerId ? "[REDACTED]" : undefined,
           },
         },
-        (key, value) => (typeof value === "bigint" ? value.toString() : value)
+        (_, value) => (typeof value === "bigint" ? value.toString() : value)
       )
     );
 

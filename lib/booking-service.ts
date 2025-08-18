@@ -12,6 +12,11 @@ export interface BookingRequest {
   idempotencyKey?: string;
 }
 
+export interface UpdateBookingRequest {
+  start_at: string;
+  version: number;
+}
+
 export interface SquareBookingRequest {
   serviceVariationId: string;
   teamMemberId: string;
@@ -243,7 +248,7 @@ export const BookingService = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || null}`,
+          Authorization: `Bearer ${localStorage.getItem("token") || sessionStorage.getItem("token") || null}`,
         },
         body: JSON.stringify(requestData),
       });
@@ -327,7 +332,8 @@ export const BookingService = {
     startDate: Date,
     endDate: Date
   ): Promise<AvailabilityResponse> {
-    const token = localStorage.getItem("token");
+    // Check both localStorage and sessionStorage for token
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     
     if (!token) {
       throw new Error("Authentication required. Please log in again.");
@@ -396,6 +402,19 @@ export const BookingService = {
   },
 
   /**
+   * Update/reschedule an existing booking
+   */
+  async updateBooking(bookingId: string, updateData: UpdateBookingRequest): Promise<any> {
+    try {
+      const response = await API.put(`/bookings/${bookingId}`, updateData);
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to update booking");
+    }
+  },
+
+
+  /**
    * Get user's bookings
    */
   async getUserBookings(page = 1, limit = 10): Promise<any> {
@@ -433,6 +452,73 @@ export const BookingService = {
     } catch (error: any) {
       console.error('❌ BookingService API call failed:', error);
       throw new Error(error.message || "Failed to create booking with segments");
+    }
+  },
+
+  // Refund Request Methods
+  
+  /**
+   * Get user's refund requests
+   */
+  async getUserRefundRequests(page = 1, limit = 10): Promise<any> {
+    try {
+      const response = await API.get(`/refund-requests?page=${page}&limit=${limit}`);
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to fetch refund requests");
+    }
+  },
+
+  /**
+   * Create a new refund request
+   */
+  async createRefundRequest(requestData: {
+    booking_id: number;
+    reason: string;
+    description?: string;
+    amount_requested: number;
+  }): Promise<any> {
+    try {
+      const response = await API.post('/refund-requests', requestData);
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to create refund request");
+    }
+  },
+
+  /**
+   * Check if a booking is eligible for refund
+   */
+  async checkRefundEligibility(bookingId: number): Promise<any> {
+    try {
+      const response = await API.get(`/refund-requests/eligibility/${bookingId}`);
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to check refund eligibility");
+    }
+  },
+
+  /**
+   * Cancel/withdraw a pending refund request
+   */
+  async cancelRefundRequest(refundRequestId: number): Promise<any> {
+    try {
+      const response = await API.delete(`/refund-requests/${refundRequestId}`);
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to cancel refund request");
+    }
+  },
+
+  /**
+   * Get refund request by ID
+   */
+  async getRefundRequestById(refundRequestId: number): Promise<any> {
+    try {
+      const response = await API.get(`/refund-requests/${refundRequestId}`);
+      return response;
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to fetch refund request");
     }
   },
 };

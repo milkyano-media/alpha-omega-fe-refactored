@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { BookingService, TeamMember, Service } from "@/lib/booking-service";
 import { preloadBarberImages } from "@/lib/barber-images";
 import { PlusCheckbox } from "@/components/plus-checkbox";
+import { VerificationGuard } from "@/components/verification-guard";
 
 export default function ServiceSelection() {
   const [services, setServices] = useState<Service[]>([]);
@@ -165,7 +166,8 @@ export default function ServiceSelection() {
   }
 
   return (
-    <main className="min-h-screen bg-white">
+    <VerificationGuard requireVerification={true}>
+      <main className="min-h-screen bg-white">
       <div className="mx-auto px-4 py-6 pt-20 pb-32 mt-28">
         {/* Header Section */}
         <div className="text-center mb-6">
@@ -340,5 +342,6 @@ export default function ServiceSelection() {
         )}
       </div>
     </main>
+    </VerificationGuard>
   );
 }
