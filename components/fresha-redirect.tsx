@@ -10,7 +10,7 @@ export function FreshaRedirectWrapper({ children }: FreshaRedirectProps) {
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_REDIRECT_TO_FRESHA === "true") {
       window.location.href =
-        "https://www.fresha.com/a/alpha-omega-mens-grooming-prahran-104-greville-street-hmdf1dt5";
+        "https://www.fresha.com/book-now/alpha-omega-mens-grooming-nrnszoxt/all-offer?share=true&pId=2632101";
     }
   }, []);
 
