@@ -13,7 +13,7 @@ export function FreshaRedirectWrapper({ children }: FreshaRedirectProps) {
         "https://www.fresha.com/book-now/alpha-omega-mens-grooming-nrnszoxt/all-offer?share=true&pId=2632101";
     }
   }, []);
-
+ 
   // If redirect is enabled, show loading screen
   if (process.env.NEXT_PUBLIC_REDIRECT_TO_FRESHA === "true") {
     return (
