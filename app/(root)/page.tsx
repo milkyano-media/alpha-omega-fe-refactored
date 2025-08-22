@@ -24,8 +24,8 @@ export default function Home() {
         <div className="w-full md:w-max">
           <Image
             src={"/logo/main.png"}
-            width={500}
-            height={500}
+            width={400}
+            height={400}
             alt="Alpha Omega Main logo"
           />
         </div>
