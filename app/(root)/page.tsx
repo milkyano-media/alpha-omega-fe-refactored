@@ -20,8 +20,9 @@ export default function Home() {
 
   return (
     <main className="flex flex-col gap-20">
-      <section className="bg-black bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white md:pt-20">
-        <div className="w-full md:w-max">
+      <section className="bg-black md:bg-black bg-[url('/bg/main-hero-mobile-1.jpeg')] md:bg-none bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-20 relative">
+        <div className="absolute inset-0 bg-black/50 md:hidden"></div>
+        <div className="w-full md:w-max flex justify-center relative z-10">
           <Image
             src={"/logo/main.png"}
             width={400}
@@ -30,7 +31,7 @@ export default function Home() {
           />
         </div>
 
-        <p className="text-center">
+        <p className="text-center relative z-10">
           ELEVATE YOUR IMAGE,
           <br />
           ELEVATE YOUR CONFIDENCE,
@@ -41,11 +42,11 @@ export default function Home() {
           EXPERIENCE THE ART OF ELEGANCE 
         </p>
 
-        <Button variant={"negative"} className="mt-8" onClick={handleBookNow}>
+        <Button variant={"negative"} className="mt-8 relative z-10" onClick={handleBookNow}>
           BOOK NOW
         </Button>
 
-        <div className="flex justify-center items-center gap-8 p-8">
+        <div className="flex justify-center items-center gap-8 p-8 relative z-10">
           <a
             href="https://www.instagram.com/alpha.omega_mens.grooming"
             target="_blank"
@@ -138,13 +139,12 @@ export default function Home() {
 
         <div className="w-full overflow-x-auto flex justify-center">
           <div className="flex flex-nowrap gap-4 px-4">
-            <div className="w-64 flex-shrink-0">
+            <div className="w-64 h-64 flex-shrink-0 relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
               <Image
-                src={"/logo/main.png"}
-                width={500}
-                height={500}
+                src={"/bg/main-service-section.jpeg"}
+                fill
                 alt="Precision haircut service"
-                className="rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 bg-black"
+                className="object-cover"
               />
             </div>
           </div>
@@ -238,12 +238,12 @@ export default function Home() {
 
       <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/assets/ao-pixelate-black.png"}
-              width={300}
-              height={300}
+              src={"/bg/main-alpha-section.jpeg"}
+              fill
               alt=""
+              className="object-cover"
             />
           </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block mt-6">
@@ -318,12 +318,12 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/assets/ao-pixelate-black.png"}
-              width={300}
-              height={300}
+              src={"/bg/main-omega-section.jpeg"}
+              fill
               alt=""
+              className="object-cover"
             />
           </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block mt-6">

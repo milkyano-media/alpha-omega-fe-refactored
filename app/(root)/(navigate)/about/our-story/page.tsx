@@ -17,12 +17,12 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/assets/ao-pixelate-black.png"}
-              width={300}
-              height={300}
+              src={"/bg/about-3.jpeg"}
+              fill
               alt=""
+              className="object-cover"
             />
           </div>
           <h4 className="bg-gray-100 px-4 py-2 rounded-lg inline-block">
@@ -53,12 +53,12 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/assets/ao-pixelate-black.png"}
-              width={300}
-              height={300}
+              src={"/bg/about-4.jpeg"}
+              fill
               alt=""
+              className="object-cover"
             />
           </div>
           <h4 className="bg-gray-100 text-xl md:text-2xl px-4 py-2 rounded-lg inline-block">
@@ -124,7 +124,14 @@ export default function Home() {
           clients
         </p>
 
-        <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full max-w-2xl" />
+        <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full max-w-2xl relative overflow-hidden">
+          <Image
+            src={"/bg/about-5.jpeg"}
+            fill
+            alt=""
+            className="object-cover"
+          />
+        </div>
       </section>
 
       <section className="flex flex-col items-center gap-8 px-4 container mx-auto">

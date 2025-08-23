@@ -80,7 +80,7 @@ export default function Home() {
           />
         </div>
 
-        <p>
+        <p className="text-lg md:text-xl max-w-2xl mx-auto text-center">
           We have the customers and the reviews to prove it our specialty is one
           of the best in Melbourne.
         </p>
