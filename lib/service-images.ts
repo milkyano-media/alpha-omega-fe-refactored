@@ -11,38 +11,38 @@ interface ServiceImageMapping {
 const SERVICE_IMAGE_MAPPINGS: ServiceImageMapping[] = [
   {
     keywords: ['haircut', 'cut', 'trim', 'style', 'scissor'],
-    image: '/assets/services-1.png',
+    image: '/bg/services-1.jpeg',
     fallbackColor: 'from-slate-800 to-slate-900'
   },
   {
     keywords: ['beard', 'facial', 'trim', 'grooming', 'shave'],
-    image: '/assets/services-2.png',
+    image: '/bg/services-2.jpeg',
     fallbackColor: 'from-amber-800 to-amber-900'
   },
   {
     keywords: ['wash', 'shampoo', 'treatment', 'conditioning'],
-    image: '/assets/services-3.png',
+    image: '/bg/services-3.jpeg',
     fallbackColor: 'from-blue-800 to-blue-900'
   },
   {
     keywords: ['color', 'coloring', 'dye', 'highlight', 'tint'],
-    image: '/assets/services-4.png',
+    image: '/bg/services-4.jpeg',
     fallbackColor: 'from-purple-800 to-purple-900'
   },
   {
     keywords: ['package', 'combo', 'full', 'complete', 'premium'],
-    image: '/assets/services-5.png',
+    image: '/bg/services-5.jpeg',
     fallbackColor: 'from-emerald-800 to-emerald-900'
   }
 ];
 
 // Fallback images for rotation
 const FALLBACK_IMAGES = [
-  '/assets/services-1.png',
-  '/assets/services-2.png',
-  '/assets/services-3.png',
-  '/assets/services-4.png',
-  '/assets/services-5.png'
+  '/bg/services-1.jpeg',
+  '/bg/services-2.jpeg',
+  '/bg/services-3.jpeg',
+  '/bg/services-4.jpeg',
+  '/bg/services-5.jpeg'
 ];
 
 // Fallback gradient colors

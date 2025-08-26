@@ -4,6 +4,7 @@ import { FAQSection } from "@/components/faq";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { ServicesCarousel } from "@/components/services-carousel";
 import Image from "next/image";
 
 export default function Home() {
@@ -137,18 +138,7 @@ export default function Home() {
           <b>All beard services Includes :</b> razor, styling 
         </p>
 
-        <div className="w-full overflow-x-auto flex justify-center">
-          <div className="flex flex-nowrap gap-4 px-4">
-            <div className="w-64 h-64 flex-shrink-0 relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-              <Image
-                src={"/bg/main-service-section.jpeg"}
-                fill
-                alt="Precision haircut service"
-                className="object-cover"
-              />
-            </div>
-          </div>
-        </div>
+        <ServicesCarousel className="my-8" />
 
         <Button className="rounded-full px-10" onClick={handleBookNow}>
           CHECK OUR SERVICES
@@ -599,7 +589,7 @@ export default function Home() {
 
         <div className="w-full md:w-max">
           <Image
-            src={"/assets/main-7.png"}
+            src={"/assets/main-9.webp"}
             width={500}
             height={500}
             alt="Barbershop 3d"
