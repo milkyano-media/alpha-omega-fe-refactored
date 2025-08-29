@@ -4,7 +4,9 @@ import { FAQSection } from "@/components/faq";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { ServicesCarousel } from "@/components/services-carousel";
+import { ServicesGrid } from "@/components/services-grid";
+import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
+import { SwipeableContainer } from "@/components/swipeable-container";
 import Image from "next/image";
 
 export default function Home() {
@@ -123,6 +125,10 @@ export default function Home() {
             width={500}
             height={500}
             alt="Our Services 3d"
+            style={{
+              width: "auto",
+              height: "auto",
+            }}
           />
         </div>
 
@@ -138,7 +144,7 @@ export default function Home() {
           <b>All beard services Includes :</b> razor, styling 
         </p>
 
-        <ServicesCarousel className="my-8" />
+        <ServicesGrid className="my-8" />
 
         <Button className="rounded-full px-10" onClick={handleBookNow}>
           CHECK OUR SERVICES
@@ -240,7 +246,7 @@ export default function Home() {
             EXPERT BARBERS
           </h4>
           <div className="flex items-start gap-4">
-            <span className="text-6xl font-bold leading-none">A</span>
+            {/* <span className="text-6xl font-bold leading-none">A</span> */}
             {/* <p>
               <b>
                 Achieving your grooming goals by offering a personalized,
@@ -320,12 +326,12 @@ export default function Home() {
             CREATIVE AND MODERN
           </h4>
           <div className="flex items-start gap-4">
-            <Image
+            {/* <Image
               src={"/assets/omega-sign.png"}
               width={80}
               height={80}
               alt=""
-            />
+            /> */}
             {/* <p>
               <b>
                 Opening new boundaries between traditional barbering and modern
@@ -392,40 +398,48 @@ export default function Home() {
           />
         </div>
 
-        {/* <div className="flex flex-col container md:flex-row gap-4">
-          <div className="w-full">
-            <Image
-              src={"/assets/main-client-1.png"}
-              width={500}
-              height={500}
-              alt="Client Feedback"
-            />
-          </div>
-          <div className="w-full">
-            <Image
-              src={"/assets/main-client-2.png"}
-              width={500}
-              height={500}
-              alt="Client Feedback"
-            />
-          </div>
-          <div className="w-full">
-            <Image
-              src={"/assets/main-client-3.png"}
-              width={500}
-              height={500}
-              alt="Client Feedback"
-            />
-          </div>
-          <div className="w-full">
-            <Image
-              src={"/assets/main-client-4.png"}
-              width={500}
-              height={500}
-              alt="Client Feedback"
-            />
-          </div>
-        </div> */}
+        <div className="container">
+          <SwipeableContainer>
+            <div className="flex gap-4 pb-4 md:justify-center" style={{ minWidth: 'max-content' }}>
+              <div className="flex-shrink-0 w-80 md:w-96">
+                <Image
+                  src={"/assets/main-client-1.png"}
+                  width={500}
+                  height={500}
+                  alt="Client Feedback"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+              <div className="flex-shrink-0 w-80 md:w-96">
+                <Image
+                  src={"/assets/main-client-2.png"}
+                  width={500}
+                  height={500}
+                  alt="Client Feedback"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+              <div className="flex-shrink-0 w-80 md:w-96">
+                <Image
+                  src={"/assets/main-client-3.png"}
+                  width={500}
+                  height={500}
+                  alt="Client Feedback"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+              <div className="flex-shrink-0 w-80 md:w-96">
+                <Image
+                  src={"/assets/main-client-4.png"}
+                  width={500}
+                  height={500}
+                  alt="Client Feedback"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+            </div>
+          </SwipeableContainer>
+        </div>
       </section>
 
       <section className="flex flex-col items-center gap-8 px-4 container mx-auto">
@@ -621,15 +635,43 @@ export default function Home() {
         </Button>
 
         <div className="w-full flex justify-center">
-          <div className="relative w-full max-w-[500px] aspect-square overflow-hidden rounded-4xl shadow-lg">
-            <Image
-              src="/assets/main-8.png"
-              fill
-              alt="Gallery of successful haircuts showcase"
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 500px"
-            />
-          </div>
+          <HorizontalCarousel 
+            items={[
+              {
+                id: "1",
+                title: "Gallery Showcase 1",
+                image: "/assets/main-8.png",
+                gradient: "from-slate-800 to-slate-900"
+              },
+              {
+                id: "2",
+                title: "Gallery Showcase 2",
+                image: "/assets/main-8.png",
+                gradient: "from-amber-800 to-amber-900"
+              },
+              {
+                id: "3",
+                title: "Gallery Showcase 3",
+                image: "/assets/main-8.png",
+                gradient: "from-blue-800 to-blue-900"
+              },
+              {
+                id: "4",
+                title: "Gallery Showcase 4",
+                image: "/assets/main-8.png",
+                gradient: "from-purple-800 to-purple-900"
+              },
+              {
+                id: "5",
+                title: "Gallery Showcase 5",
+                image: "/assets/main-8.png",
+                gradient: "from-emerald-800 to-emerald-900"
+              }
+            ]}
+            autoRotate={true}
+            autoRotateInterval={4000}
+            className="my-8"
+          />
         </div>
       </section>
     </main>

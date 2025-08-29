@@ -1,7 +1,11 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 export default function Home() {
+  const router = useRouter();
   return (
     <main className="flex flex-col gap-20">
       <section className="flex flex-col gap-8 px-4 mt-40 max-w-2xl text-center items-center mb-40 container mx-auto">
@@ -20,7 +24,12 @@ export default function Home() {
           exceptional grooming.
         </p>
 
-        <Button className="bg-[#525252] rounded-full py-2">Haircuts</Button>
+        <Button 
+          className="bg-[#525252] rounded-full py-2"
+          onClick={() => router.push("/gallery/haircuts")}
+        >
+          Haircuts
+        </Button>
         <Button className="bg-[#525252] rounded-full py-2">Barbershop</Button>
       </section>
     </main>
