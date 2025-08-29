@@ -45,7 +45,11 @@ export default function Home() {
           EXPERIENCE THE ART OF ELEGANCE 
         </p>
 
-        <Button variant={"negative"} className="mt-8 relative z-10" onClick={handleBookNow}>
+        <Button
+          variant={"negative"}
+          className="mt-8 relative z-10"
+          onClick={handleBookNow}
+        >
           BOOK NOW
         </Button>
 
@@ -604,8 +608,8 @@ export default function Home() {
         <div className="w-full md:w-max">
           <Image
             src={"/assets/main-9.webp"}
-            width={500}
-            height={500}
+            width={800}
+            height={800}
             alt="Barbershop 3d"
           />
         </div>
