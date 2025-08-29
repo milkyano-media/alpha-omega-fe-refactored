@@ -43,7 +43,11 @@ export default function Home() {
           EXPERIENCE THE ART OF ELEGANCE 
         </p>
 
-        <Button variant={"negative"} className="mt-8 relative z-10" onClick={handleBookNow}>
+        <Button
+          variant={"negative"}
+          className="mt-8 relative z-10"
+          onClick={handleBookNow}
+        >
           BOOK NOW
         </Button>
 
@@ -392,7 +396,7 @@ export default function Home() {
           />
         </div>
 
-        {/* <div className="flex flex-col container md:flex-row gap-4">
+        <div className="flex flex-col container md:flex-row gap-4">
           <div className="w-full">
             <Image
               src={"/assets/main-client-1.png"}
@@ -425,7 +429,7 @@ export default function Home() {
               alt="Client Feedback"
             />
           </div>
-        </div> */}
+        </div>
       </section>
 
       <section className="flex flex-col items-center gap-8 px-4 container mx-auto">
@@ -590,8 +594,8 @@ export default function Home() {
         <div className="w-full md:w-max">
           <Image
             src={"/assets/main-9.webp"}
-            width={500}
-            height={500}
+            width={800}
+            height={800}
             alt="Barbershop 3d"
           />
         </div>
