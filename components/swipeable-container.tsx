@@ -8,7 +8,7 @@ interface SwipeableContainerProps {
 }
 
 export function SwipeableContainer({ children, className = "" }: SwipeableContainerProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);

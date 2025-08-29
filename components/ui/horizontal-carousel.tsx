@@ -70,7 +70,7 @@ export function HorizontalCarousel({
     >
       <div className="relative w-full h-full flex justify-center items-center">
         {items.map((item, index) => {
-          const isActive = index === currentIndex;
+          // const isActive = index === currentIndex;
           // Calculate relative position for horizontal layout
           let relativeIndex = index - currentIndex;
           

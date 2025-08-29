@@ -69,7 +69,7 @@ export function GalleryCarousel({ className }: GalleryCarouselProps) {
           className="flex transition-transform duration-500 ease-in-out h-full"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
-          {GALLERY_IMAGES.map((image, index) => (
+          {GALLERY_IMAGES.map((image) => (
             <div key={image.id} className="relative w-full flex-shrink-0">
               <Image
                 src={image.src}
