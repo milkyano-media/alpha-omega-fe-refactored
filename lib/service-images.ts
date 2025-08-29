@@ -33,6 +33,11 @@ const SERVICE_IMAGE_MAPPINGS: ServiceImageMapping[] = [
     keywords: ['package', 'combo', 'full', 'complete', 'premium'],
     image: '/bg/services-5.jpeg',
     fallbackColor: 'from-emerald-800 to-emerald-900'
+  },
+  {
+    keywords: ['styling', 'style', 'event', 'formal', 'occasion'],
+    image: '/bg/services-6.png',
+    fallbackColor: 'from-rose-800 to-rose-900'
   }
 ];
 
@@ -42,7 +47,8 @@ const FALLBACK_IMAGES = [
   '/bg/services-2.jpeg',
   '/bg/services-3.jpeg',
   '/bg/services-4.jpeg',
-  '/bg/services-5.jpeg'
+  '/bg/services-5.jpeg',
+  '/bg/services-6.png'
 ];
 
 // Fallback gradient colors
