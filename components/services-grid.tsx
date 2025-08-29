@@ -1,6 +1,6 @@
 "use client";
 
-import { getServiceImageSafe } from "@/lib/service-images";
+// import { getServiceImageSafe } from "@/lib/service-images";
 import Image from "next/image";
 
 interface ServicesGridProps {
