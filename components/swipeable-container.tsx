@@ -1,29 +1,31 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, forwardRef } from "react";
 
 interface SwipeableContainerProps {
   children: React.ReactNode;
   className?: string;
 }
 
-export function SwipeableContainer({ children, className = "" }: SwipeableContainerProps) {
+export const SwipeableContainer = forwardRef<HTMLDivElement, SwipeableContainerProps>(
+  function SwipeableContainer({ children, className = "" }, forwardedRef) {
   // const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLDivElement>(null);
+  const containerRef = forwardedRef || internalRef;
 
   const handleStart = (clientX: number) => {
     setIsDragging(true);
     setStartX(clientX);
-    if (containerRef.current) {
+    if (containerRef && 'current' in containerRef && containerRef.current) {
       setScrollLeft(containerRef.current.scrollLeft);
     }
   };
 
   const handleMove = (clientX: number) => {
-    if (!isDragging || !containerRef.current) return;
+    if (!isDragging || !containerRef || !('current' in containerRef) || !containerRef.current) return;
     
     const x = clientX;
     const walk = (x - startX) * 2; // Multiply for faster scroll
@@ -67,7 +69,7 @@ export function SwipeableContainer({ children, className = "" }: SwipeableContai
   return (
     <div 
       ref={containerRef}
-      className={`md:overflow-visible overflow-x-auto scrollbar-hide ${className}`}
+      className={`overflow-x-auto scrollbar-hide ${className}`}
       style={{ 
         cursor: isDragging ? 'grabbing' : 'grab',
         scrollBehavior: isDragging ? 'auto' : 'smooth'
@@ -83,4 +85,5 @@ export function SwipeableContainer({ children, className = "" }: SwipeableContai
       {children}
     </div>
   );
-}
+  }
+);

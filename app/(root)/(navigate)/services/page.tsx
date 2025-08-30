@@ -87,13 +87,12 @@ export default function ServicesPage() {
                     looking your best.
                   </p>
 
-                  <div className="relative w-full mb-4 sm:mb-6">
+                  <div className="relative w-full mb-4 sm:mb-6 aspect-square">
                     <Image
-                      src={"/assets/services-3.png"}
-                      width={500}
-                      height={500}
+                      src={"/assets/premium-haircut.jpg"}
+                      fill
                       alt="Premium Haircut"
-                      className="w-full h-auto rounded-lg shadow-md"
+                      className="object-cover rounded-lg shadow-md"
                     />
                   </div>
 
@@ -129,13 +128,12 @@ export default function ServicesPage() {
                     cohesive look.
                   </p>
 
-                  <div className="relative w-full mb-4 sm:mb-6">
+                  <div className="relative w-full mb-4 sm:mb-6 aspect-square">
                     <Image
-                      src={"/assets/services-4.png"}
-                      width={500}
-                      height={500}
+                      src={"/assets/haircut-beard-styling.jpg"}
+                      fill
                       alt="Haircut and Beard Styling"
-                      className="w-full h-auto rounded-lg shadow-md"
+                      className="object-cover rounded-lg shadow-md"
                     />
                   </div>
 
