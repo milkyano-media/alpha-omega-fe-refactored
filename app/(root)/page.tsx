@@ -34,7 +34,7 @@ export default function Home() {
           />
         </div>
 
-        <p className="text-center relative z-10">
+        <p className="text-center tracking-wide relative z-10">
           ELEVATE YOUR IMAGE,
           <br />
           ELEVATE YOUR CONFIDENCE,
@@ -159,10 +159,10 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="flex flex-col items-center bg-[#F8F8F8] py-10 px-4">
+      <section className="flex flex-col items-center bg-[#F8F8F8] py-6 px-4">
         <div className="w-full md:w-max">
           <Image
-            src={"/assets/main-2.png"}
+            src={"/assets/main-9.png"}
             width={500}
             height={500}
             alt="Opening Time 3d"
@@ -170,12 +170,7 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-6 container mx-auto max-w-2xl mt-6">
-          <p className="text-center">
-            At Alpha Omega, we value your time and convenience. Check out our
-            flexible opening hours designed to fit seamlessly into your
-            schedule, whether it’s a quick trim before work or a full grooming
-            session on the weekend.
-          </p>
+          <h3 className="text-center">Opening Hours</h3>
 
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <table className="w-full">
@@ -404,7 +399,10 @@ export default function Home() {
 
         <div className="container">
           <SwipeableContainer>
-            <div className="flex gap-4 pb-4 md:justify-center" style={{ minWidth: 'max-content' }}>
+            <div
+              className="flex gap-4 pb-4 md:justify-center"
+              style={{ minWidth: "max-content" }}
+            >
               <div className="flex-shrink-0 w-80 md:w-96">
                 <Image
                   src={"/assets/main-client-1.png"}
@@ -607,7 +605,7 @@ export default function Home() {
 
         <div className="w-full md:w-max">
           <Image
-            src={"/assets/main-9.webp"}
+            src={"/assets/main-2.png"}
             width={800}
             height={800}
             alt="Barbershop 3d"
@@ -639,38 +637,38 @@ export default function Home() {
         </Button>
 
         <div className="w-full flex justify-center">
-          <HorizontalCarousel 
+          <HorizontalCarousel
             items={[
               {
                 id: "1",
                 title: "Gallery Showcase 1",
                 image: "/assets/main-8.png",
-                gradient: "from-slate-800 to-slate-900"
+                gradient: "from-slate-800 to-slate-900",
               },
               {
                 id: "2",
                 title: "Gallery Showcase 2",
                 image: "/assets/main-8.png",
-                gradient: "from-amber-800 to-amber-900"
+                gradient: "from-amber-800 to-amber-900",
               },
               {
                 id: "3",
                 title: "Gallery Showcase 3",
                 image: "/assets/main-8.png",
-                gradient: "from-blue-800 to-blue-900"
+                gradient: "from-blue-800 to-blue-900",
               },
               {
                 id: "4",
                 title: "Gallery Showcase 4",
                 image: "/assets/main-8.png",
-                gradient: "from-purple-800 to-purple-900"
+                gradient: "from-purple-800 to-purple-900",
               },
               {
                 id: "5",
                 title: "Gallery Showcase 5",
                 image: "/assets/main-8.png",
-                gradient: "from-emerald-800 to-emerald-900"
-              }
+                gradient: "from-emerald-800 to-emerald-900",
+              },
             ]}
             autoRotate={true}
             autoRotateInterval={4000}

@@ -21,7 +21,7 @@ export default function ServicesPage() {
     <main className="flex flex-col">
       {/* Hero Section */}
       <section className="flex flex-col gap-6 sm:gap-8 px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 max-w-4xl container mx-auto">
-        <div className="w-full flex justify-center">
+        {/* <div className="w-full flex justify-center">
           <div className="relative w-full max-w-md sm:max-w-lg">
             <Image
               src={"/assets/services-1.png"}
@@ -31,7 +31,7 @@ export default function ServicesPage() {
               className="w-full h-auto rounded-lg shadow-md"
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="text-center space-y-4">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
@@ -206,7 +206,7 @@ export default function ServicesPage() {
       <section className="py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex flex-col gap-8 sm:gap-12 items-center">
-            <div className="text-center space-y-4 max-w-4xl">
+            {/* <div className="text-center space-y-4 max-w-4xl">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
                 Why Choose Our Services
               </h2>
@@ -218,7 +218,7 @@ export default function ServicesPage() {
                 personality. Whether it&apos;s a classic cut or a modern look,
                 we deliver precision, detail, and confidence every time.
               </p>
-            </div>
+            </div> */}
 
             {/* <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
               Customer Experiences
