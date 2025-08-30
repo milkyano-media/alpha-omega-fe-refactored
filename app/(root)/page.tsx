@@ -6,12 +6,20 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ServicesGrid } from "@/components/services-grid";
 import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
-import { SwipeableContainer } from "@/components/swipeable-container";
+import { TestimonialCarousel } from "@/components/testimonial-carousel";
 import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+
+  // Testimonial images data
+  const testimonialImages = [
+    { id: 1, src: "/assets/main-client-1.png", alt: "Client Feedback 1" },
+    { id: 2, src: "/assets/main-client-2.png", alt: "Client Feedback 2" },
+    { id: 3, src: "/assets/main-client-3.png", alt: "Client Feedback 3" },
+    { id: 4, src: "/assets/main-client-4.png", alt: "Client Feedback 4" },
+  ];
 
   const handleBookNow = () => {
     if (isAuthenticated) {
@@ -23,7 +31,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col gap-20">
-      <section className="bg-black md:bg-black bg-[url('/bg/main-hero-mobile-1.jpeg')] md:bg-none bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-20 relative">
+      <section className="bg-black md:bg-black bg-[url('/bg/main-hero-mobile-1.jpeg')] md:bg-none bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-10 relative gap-5">
         <div className="absolute inset-0 bg-black/50 md:hidden"></div>
         <div className="w-full md:w-max flex justify-center relative z-10">
           <Image
@@ -397,50 +405,12 @@ export default function Home() {
           />
         </div>
 
-        <div className="container">
-          <SwipeableContainer>
-            <div
-              className="flex gap-4 pb-4 md:justify-center"
-              style={{ minWidth: "max-content" }}
-            >
-              <div className="flex-shrink-0 w-80 md:w-96">
-                <Image
-                  src={"/assets/main-client-1.png"}
-                  width={500}
-                  height={500}
-                  alt="Client Feedback"
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
-              <div className="flex-shrink-0 w-80 md:w-96">
-                <Image
-                  src={"/assets/main-client-2.png"}
-                  width={500}
-                  height={500}
-                  alt="Client Feedback"
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
-              <div className="flex-shrink-0 w-80 md:w-96">
-                <Image
-                  src={"/assets/main-client-3.png"}
-                  width={500}
-                  height={500}
-                  alt="Client Feedback"
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
-              <div className="flex-shrink-0 w-80 md:w-96">
-                <Image
-                  src={"/assets/main-client-4.png"}
-                  width={500}
-                  height={500}
-                  alt="Client Feedback"
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
-            </div>
-          </SwipeableContainer>
+        {/* Testimonial Section */}
+        <div className="container md:max-w-none md:w-full">
+          <TestimonialCarousel 
+            images={testimonialImages} 
+            className="max-w-full"
+          />
         </div>
       </section>
 
@@ -648,25 +618,31 @@ export default function Home() {
               {
                 id: "2",
                 title: "Gallery Showcase 2",
-                image: "/assets/main-8.png",
+                image: "/assets/cuts-01.jpg",
                 gradient: "from-amber-800 to-amber-900",
               },
               {
                 id: "3",
                 title: "Gallery Showcase 3",
-                image: "/assets/main-8.png",
+                image: "/assets/cuts-02.jpg",
                 gradient: "from-blue-800 to-blue-900",
               },
               {
                 id: "4",
                 title: "Gallery Showcase 4",
-                image: "/assets/main-8.png",
+                image: "/assets/cuts-03.jpg",
                 gradient: "from-purple-800 to-purple-900",
               },
               {
                 id: "5",
                 title: "Gallery Showcase 5",
-                image: "/assets/main-8.png",
+                image: "/assets/cuts-04.jpg",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "6",
+                title: "Gallery Showcase 6",
+                image: "/assets/cuts-05.jpg",
                 gradient: "from-emerald-800 to-emerald-900",
               },
             ]}

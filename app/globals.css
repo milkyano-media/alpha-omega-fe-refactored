@@ -211,6 +211,20 @@
   .rounded-full {
     overflow: hidden;
   }
+
+  /* Hide scrollbars while maintaining functionality */
+  .scrollbar-hide {
+    /* Hide scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Hide scrollbar for Firefox */
+    scrollbar-width: none;
+    
+    /* Hide scrollbar for Internet Explorer and Edge */
+    -ms-overflow-style: none;
+  }
 }
 
 @keyframes marquee {
