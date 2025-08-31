@@ -131,7 +131,7 @@ export default function Home() {
       </section>
 
       <section className="flex flex-col gap-8 justify-center items-center px-4 container mx-auto">
-        <div className="w-full md:w-max">
+        <div className="w-full md:w-max flex justify-center items-center">
           <Image
             src={"/assets/main-1.png"}
             width={500}
@@ -145,11 +145,11 @@ export default function Home() {
         </div>
 
         <p className="text-center">
-          Explore our full range of grooming services, from precision cuts and
+          {/* Explore our full range of grooming services, from precision cuts and
           tailored trims to beard styling and refreshing shaves – each designed
           to elevate your style, enhance your confidence, and redefine your
           look.
-          <br /> <br />
+          <br /> <br /> */}
           <b>All hair services includes :</b> refreshing hair washing, styling,
           tips for maintenance and style the final result.
           <br /> <br />
@@ -159,7 +159,7 @@ export default function Home() {
         <ServicesGrid className="my-8" />
 
         <Button className="rounded-full px-10" onClick={handleBookNow}>
-          CHECK OUR SERVICES
+          EXPLORE
         </Button>
         <p className="text-center">
           Enjoy our introductory 10$ discount on our services by pre-booking
@@ -320,7 +320,7 @@ export default function Home() {
           </div> */}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 order-first">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
               src={"/bg/main-omega-section.jpeg"}
@@ -407,8 +407,8 @@ export default function Home() {
 
         {/* Testimonial Section */}
         <div className="container md:max-w-none md:w-full">
-          <TestimonialCarousel 
-            images={testimonialImages} 
+          <TestimonialCarousel
+            images={testimonialImages}
             className="max-w-full"
           />
         </div>
@@ -643,6 +643,48 @@ export default function Home() {
                 id: "6",
                 title: "Gallery Showcase 6",
                 image: "/assets/cuts-05.jpg",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "7",
+                title: "Gallery Showcase 7",
+                image: "/assets/cuts-06.png",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "8",
+                title: "Gallery Showcase 8",
+                image: "/assets/cuts-07.png",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "9",
+                title: "Gallery Showcase 9",
+                image: "/assets/cuts-08.png",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "10",
+                title: "Gallery Showcase 10",
+                image: "/assets/cuts-09.png",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "11",
+                title: "Gallery Showcase 11",
+                image: "/assets/cuts-10.png",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "12",
+                title: "Gallery Showcase 12",
+                image: "/assets/cuts-11.png",
+                gradient: "from-emerald-800 to-emerald-900",
+              },
+              {
+                id: "13",
+                title: "Gallery Showcase 13",
+                image: "/assets/cuts-12.png",
                 gradient: "from-emerald-800 to-emerald-900",
               },
             ]}

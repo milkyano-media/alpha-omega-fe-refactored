@@ -20,8 +20,8 @@ export default function ServicesPage() {
   return (
     <main className="flex flex-col">
       {/* Hero Section */}
-      <section className="flex flex-col gap-6 sm:gap-8 px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 max-w-4xl container mx-auto">
-        {/* <div className="w-full flex justify-center">
+      {/* <section className="flex flex-col gap-6 sm:gap-8 px-4 sm:px-6 pt-24 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 max-w-4xl container mx-auto">
+        <div className="w-full flex justify-center">
           <div className="relative w-full max-w-md sm:max-w-lg">
             <Image
               src={"/assets/services-1.png"}
@@ -31,7 +31,7 @@ export default function ServicesPage() {
               className="w-full h-auto rounded-lg shadow-md"
             />
           </div>
-        </div> */}
+        </div>
 
         <div className="text-center space-y-4">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
@@ -43,7 +43,7 @@ export default function ServicesPage() {
             sharp and feeling confident.
           </p>
         </div>
-      </section>
+      </section> */}
 
       {/* Services Showcase Section */}
       <section className="bg-gradient-to-b from-gray-900 to-black py-12 sm:py-16 lg:py-20">
@@ -78,7 +78,7 @@ export default function ServicesPage() {
               <div className="bg-white rounded-xl shadow-xl md:hover:scale-105 transition-transform duration-300 mx-2 md:mx-0">
                 <div className="p-4 sm:p-6 md:p-8">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
-                    Premium Haircut
+                    Haircut
                   </h3>
 
                   <p className="text-gray-600 text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">

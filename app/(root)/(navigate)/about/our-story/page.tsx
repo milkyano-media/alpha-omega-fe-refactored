@@ -4,9 +4,9 @@ import Image from "next/image";
 export default function Home() {
   return (
     <main className="flex flex-col gap-20 -mt-20">
-      <section className="bg-[url('/bg/about-1.png')] bg-cover bg-center h-80 md:h-[600px] md:mt-20 flex flex-col justify-center items-center text-center text-white"></section>
+      <section className="bg-[url('/bg/about-1.png')] bg-cover bg-center h-80 md:h-[600px] md:mt-20 hidden md:flex flex-col justify-center items-center text-center text-white"></section>
 
-      <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">
+      <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl md:mt-0 mt-44 container mx-auto">
         <div className="w-full md:w-max mx-auto col-span-2">
           <Image
             src={"/assets/about-1.png"}
@@ -53,7 +53,7 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
+          <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden mb-4">
             <Image
               src={"/bg/about-4.jpeg"}
               fill
@@ -134,7 +134,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="flex flex-col items-center gap-8 px-4 container mx-auto">
+      {/* <section className="flex flex-col items-center gap-8 px-4 container mx-auto">
         <div className="w-full md:w-max">
           <Image
             src={"/assets/about-5.png"}
@@ -153,9 +153,9 @@ export default function Home() {
           barbershop experience that keeps you coming back. At Alpha Omega,
           we’re not just raising the standard; we’re redefining it.
         </p>
-      </section>
+      </section> */}
 
-      <section className="bg-[url('/bg/about-2.png')] bg-cover bg-center h-80"></section>
+      {/* <section className="bg-[url('/bg/about-2.png')] bg-cover bg-center h-80 -mt-20"></section>
 
       <section className="flex px-4 container mx-auto">
         <p>
@@ -168,7 +168,7 @@ export default function Home() {
           luxurious retreat, while staying true to the authenticity of
           old-school barbering.
         </p>
-      </section>
+      </section> */}
 
       <section className="flex flex-col gap-8 px-4 mb-40 container mx-auto">
         <h2 className="text-center">Book An Appointment</h2>
