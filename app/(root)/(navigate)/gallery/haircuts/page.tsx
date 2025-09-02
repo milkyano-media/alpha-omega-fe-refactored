@@ -1,6 +1,5 @@
 "use client";
 
-import { ServicesCarousel } from "@/components/services-carousel";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import Image from "next/image";

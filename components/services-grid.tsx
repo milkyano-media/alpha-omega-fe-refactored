@@ -12,21 +12,31 @@ const SERVICES_DATA = [
   {
     id: "haircut",
     name: "Haircut",
-    description: "Expert scissor cuts tailored to your face shape and style preferences",
+    image: "/assets/cuts-11.png",
+    description:
+      "Expert scissor cuts tailored to your face shape and style preferences",
   },
   {
     id: "beard",
-    name: "Beard Trim", 
+    name: "Beard Trim",
     description: "Professional beard trimming and shaping with razor precision",
   },
   {
     id: "scissor cut",
     name: "Scissor Cut",
+    image: "/assets/premium-haircut.jpg",
     description: "Refreshing hair washing with premium conditioning treatments",
+  },
+  {
+    id: "long beard trim",
+    name: "Long Beard Trim",
+    image: "/assets/cuts-13.png",
+    description: "Professional coloring and styling for the modern gentleman",
   },
   {
     id: "afro haircut",
     name: "Afro Haircut",
+    image: "/assets/cuts-07.png",
     description: "Professional coloring and styling for the modern gentleman",
   },
   {
@@ -37,29 +47,30 @@ const SERVICES_DATA = [
   {
     id: "styling",
     name: "Restyle",
+    image: "/assets/cuts-14.png",
     description: "Professional styling for any occasion or event",
   },
   {
     id: "eyebrows",
-    name: "Eyebrows (Wax & Razor)",
+    name: "Eyebrows",
     description: "Refreshing hair washing with premium conditioning treatments",
   },
-  {
-    id: "long beard",
-    name: "Long Beard Grooming",
-    description: "Professional coloring and styling for the modern gentleman",
-  },
-  
 ];
 
 export function ServicesGrid({ className }: ServicesGridProps) {
   const totalItems = SERVICES_DATA.length;
   const remainingDesktop = totalItems % 3;
-  
+
   // Split items into complete rows and remaining items
-  const completeItems = remainingDesktop === 0 ? SERVICES_DATA : SERVICES_DATA.slice(0, totalItems - remainingDesktop);
-  const remainingItems = remainingDesktop === 0 ? [] : SERVICES_DATA.slice(totalItems - remainingDesktop);
-  
+  const completeItems =
+    remainingDesktop === 0
+      ? SERVICES_DATA
+      : SERVICES_DATA.slice(0, totalItems - remainingDesktop);
+  const remainingItems =
+    remainingDesktop === 0
+      ? []
+      : SERVICES_DATA.slice(totalItems - remainingDesktop);
+
   return (
     <div className={className}>
       {/* Complete rows */}
@@ -71,7 +82,9 @@ export function ServicesGrid({ className }: ServicesGridProps) {
           >
             <Image
               // src={imageData.src}
-              src={`/assets/ao-pixelate-black.png`}
+              src={
+                service.image ? service.image : `/assets/ao-pixelate-black.png`
+              }
               width={400}
               height={300}
               alt={service.name}
@@ -86,10 +99,14 @@ export function ServicesGrid({ className }: ServicesGridProps) {
           </div>
         ))}
       </div>
-      
+
       {/* Last row - centered */}
       {remainingItems.length > 0 && (
-        <div className={`flex justify-center gap-4 md:gap-6 ${completeItems.length > 0 ? 'mt-4 md:mt-6' : ''}`}>
+        <div
+          className={`flex justify-center gap-4 md:gap-6 ${
+            completeItems.length > 0 ? "mt-4 md:mt-6" : ""
+          }`}
+        >
           {remainingItems.map((service) => (
             <div
               key={service.id}
