@@ -115,7 +115,11 @@ export function ServicesGrid({ className }: ServicesGridProps) {
             >
               <Image
                 // src={imageData.src}
-                src={`/assets/ao-pixelate-black.png`}
+                src={
+                  service.image
+                    ? service.image
+                    : `/assets/ao-pixelate-black.png`
+                }
                 width={400}
                 height={300}
                 alt={service.name}
