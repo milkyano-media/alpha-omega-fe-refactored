@@ -177,7 +177,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex flex-col gap-6 container mx-auto max-w-2xl mt-6">
+        {/* <div className="flex flex-col gap-6 container mx-auto max-w-2xl mt-6">
           <h3 className="text-center">Opening Hours</h3>
 
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -236,7 +236,7 @@ export default function Home() {
               </tbody>
             </table>
           </div>
-        </div>
+        </div> */}
       </section>
 
       <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl container mx-auto">

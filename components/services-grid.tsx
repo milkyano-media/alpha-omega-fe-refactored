@@ -19,6 +19,7 @@ const SERVICES_DATA = [
   {
     id: "beard",
     name: "Beard Trim",
+    image: "/assets/cuts-13.png",
     description: "Professional beard trimming and shaping with razor precision",
   },
   {
@@ -30,7 +31,7 @@ const SERVICES_DATA = [
   {
     id: "long beard trim",
     name: "Long Beard Trim",
-    image: "/assets/cuts-13.png",
+    image: "/assets/cuts-15.png",
     description: "Professional coloring and styling for the modern gentleman",
   },
   {
