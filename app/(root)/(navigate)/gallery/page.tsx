@@ -30,7 +30,12 @@ export default function Home() {
         >
           Haircuts
         </Button>
-        <Button className="bg-[#525252] rounded-full py-2">Barbershop</Button>
+        <Button 
+          className="bg-[#525252] rounded-full py-2"
+          onClick={() => router.push("/gallery/barbershop")}
+        >
+          Barbershop
+        </Button>
       </section>
     </main>
   );
