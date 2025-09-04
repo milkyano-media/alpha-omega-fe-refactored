@@ -25,7 +25,7 @@ const SERVICES_DATA = [
   {
     id: "scissor cut",
     name: "Scissor Cut",
-    image: "/assets/premium-haircut.jpg",
+    image: "/assets/cuts-06.png",
     description: "Refreshing hair washing with premium conditioning treatments",
   },
   {
