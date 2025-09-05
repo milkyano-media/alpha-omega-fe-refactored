@@ -54,6 +54,7 @@ const SERVICES_DATA = [
   {
     id: "eyebrows",
     name: "Eyebrows",
+    image: "/assets/eyebrows.jpeg",
     description: "Refreshing hair washing with premium conditioning treatments",
   },
 ];

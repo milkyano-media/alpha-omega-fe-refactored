@@ -444,7 +444,7 @@ export default function Home() {
 
         {/* <div className="rounded-xl shadow-xl w-60 md:w-2xl h-96" /> */}
 
-        <p className="mt-10 md:mt-0">OR FIND US AT</p>
+        {/* <p className="mt-10 md:mt-0">OR FIND US AT</p> */}
 
         <div className="w-full md:w-max">
           <Image
