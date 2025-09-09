@@ -7,6 +7,8 @@ import { useState } from "react";
 import PhoneInput from "react-phone-number-input";
 import { isPossiblePhoneNumber } from "react-phone-number-input";
 import "@/styles/phone-input.css";
+import apiClient from "@/lib/api-client";
+import toast from 'react-hot-toast';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -99,16 +101,32 @@ export function BarberApplicationForm() {
     setError(null);
 
     try {
-      // Here you would typically send the application to your backend
-      console.log("Barber application submitted:", values);
+      // Submit application to backend API using configured API client
+      await apiClient.post('/barber-applications', values);
 
-      // For now, just show success
-      alert("Thank you for your application! We'll be in touch soon.");
+      // Show success toast
+      toast.success("Thank you for your application! We'll be in touch soon.", {
+        duration: 5000,
+        position: 'top-center',
+      });
 
       // Reset form
       form.reset();
-    } catch {
-      setError("Failed to submit application. Please try again.");
+    } catch (error: any) {
+      console.error("Error submitting application:", error);
+      
+      // Extract error message from API response or use default
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          "Failed to submit application. Please try again.";
+      
+      // Show error toast
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
