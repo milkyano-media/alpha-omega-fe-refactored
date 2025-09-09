@@ -48,12 +48,13 @@ const SERVICES_DATA = [
   {
     id: "styling",
     name: "Restyle",
-    image: "/assets/cuts-14.png",
+    image: "/assets/restyle.png",
     description: "Professional styling for any occasion or event",
   },
   {
     id: "eyebrows",
     name: "Eyebrows",
+    image: "/assets/eyebrows.jpeg",
     description: "Refreshing hair washing with premium conditioning treatments",
   },
 ];

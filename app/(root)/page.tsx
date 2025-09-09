@@ -31,7 +31,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col gap-20">
-      <section className="bg-black md:bg-black bg-[url('/bg/main-hero-mobile-1.jpeg')] md:bg-none bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-10 relative gap-5">
+      <section className="bg-black md:bg-[url('/bg/main-hero.png')] bg-[url('/bg/main-hero-mobile-1.jpeg')] bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-10 relative gap-5">
         <div className="absolute inset-0 bg-black/50 md:hidden"></div>
         <div className="w-full md:w-max flex justify-center relative z-10">
           <Image
@@ -444,7 +444,7 @@ export default function Home() {
 
         {/* <div className="rounded-xl shadow-xl w-60 md:w-2xl h-96" /> */}
 
-        <p className="mt-10 md:mt-0">OR FIND US AT</p>
+        {/* <p className="mt-10 md:mt-0">OR FIND US AT</p> */}
 
         <div className="w-full md:w-max">
           <Image
