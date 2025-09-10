@@ -12,14 +12,14 @@ const SERVICES_DATA = [
   {
     id: "haircut",
     name: "Haircut",
-    image: "/assets/cuts-11.png",
+    image: "/assets/haircut.png",
     description:
       "Expert scissor cuts tailored to your face shape and style preferences",
   },
   {
     id: "beard",
     name: "Beard Trim",
-    image: "/assets/cuts-13.png",
+    image: "/assets/beard-trim.png",
     description: "Professional beard trimming and shaping with razor precision",
   },
   {
@@ -31,7 +31,7 @@ const SERVICES_DATA = [
   {
     id: "long beard trim",
     name: "Long Beard Trim",
-    image: "/assets/cuts-15.png",
+    image: "/assets/long-beard-trim.png",
     description: "Professional coloring and styling for the modern gentleman",
   },
   {
