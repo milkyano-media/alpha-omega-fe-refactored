@@ -7,7 +7,7 @@ export default function Home() {
       <section className="flex flex-col gap-8 px-4 mt-40 text-center container mx-auto">
         <div className="w-full md:w-max self-center">
           <Image
-            src={"/assets/careers-1.png"}
+            src={"/assets/careers-1.jpg"}
             width={500}
             height={500}
             alt="Shave Cut"

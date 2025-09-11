@@ -17,22 +17,16 @@ const SERVICES_DATA = [
       "Expert scissor cuts tailored to your face shape and style preferences",
   },
   {
-    id: "beard",
-    name: "Beard Trim",
-    image: "/assets/beard-trim.png",
-    description: "Professional beard trimming and shaping with razor precision",
-  },
-  {
     id: "scissor cut",
     name: "Scissor Cut",
     image: "/assets/cuts-06.png",
     description: "Refreshing hair washing with premium conditioning treatments",
   },
   {
-    id: "long beard trim",
-    name: "Long Beard Trim",
-    image: "/assets/long-beard-trim.png",
-    description: "Professional coloring and styling for the modern gentleman",
+    id: "styling",
+    name: "Restyle",
+    image: "/assets/restyle.png",
+    description: "Professional styling for any occasion or event",
   },
   {
     id: "afro haircut",
@@ -46,16 +40,22 @@ const SERVICES_DATA = [
     description: "Complete grooming experience combining our best services",
   },
   {
-    id: "styling",
-    name: "Restyle",
-    image: "/assets/restyle.png",
-    description: "Professional styling for any occasion or event",
-  },
-  {
     id: "eyebrows",
     name: "Eyebrows",
     image: "/assets/eyebrows.jpeg",
     description: "Refreshing hair washing with premium conditioning treatments",
+  },
+  {
+    id: "beard",
+    name: "Beard Trim",
+    image: "/assets/beard-trim.png",
+    description: "Professional beard trimming and shaping with razor precision",
+  },
+  {
+    id: "long beard trim",
+    name: "Long Beard Trim",
+    image: "/assets/long-beard-trim.png",
+    description: "Professional coloring and styling for the modern gentleman",
   },
 ];
 
