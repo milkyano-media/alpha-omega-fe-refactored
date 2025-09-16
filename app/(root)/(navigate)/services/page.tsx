@@ -89,7 +89,7 @@ export default function ServicesPage() {
 
                   <div className="relative w-full mb-4 sm:mb-6 aspect-square">
                     <Image
-                      src={"/assets/premium-haircut.jpg"}
+                      src={"/assets/cuts-11.png"}
                       fill
                       alt="Premium Haircut"
                       className="object-cover rounded-lg shadow-md"

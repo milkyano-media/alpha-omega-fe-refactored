@@ -41,7 +41,21 @@ export default function Home() {
             />
           </div>
           <h4>Christos</h4>
+
+          <p className="text-gray-600 font-medium">Languages: 🇦🇺 🇬🇷</p>
         </div>
+        <p className="text-center">
+          Driven by creativity, detail, and the pursuit of growth, I’ve been
+          dedicating myself to the industry since 2018, shaping my vision. I
+          came from Greece to Australia, driven by a clear mission. Alpha Omega
+          was created as more than just a barbershop, it’s a reflection of my
+          journey a place of authenticity and luxuriness. To me, style is not
+          just about appearance, but about elevating the way you carry yourself
+          through life.
+          <br />
+          <br />
+          Not here to imitate. Here to dominate.
+        </p>
       </section>
     </main>
   );
