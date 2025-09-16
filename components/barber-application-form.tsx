@@ -7,7 +7,7 @@ import { useState } from "react";
 import PhoneInput from "react-phone-number-input";
 import { isPossiblePhoneNumber } from "react-phone-number-input";
 import "@/styles/phone-input.css";
-import apiClient from "@/lib/api-client";
+import FormSubmissionService from "@/lib/form-submission-service";
 import toast from 'react-hot-toast';
 
 import { Button } from "@/components/ui/button";
@@ -101,8 +101,17 @@ export function BarberApplicationForm() {
     setError(null);
 
     try {
-      // Submit application to backend API using configured API client
-      await apiClient.post('/barber-applications', values);
+      // Submit using the new form submission service
+      await FormSubmissionService.submitBarberApplication({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        experience: values.experience,
+        specializations: values.specializations,
+        availability: values.availability,
+        portfolio: values.portfolio
+      });
 
       // Show success toast
       toast.success("Thank you for your application! We'll be in touch soon.", {
@@ -114,18 +123,18 @@ export function BarberApplicationForm() {
       form.reset();
     } catch (error: any) {
       console.error("Error submitting application:", error);
-      
+
       // Extract error message from API response or use default
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
+      const errorMessage = error.response?.data?.message ||
+                          error.message ||
                           "Failed to submit application. Please try again.";
-      
+
       // Show error toast
       toast.error(errorMessage, {
         duration: 5000,
         position: 'top-center',
       });
-      
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
