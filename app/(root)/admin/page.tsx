@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { API } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const fetchRefundRequests = async (page: number = 1) => {
+  const fetchRefundRequests = useCallback(async (page: number = 1) => {
     try {
       setRefundLoading(true);
       const statusQuery = refundStatusFilter !== "all" ? `&status=${refundStatusFilter}` : "";
@@ -221,7 +221,7 @@ export default function AdminDashboardPage() {
     } finally {
       setRefundLoading(false);
     }
-  };
+  }, [refundStatusFilter]);
 
   const handleRefundStatusUpdate = async (refundId: number, newStatus: string, notes?: string) => {
     const loadingToast = toast.loading(`Updating refund status to ${newStatus}...`, {
@@ -376,13 +376,13 @@ export default function AdminDashboardPage() {
       fetchBookings();
       fetchRefundRequests();
     }
-  }, [mounted, isAuthenticated, user]);
+  }, [mounted, isAuthenticated, user, fetchRefundRequests]);
 
   useEffect(() => {
     if (mounted && isAuthenticated && user?.role === "admin") {
       fetchRefundRequests(refundPagination.currentPage);
     }
-  }, [refundStatusFilter]);
+  }, [refundStatusFilter, fetchRefundRequests, isAuthenticated, mounted, refundPagination.currentPage, user?.role]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
