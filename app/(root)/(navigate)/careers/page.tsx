@@ -1,5 +1,5 @@
 import { BarberApplicationForm } from "@/components/barber-application-form";
-import { EnvDebugComponent } from "@/components/debug/env-debug";
+// import { EnvDebugComponent } from "@/components/debug/env-debug";
 import Image from "next/image";
 
 export default function Home() {
@@ -141,7 +141,7 @@ export default function Home() {
       </section>
 
       {/* Temporary debug component - remove in production */}
-      <EnvDebugComponent />
+      {/* <EnvDebugComponent /> */}
     </main>
   );
 }
