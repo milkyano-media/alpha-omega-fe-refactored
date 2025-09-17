@@ -1,0 +1,777 @@
+"use client"
+
+import React, { useEffect, useState } from "react"
+import { API } from "@/lib/api-client"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Plus, Edit, Trash2, Search, RefreshCw, Tag, ChevronUp, ChevronDown, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import toast from "react-hot-toast"
+import { getErrorMessage } from "@/lib/error-utils"
+import { FormImageUpload } from "@/components/ui/form-image-upload"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+interface ServiceCategory {
+  id: number
+  name: string
+  description: string
+  slug: string
+  display_order: number
+  is_active: boolean
+  icon: string
+  color_theme: string
+  seo_title: string
+  seo_description: string
+  created_at: string
+  updated_at: string
+  services?: Array<{
+    id: number
+    name: string
+    is_active: boolean
+  }>
+}
+
+// Validation schema for service category form
+const categorySchema = z.object({
+  name: z.string()
+    .min(1, "Category name is required")
+    .min(2, "Category name must be at least 2 characters")
+    .max(255, "Category name must be less than 255 characters")
+    .regex(/^[a-zA-Z0-9\s&'-]+$/, "Category name contains invalid characters"),
+  
+  description: z.string()
+    .min(0)
+    .max(1000, "Description must be less than 1000 characters")
+    .optional()
+    .or(z.literal("")),
+
+  slug: z.string()
+    .min(1, "Slug is required")
+    .min(2, "Slug must be at least 2 characters")  
+    .max(255, "Slug must be less than 255 characters")
+    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+
+  display_order: z.string()
+    .regex(/^\d+$/, "Display order must be a number")
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 0, "Display order must be 0 or greater"),
+
+  is_active: z.boolean(),
+
+  icon: z.string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => {
+      if (!val || val.trim() === "") return true
+      const urlRegex = /^https?:\/\/.+/
+      return urlRegex.test(val)
+    }, "Icon must be a valid URL"),
+  
+  color_theme: z.string()
+    .optional()
+    .refine((val) => {
+      if (!val || val.trim() === "") return true
+      return /^#[0-9A-Fa-f]{6}$/.test(val)
+    }, "Color theme must be a valid hex color (e.g., #FF5733)"),
+
+  seo_title: z.string()
+    .max(255, "SEO title must be less than 255 characters")
+    .optional()
+    .or(z.literal("")),
+
+  seo_description: z.string()
+    .max(500, "SEO description must be less than 500 characters")
+    .optional()
+    .or(z.literal(""))
+})
+
+type CategoryFormData = z.infer<typeof categorySchema>
+
+interface ServiceCategoriesSectionProps {
+  activeSection: string
+  onSectionChange?: (section: string) => void
+}
+
+// Sorting and filtering types
+type SortField = 'name' | 'display_order' | 'created_at' | 'services_count'
+type SortDirection = 'asc' | 'desc'
+type StatusFilter = 'all' | 'active' | 'inactive'
+
+const DEFAULT_COLOR = '#6366f1' // Indigo-500 as default fallback color
+
+function ServiceCategoriesSection({ activeSection }: ServiceCategoriesSectionProps) {
+  const [categories, setCategories] = useState<ServiceCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('display_order')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  
+  // Filtering state
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [showFilters, setShowFilters] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CategoryFormData>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      slug: "",
+      display_order: 0,
+      is_active: true,
+      icon: "",
+      color_theme: "",
+      seo_title: "",
+      seo_description: "",
+    }
+  })
+
+  const nameValue = watch("name")
+
+  // Auto-generate slug from name when creating a new category
+  useEffect(() => {
+    if (!editingCategory && nameValue) {
+      const slug = nameValue
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .trim()
+      setValue("slug", slug)
+    }
+  }, [nameValue, editingCategory, setValue])
+
+  useEffect(() => {
+    if (activeSection === "service-categories") {
+      fetchCategories()
+    }
+  }, [activeSection])
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true)
+      const response = await API.get('/service-categories')
+      console.log('Service categories API response:', response)
+      
+      const data = response?.data?.data || response?.data || response || []
+      setCategories(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching service categories:', error)
+      toast.error('Failed to fetch service categories')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateCategory = () => {
+    setEditingCategory(null)
+    reset({
+      name: "",
+      description: "",
+      slug: "",
+      display_order: 0,
+      is_active: true,
+      icon: "",
+      color_theme: "",
+      seo_title: "",
+      seo_description: "",
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleEditCategory = (category: ServiceCategory) => {
+    setEditingCategory(category)
+    reset({
+      name: category.name,
+      description: category.description || "",
+      slug: category.slug,
+      display_order: category.display_order,
+      is_active: category.is_active,
+      icon: category.icon || "",
+      color_theme: category.color_theme || "",
+      seo_title: category.seo_title || "",
+      seo_description: category.seo_description || "",
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleDeleteCategory = async (category: ServiceCategory) => {
+    if (!confirm(`Are you sure you want to delete "${category.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await API.delete(`/service-categories/${category.id}`)
+      toast.success("Category deleted successfully")
+      fetchCategories()
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast.error(getErrorMessage(error))
+    }
+  }
+
+  const onSubmit = async (data: CategoryFormData) => {
+    try {
+      const formattedData = {
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        slug: data.slug.trim(),
+        display_order: data.display_order,
+        is_active: data.is_active,
+        icon: data.icon?.trim() || null,
+        color_theme: data.color_theme?.trim() || null,
+        seo_title: data.seo_title?.trim() || null,
+        seo_description: data.seo_description?.trim() || null,
+      }
+
+      if (editingCategory) {
+        await API.put(`/service-categories/${editingCategory.id}`, formattedData)
+        toast.success("Category updated successfully")
+      } else {
+        await API.post('/service-categories', formattedData)
+        toast.success("Category created successfully")
+      }
+
+      setIsDialogOpen(false)
+      fetchCategories()
+    } catch (error) {
+      console.error('Error saving category:', error)
+      toast.error(getErrorMessage(error))
+    }
+  }
+
+  // Enhanced filtering and sorting
+  const filteredAndSortedCategories = React.useMemo(() => {
+    const filtered = categories.filter(category => {
+      // Search filter
+      const matchesSearch = searchTerm === "" || 
+        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        category.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        category.slug.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'active' && category.is_active) ||
+        (statusFilter === 'inactive' && !category.is_active)
+      
+      return matchesSearch && matchesStatus
+    })
+    
+    // Sorting
+    filtered.sort((a, b) => {
+      let aValue: any
+      let bValue: any
+
+      // Handle special cases
+      if (sortField === 'services_count') {
+        aValue = a.services?.length || 0
+        bValue = b.services?.length || 0
+      } else if (sortField === 'created_at') {
+        aValue = new Date(a.created_at).getTime()
+        bValue = new Date(b.created_at).getTime()
+      } else {
+        aValue = a[sortField as keyof ServiceCategory]
+        bValue = b[sortField as keyof ServiceCategory]
+      }
+      
+      // Convert to string for comparison if needed
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase()
+        bValue = bValue.toLowerCase()
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+    
+    return filtered
+  }, [categories, searchTerm, statusFilter, sortField, sortDirection])
+  
+  // Pagination
+  const totalItems = filteredAndSortedCategories.length
+  const totalPages = Math.ceil(totalItems / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const currentPageCategories = filteredAndSortedCategories.slice(startIndex, endIndex)
+  
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, sortField, sortDirection])
+  
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+  
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return null
+    return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+  }
+  
+  const getColorWithFallback = (color: string | null | undefined) => {
+    return color && color.trim() ? color : DEFAULT_COLOR
+  }
+
+  if (activeSection !== "service-categories") return null
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Tag className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-bold">Service Categories</h2>
+          </div>
+          <Button onClick={handleCreateCategory}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Category
+          </Button>
+        </div>
+
+        {/* Enhanced Controls Section */}
+        <div className="space-y-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search categories..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-[250px]"
+                />
+              </div>
+              
+              {/* Filter Toggle */}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+                <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            
+            <Button variant="outline" onClick={fetchCategories} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+          
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="flex flex-col space-y-2">
+                  <Label className="text-sm font-medium">Status</Label>
+                  <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex flex-col space-y-2">
+                  <Label className="text-sm font-medium">Items per page</Label>
+                  <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 per page</SelectItem>
+                      <SelectItem value="10">10 per page</SelectItem>
+                      <SelectItem value="25">25 per page</SelectItem>
+                      <SelectItem value="50">50 per page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Loading categories...</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('name')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Name
+                        {getSortIcon('name')}
+                      </div>
+                    </TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('display_order')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Order
+                        {getSortIcon('display_order')}
+                      </div>
+                    </TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('services_count')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Services
+                        {getSortIcon('services_count')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentPageCategories.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        {searchTerm ? 'No categories match your search.' : 'No service categories found.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    currentPageCategories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full border border-gray-200" 
+                              style={{ backgroundColor: getColorWithFallback(category.color_theme) }}
+                            />
+                            {category.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-sm bg-muted px-1 py-0.5 rounded">
+                            {category.slug}
+                          </code>
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {category.description ? (
+                            <span className="text-sm text-muted-foreground line-clamp-2">
+                              {category.description}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">No description</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{category.display_order}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={category.is_active ? "default" : "secondary"}>
+                            {category.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {category.services?.length || 0} services
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCategory(category)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCategory(category)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {/* Pagination Controls */}
+            {totalItems > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} categories
+                  {statusFilter !== 'all' && (
+                    <span className="ml-1">
+                      (filtered by {statusFilter})
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        return page === 1 || 
+                               page === totalPages || 
+                               Math.abs(page - currentPage) <= 1
+                      })
+                      .map((page, index, array) => {
+                        const showEllipsis = index > 0 && array[index - 1] !== page - 1
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsis && (
+                              <span className="px-2 text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {page}
+                            </Button>
+                          </React.Fragment>
+                        )
+                      })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Create/Edit Category Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-4xl w-[95vw] max-h-[95vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>
+                {editingCategory ? "Edit Service Category" : "Create Service Category"}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Category Name</Label>
+                      <Input
+                        id="name"
+                        {...register("name")}
+                        placeholder="e.g., Hair Services"
+                      />
+                      {errors.name && (
+                        <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="slug">Slug</Label>
+                      <Input
+                        id="slug"
+                        {...register("slug")}
+                        placeholder="e.g., hair-services"
+                      />
+                      {errors.slug && (
+                        <p className="text-sm text-destructive mt-1">{errors.slug.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="display_order">Display Order</Label>
+                      <Input
+                        id="display_order"
+                        type="number"
+                        min="0"
+                        max="999"
+                        {...register("display_order")}
+                        placeholder="0"
+                      />
+                      {errors.display_order && (
+                        <p className="text-sm text-destructive mt-1">{errors.display_order.message}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_active"
+                        {...register("is_active")}
+                      />
+                      <Label htmlFor="is_active">Active</Label>
+                    </div>
+                  </div>
+
+                  {/* Visual & SEO */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="color_theme">Color Theme</Label>
+                      <Input
+                        id="color_theme"
+                        {...register("color_theme")}
+                        placeholder="#FF5733"
+                      />
+                      {errors.color_theme && (
+                        <p className="text-sm text-destructive mt-1">{errors.color_theme.message}</p>
+                      )}
+                    </div>
+
+                    <div className="w-full">
+                      <FormImageUpload
+                        label="Category Icon"
+                        value={watch("icon")}
+                        onChange={(url) => setValue("icon", url)}
+                        uploadType="service"
+                        maxSizeKB={2048}
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+                        placeholder="Upload icon or enter URL"
+                      />
+                      {errors.icon && (
+                        <p className="text-sm text-destructive mt-1">{errors.icon.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    {...register("description")}
+                    placeholder="Brief description of this category..."
+                    rows={3}
+                  />
+                  {errors.description && (
+                    <p className="text-sm text-destructive mt-1">{errors.description.message}</p>
+                  )}
+                </div>
+
+                {/* SEO Fields */}
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                    SEO Settings
+                  </h4>
+                  
+                  <div>
+                    <Label htmlFor="seo_title">SEO Title</Label>
+                    <Input
+                      id="seo_title"
+                      {...register("seo_title")}
+                      placeholder="e.g., Professional Hair Services | Alpha Omega"
+                    />
+                    {errors.seo_title && (
+                      <p className="text-sm text-destructive mt-1">{errors.seo_title.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="seo_description">SEO Description</Label>
+                    <Textarea
+                      id="seo_description"
+                      {...register("seo_description")}
+                      placeholder="Professional hair services including cuts, styling, and treatments..."
+                      rows={3}
+                    />
+                    {errors.seo_description && (
+                      <p className="text-sm text-destructive mt-1">{errors.seo_description.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        {editingCategory ? "Updating..." : "Creating..."}
+                      </>
+                    ) : (
+                      editingCategory ? "Update Category" : "Create Category"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  )
+}
+
+export { ServiceCategoriesSection }

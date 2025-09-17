@@ -202,7 +202,7 @@ export function FormImageUpload({
       </Label>
       
       {/* Current Image Preview */}
-      {value && (
+      {value && value.trim() !== "" && (
         <Card className="p-2">
           <CardContent className="flex items-center gap-3 p-2">
             <div className="relative w-16 h-16 rounded border overflow-hidden bg-gray-100">
