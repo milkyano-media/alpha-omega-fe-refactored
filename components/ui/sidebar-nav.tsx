@@ -4,7 +4,6 @@
 import { cn } from "@/lib/utils"
 import {
   Calendar,
-  CreditCard,
   FileText,
   Home,
   Images,
@@ -31,14 +30,9 @@ const navItems = [
     icon: Calendar,
   },
   {
-    title: "Services",
-    section: "services", 
+    title: "Services Management",
+    section: "services-management", 
     icon: Wrench,
-  },
-  {
-    title: "Service Pricing",
-    section: "pricing",
-    icon: CreditCard,
   },
   {
     title: "Team Members",

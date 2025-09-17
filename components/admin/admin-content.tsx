@@ -1,8 +1,8 @@
 "use client"
 
 import { OverviewSection } from "./sections/overview-section"
-import { ServicesSection } from "./sections/services-section"
-import { PricingSection } from "./sections/pricing-section"
+import { ServicesManagementSection } from "./sections/services-management-section"
+import { TeamManagementSection } from "./sections/team-management-section"
 import BusinessSettingsSection from "./sections/business-settings-section"
 import { ImagesSection } from "./sections/images-section"
 // Import other sections as we create them
@@ -24,14 +24,14 @@ export function AdminContent({ activeSection = "overview", onSectionChange }: Ad
         onSectionChange={onSectionChange} 
       />
 
-      {/* Services Section */}
-      <ServicesSection 
+      {/* Unified Services Management Section */}
+      <ServicesManagementSection 
         activeSection={activeSection} 
         onSectionChange={onSectionChange} 
       />
 
-      {/* Pricing Section */}
-      <PricingSection 
+      {/* Team Management Section */}
+      <TeamManagementSection 
         activeSection={activeSection} 
         onSectionChange={onSectionChange} 
       />
@@ -55,12 +55,6 @@ export function AdminContent({ activeSection = "overview", onSectionChange }: Ad
         </div>
       )}
 
-      {activeSection === "team" && (
-        <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-medium">Team Members</h3>
-          <p className="text-sm text-muted-foreground">Coming soon - team member management</p>
-        </div>
-      )}
 
 
 
