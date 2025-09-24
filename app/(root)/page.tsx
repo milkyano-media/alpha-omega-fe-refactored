@@ -243,7 +243,7 @@ export default function Home() {
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/bg/main-section-2.jpg"}
+              src={"/bg/main-section-2.jpeg"}
               fill
               alt=""
               className="object-cover"
@@ -323,7 +323,7 @@ export default function Home() {
         <div className="flex flex-col gap-2 order-first">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/bg/main-section-1.jpg"}
+              src={"/bg/main-section-1.jpeg"}
               fill
               alt=""
               className="object-cover"
@@ -446,14 +446,17 @@ export default function Home() {
 
         {/* <p className="mt-10 md:mt-0">OR FIND US AT</p> */}
 
-        <div className="w-full md:w-max">
+        <a
+          href="https://maps.app.goo.gl/HaRjZaFAR8YpbfQN6"
+          className="w-full md:w-max"
+        >
           <Image
             src={"/assets/main-5.png"}
             width={500}
             height={500}
             alt="Alpha Omega on the map"
           />
-        </div>
+        </a>
       </section>
 
       <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10 px-4">

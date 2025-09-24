@@ -125,7 +125,12 @@ export default function Home() {
         </p>
 
         <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full max-w-2xl relative overflow-hidden">
-          <Image src={"/bg/about-5.jpg"} fill alt="" className="object-cover" />
+          <Image
+            src={"/bg/about-5.jpeg"}
+            fill
+            alt=""
+            className="object-cover"
+          />
         </div>
       </section>
 
