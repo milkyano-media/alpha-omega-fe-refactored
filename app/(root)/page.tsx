@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ServicesGrid } from "@/components/services-grid";
-import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
+// import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
 import { TestimonialCarousel } from "@/components/testimonial-carousel";
 import Image from "next/image";
 import { ServicesCarousel } from "@/components/services-carousel";
