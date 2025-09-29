@@ -8,6 +8,7 @@ import { ServicesGrid } from "@/components/services-grid";
 import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
 import { TestimonialCarousel } from "@/components/testimonial-carousel";
 import Image from "next/image";
+import { ServicesCarousel } from "@/components/services-carousel";
 
 export default function Home() {
   const router = useRouter();
@@ -609,7 +610,9 @@ export default function Home() {
           Book appointment
         </Button>
 
-        <div className="w-full flex justify-center">
+        <ServicesCarousel />
+
+        {/* <div className="w-full flex justify-center">
           <HorizontalCarousel
             items={[
               {
@@ -695,7 +698,7 @@ export default function Home() {
             autoRotateInterval={4000}
             className="my-8"
           />
-        </div>
+        </div> */}
       </section>
     </main>
   );

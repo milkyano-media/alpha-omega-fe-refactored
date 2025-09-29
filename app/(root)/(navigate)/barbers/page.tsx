@@ -1,8 +1,10 @@
 import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+export default function BarbersPage() {
   return (
     <main className="flex flex-col gap-20">
+      {/* Hero Section */}
       <section className="flex flex-col gap-8 px-4 mt-40 max-w-2xl container mx-auto">
         <div className="w-full md:w-max self-center">
           <Image
@@ -13,49 +15,60 @@ export default function Home() {
           />
         </div>
 
-        <p>
-          From precision haircuts and classic shaves to beard styling and
-          premium treatments, our services are designed to keep you looking
-          sharp and feeling confident.
+        <p className="text-center text-gray-700">
+          Precision cuts, classic shaves, and premium grooming to keep you sharp
+          and confident.
         </p>
       </section>
 
+      {/* Featured Barber */}
       <section className="flex flex-col items-center gap-8 px-4 container max-w-2xl mx-auto mb-40">
         <div className="w-full md:w-max flex flex-col items-center gap-4">
-          {/* <div className="aspect-square bg-gray-100 relative overflow-hidden rounded-4xl">
-            <Image
-              src={"/assets/barber-1.png"}
-              width={500}
-              height={500}
-              className="object-cover w-full h-full"
-              alt="The Barber"
-            />
-          </div> */}
-
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
             <Image
               src={"/assets/ao-pixelate-black.png"}
               width={500}
               height={500}
-              alt=""
+              alt="Christos Barber"
             />
           </div>
-          <h4>Christos</h4>
+          <h4 className="text-xl font-semibold">Christos</h4>
 
-          <p className="text-gray-600 font-medium">Languages: 🇦🇺 🇬🇷</p>
+          <div className="flex gap-4">
+            <span className="flex items-center gap-2">
+              <Image
+                src="/assets/aus.svg"
+                width={24}
+                height={16}
+                alt="Australia Flag"
+                className="rounded-sm"
+              />
+              English
+            </span>
+            <span className="flex items-center gap-2">
+              <Image
+                src="/assets/greece.svg"
+                width={24}
+                height={16}
+                alt="Greece Flag"
+                className="rounded-sm"
+              />
+              Greek
+            </span>
+          </div>
         </div>
-        <p className="text-center">
-          Driven by creativity, detail, and the pursuit of growth, I’ve been
-          dedicating myself to the industry since 2018, shaping my vision. I
-          came from Greece to Australia, driven by a clear mission. Alpha Omega
-          was created as more than just a barbershop, it’s a reflection of my
-          journey a place of authenticity and luxuriness. To me, style is not
-          just about appearance, but about elevating the way you carry yourself
-          through life.
-          <br />
-          <br />
-          Not here to imitate. Here to dominate.
+
+        <p className="text-center max-w-lg text-gray-700">
+          Barber since 2018, bringing creativity and precision from Greece to
+          Australia. Founder of Alpha Omega — where authenticity meets luxury.
         </p>
+
+        <Link
+          href="/barbers/christos"
+          className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
+        >
+          Learn More
+        </Link>
       </section>
     </main>
   );

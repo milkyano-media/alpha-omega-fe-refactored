@@ -10,65 +10,68 @@ interface ServiceImageMapping {
 // Available service images from assets
 const SERVICE_IMAGE_MAPPINGS: ServiceImageMapping[] = [
   {
-    keywords: ['haircut', 'cut', 'trim', 'style', 'scissor'],
-    image: '/bg/services-1.jpeg',
-    fallbackColor: 'from-slate-800 to-slate-900'
+    keywords: ["haircut", "cut", "trim", "style", "scissor"],
+    image: "/bg/services-1.jpeg",
+    fallbackColor: "from-slate-800 to-slate-900",
   },
   {
-    keywords: ['beard', 'facial', 'trim', 'grooming', 'shave'],
-    image: '/bg/services-2.jpeg',
-    fallbackColor: 'from-amber-800 to-amber-900'
+    keywords: ["beard", "facial", "trim", "grooming", "shave"],
+    image: "/bg/services-2.jpeg",
+    fallbackColor: "from-amber-800 to-amber-900",
   },
   {
-    keywords: ['wash', 'shampoo', 'treatment', 'conditioning'],
-    image: '/bg/services-3.jpeg',
-    fallbackColor: 'from-blue-800 to-blue-900'
+    keywords: ["wash", "shampoo", "treatment", "conditioning"],
+    image: "/bg/services-3.jpeg",
+    fallbackColor: "from-blue-800 to-blue-900",
   },
   {
-    keywords: ['color', 'coloring', 'dye', 'highlight', 'tint'],
-    image: '/bg/services-4.jpeg',
-    fallbackColor: 'from-purple-800 to-purple-900'
+    keywords: ["color", "coloring", "dye", "highlight", "tint"],
+    image: "/bg/services-4.jpeg",
+    fallbackColor: "from-purple-800 to-purple-900",
   },
   {
-    keywords: ['package', 'combo', 'full', 'complete', 'premium'],
-    image: '/bg/services-5.jpeg',
-    fallbackColor: 'from-emerald-800 to-emerald-900'
+    keywords: ["package", "combo", "full", "complete", "premium"],
+    image: "/bg/services-5.jpeg",
+    fallbackColor: "from-emerald-800 to-emerald-900",
   },
   {
-    keywords: ['styling', 'style', 'event', 'formal', 'occasion'],
-    image: '/bg/services-6.png',
-    fallbackColor: 'from-rose-800 to-rose-900'
-  }
+    keywords: ["styling", "style", "event", "formal", "occasion"],
+    image: "/bg/services-6.png",
+    fallbackColor: "from-rose-800 to-rose-900",
+  },
 ];
 
 // Fallback images for rotation
 const FALLBACK_IMAGES = [
-  '/bg/services-1.jpeg',
-  '/bg/services-2.jpeg',
-  '/bg/services-3.jpeg',
-  '/bg/services-4.jpeg',
-  '/bg/services-5.jpeg',
-  '/bg/services-6.png'
+  "/bg/services-1.jpeg",
+  "/bg/services-2.jpeg",
+  "/bg/services-3.jpeg",
+  "/bg/services-4.jpeg",
+  "/bg/services-5.jpeg",
+  "/bg/services-6.png",
 ];
 
 // Fallback gradient colors
 const FALLBACK_COLORS = [
-  'from-slate-800 to-slate-900',
-  'from-amber-800 to-amber-900',
-  'from-blue-800 to-blue-900',
-  'from-purple-800 to-purple-900',
-  'from-emerald-800 to-emerald-900',
-  'from-red-800 to-red-900',
-  'from-indigo-800 to-indigo-900',
-  'from-teal-800 to-teal-900'
+  "from-slate-800 to-slate-900",
+  "from-amber-800 to-amber-900",
+  "from-blue-800 to-blue-900",
+  "from-purple-800 to-purple-900",
+  "from-emerald-800 to-emerald-900",
+  "from-red-800 to-red-900",
+  "from-indigo-800 to-indigo-900",
+  "from-teal-800 to-teal-900",
 ];
 
 /**
  * Get the best matching image for a service based on its name and description
  */
-export function getServiceImage(serviceName: string, description?: string): string {
-  const searchText = `${serviceName} ${description || ''}`.toLowerCase();
-  
+export function getServiceImage(
+  serviceName: string,
+  description?: string,
+): string {
+  const searchText = `${serviceName} ${description || ""}`.toLowerCase();
+
   // Find the best matching service image
   for (const mapping of SERVICE_IMAGE_MAPPINGS) {
     for (const keyword of mapping.keywords) {
@@ -77,7 +80,7 @@ export function getServiceImage(serviceName: string, description?: string): stri
       }
     }
   }
-  
+
   // Fallback: use service name hash to consistently pick same image
   const hash = hashString(serviceName);
   return FALLBACK_IMAGES[hash % FALLBACK_IMAGES.length];
@@ -86,9 +89,12 @@ export function getServiceImage(serviceName: string, description?: string): stri
 /**
  * Get a consistent gradient color for a service
  */
-export function getServiceGradient(serviceName: string, description?: string): string {
-  const searchText = `${serviceName} ${description || ''}`.toLowerCase();
-  
+export function getServiceGradient(
+  serviceName: string,
+  description?: string,
+): string {
+  const searchText = `${serviceName} ${description || ""}`.toLowerCase();
+
   // Find the best matching gradient
   for (const mapping of SERVICE_IMAGE_MAPPINGS) {
     for (const keyword of mapping.keywords) {
@@ -97,7 +103,7 @@ export function getServiceGradient(serviceName: string, description?: string): s
       }
     }
   }
-  
+
   // Fallback: use service name hash to consistently pick same gradient
   const hash = hashString(serviceName);
   return FALLBACK_COLORS[hash % FALLBACK_COLORS.length];
@@ -110,7 +116,7 @@ function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
   return Math.abs(hash);
@@ -119,7 +125,10 @@ function hashString(str: string): number {
 /**
  * Get service image with error handling
  */
-export function getServiceImageSafe(serviceName: string, description?: string): {
+export function getServiceImageSafe(
+  serviceName: string,
+  description?: string,
+): {
   src: string;
   gradient: string;
   alt: string;
@@ -127,7 +136,7 @@ export function getServiceImageSafe(serviceName: string, description?: string): 
   return {
     src: getServiceImage(serviceName, description),
     gradient: getServiceGradient(serviceName, description),
-    alt: `${serviceName} service image`
+    alt: `${serviceName} service image`,
   };
 }
 
@@ -135,8 +144,8 @@ export function getServiceImageSafe(serviceName: string, description?: string): 
  * Preload service images for better performance
  */
 export function preloadServiceImages(): void {
-  if (typeof window !== 'undefined') {
-    FALLBACK_IMAGES.forEach(src => {
+  if (typeof window !== "undefined") {
+    FALLBACK_IMAGES.forEach((src) => {
       const img = new Image();
       img.src = src;
     });
