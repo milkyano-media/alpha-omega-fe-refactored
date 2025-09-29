@@ -595,11 +595,11 @@ export default function Home() {
       <section className="flex flex-col items-center gap-8 px-4 mb-40 container mx-auto">
         <h3 className="text-center">Join Our Gallery Of Successful Cuts.</h3>
 
-        <p>
+        {/* <p>
           Experience the real barbershop experience. Ultimate grooming with
           luxury service designed for you. Our team of expert barbers doesn’t
           disappoint!
-        </p>
+        </p> */}
 
         <Button
           variant={"secondary"}
