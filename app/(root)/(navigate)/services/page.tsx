@@ -73,8 +73,8 @@ export default function ServicesPage() {
             </div>
 
             {/* Service Cards */}
-            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 w-full max-w-5xl px-2">
-              {/* Haircut Service */}
+            {/* <div className="grid md:grid-cols-2 gap-6 sm:gap-8 w-full max-w-5xl px-2">
+
               <div className="bg-white rounded-xl shadow-xl md:hover:scale-105 transition-transform duration-300 mx-2 md:mx-0">
                 <div className="p-4 sm:p-6 md:p-8">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
@@ -115,7 +115,7 @@ export default function ServicesPage() {
                 </div>
               </div>
 
-              {/* Haircut + Beard Service */}
+
               <div className="bg-white rounded-xl shadow-xl md:hover:scale-105 transition-transform duration-300 mx-2 md:mx-0">
                 <div className="p-4 sm:p-6 md:p-8">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
@@ -153,6 +153,190 @@ export default function ServicesPage() {
                       Learn More →
                     </a>
                   </div>
+                </div>
+              </div>
+            </div> */}
+
+            <div className="flex flex-col gap-6 w-full max-w-5xl px-2">
+              {/* Haircut */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Haircut"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Haircut — $70{" "}
+                    <span className="text-sm text-gray-500">(45min)</span>
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    A precise cut tailored to your style. Balanced lines, clean
+                    finish, and timeless shape.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary refreshing hair wash, warm towels, perfume,
+                    and professional styling products — because detail matters.
+                  </p>
+                </div>
+              </div>
+
+              {/* Afro Haircut */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Afro Haircut"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Afro Haircut — $80{" "}
+                    <span className="text-sm text-gray-500">(50min)</span>
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    Specialized care for afro texture. Defined shape, natural
+                    volume, and respect for the uniqueness of your curls.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary refreshing hair wash, warm towels, perfume,
+                    and professional styling products — because detail matters.
+                  </p>
+                </div>
+              </div>
+
+              {/* Scissor Cut — Long Hair */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Scissor Cut Long Hair"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Scissor Cut — Long Hair — $80{" "}
+                    <span className="text-sm text-gray-500">(50min)</span>
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    Crafted for length, flow, and movement. A scissor-only cut
+                    that enhances the natural fall while refining structure.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary refreshing hair wash, warm towels, perfume,
+                    and professional styling products — because detail matters.
+                  </p>
+                </div>
+              </div>
+
+              {/* Restyling */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Restyling"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Restyling — $100{" "}
+                    <span className="text-sm text-gray-500">(1h)</span>
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    A complete transformation. Redefining your look through
+                    consultation, new shape, and fresh identity.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary refreshing hair wash, warm towels, perfume,
+                    and professional styling products — because detail matters.
+                  </p>
+                </div>
+              </div>
+
+              {/* Beard Trim */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Beard Trim"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Beard Trim — $30{" "}
+                    <span className="text-sm text-gray-500">(25min)</span>
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    For shorter beards that need clean definition. Sharp
+                    contours, balanced proportions, and a refined finish.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary warm towels, essential oil, shaving foam,
+                    razor detailing, beard oils and perfume — because detail
+                    matters.
+                  </p>
+                </div>
+              </div>
+
+              {/* Long Beard Trim */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Long Beard Trim"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Long Beard Trim — $40{" "}
+                    <span className="text-sm text-gray-500">(35min)</span>
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    Designed for fuller beards that require structure. Careful
+                    shaping to balance length, density, and natural growth.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary warm towels, essential oil shaving foam, razor
+                    detailing, beard oils and perfume — because detail matters.
+                  </p>
+                </div>
+              </div>
+
+              {/* Eyebrows */}
+              <div className="bg-white rounded-xl shadow-xl flex flex-row overflow-hidden">
+                <div className="relative w-32 md:w-1/3 aspect-square md:aspect-auto">
+                  <Image
+                    src="/assets/ao-pixelate-black.png"
+                    fill
+                    alt="Eyebrows Wax and Razor"
+                    className="object-cover w-full h-full md:rounded-l-xl"
+                  />
+                </div>
+                <div className="p-4 sm:p-6 md:p-8 flex flex-col justify-between w-2/3">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 w-max">
+                    Eyebrows (Wax & Razor) — $10
+                  </h3>
+                  <p className="text-gray-600 mb-3">
+                    Small detail, big impact. Clean, natural shaping that
+                    enhances the eyes without overdoing it.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Complimentary warm towels, essential oil shaving foam, razor
+                    detailing — because detail matters.
+                  </p>
                 </div>
               </div>
             </div>

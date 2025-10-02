@@ -1,6 +1,6 @@
 "use client";
 
-import { FAQSection } from "@/components/faq";
+// import { FAQSection } from "@/components/faq";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
