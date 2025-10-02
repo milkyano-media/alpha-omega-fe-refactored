@@ -8,25 +8,25 @@ const instaPosts = [
   {
     id: 1,
     type: "video",
-    src: "/assets/video-1.mp4",
+    src: "/video-1.mp4",
     url: "https://www.instagram.com/alpha.omega_mens.grooming",
   },
   {
     id: 2,
     type: "video",
-    src: "/assets/video-2.mp4",
+    src: "/video-2.mp4",
     url: "https://www.instagram.com/alpha.omega_mens.grooming",
   },
   {
     id: 3,
     type: "video",
-    src: "/assets/video-3.mp4",
+    src: "/video-3.mp4",
     url: "https://www.instagram.com/alpha.omega_mens.grooming",
   },
   {
     id: 4,
     type: "video",
-    src: "/assets/video-4.mp4",
+    src: "/video-4.mp4",
     url: "https://www.instagram.com/alpha.omega_mens.grooming",
   },
 ];
@@ -52,17 +52,17 @@ export default function HaircutsGallery() {
               href={post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="relative flex-shrink-0 snap-center w-72 h-96 rounded-xl overflow-hidden shadow-md hover:scale-[1.02] transition"
+              className="snap-center flex-shrink-0"
             >
               <video
-                className="w-full h-full object-cover"
-                autoPlay
+                src={post.src}
                 muted
+                controls
+                autoPlay
                 loop
                 playsInline
-              >
-                <source src={post.src} type="video/mp4" />
-              </video>
+                className="w-64 h-96 object-cover rounded-xl shadow-lg hover:scale-105 transition-transform duration-300"
+              />
             </Link>
           ))}
         </div>

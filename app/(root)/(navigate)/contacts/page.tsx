@@ -28,9 +28,9 @@ export default function Home() {
           />
         </div>
 
-        <h3>Need a hand with an Issue?</h3>
+        {/* <h3>Need a hand with an Issue?</h3> */}
 
-        <p>OR REACH US THROUGH</p>
+        {/* <p>OR REACH US THROUGH</p> */}
 
         <div className="flex flex-col self-center gap-8">
           <a

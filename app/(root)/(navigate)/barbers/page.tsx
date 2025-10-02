@@ -4,16 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 const barbers = [
-  {
-    name: "Nikos",
-    image: "/assets/ao-pixelate-black.png",
-    flags: [
-      { src: "/assets/aus.svg", alt: "Australia Flag", lang: "English" },
-      { src: "/assets/greece.svg", alt: "Greece Flag", lang: "Greek" },
-    ],
-    bio: "Specialist in modern fades and luxury beard trims. Attention to detail with a sharp, clean aesthetic.",
-    link: "/barbers/nikos",
-  },
+  // {
+  //   name: "Nikos",
+  //   image: "/assets/ao-pixelate-black.png",
+  //   flags: [
+  //     { src: "/assets/aus.svg", alt: "Australia Flag", lang: "English" },
+  //     { src: "/assets/greece.svg", alt: "Greece Flag", lang: "Greek" },
+  //   ],
+  //   bio: "Specialist in modern fades and luxury beard trims. Attention to detail with a sharp, clean aesthetic.",
+  //   link: "/barbers/nikos",
+  // },
   {
     name: "Christos",
     image: "/assets/christos.jpg",
@@ -24,13 +24,13 @@ const barbers = [
     bio: "Barber since 2018, bringing creativity and precision from Greece to Australia. Founder of Alpha Omega — where authenticity meets luxury.",
     link: "/barbers/christos",
   },
-  {
-    name: "Alex",
-    image: "/assets/ao-pixelate-black.png",
-    flags: [{ src: "/assets/aus.svg", alt: "Australia Flag", lang: "English" }],
-    bio: "Master stylist focusing on scissor work, long hair, and contemporary restyling.",
-    link: "/barbers/alex",
-  },
+  // {
+  //   name: "Alex",
+  //   image: "/assets/ao-pixelate-black.png",
+  //   flags: [{ src: "/assets/aus.svg", alt: "Australia Flag", lang: "English" }],
+  //   bio: "Master stylist focusing on scissor work, long hair, and contemporary restyling.",
+  //   link: "/barbers/alex",
+  // },
 ];
 
 export default function BarbersPage() {

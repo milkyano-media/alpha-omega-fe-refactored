@@ -86,7 +86,7 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="flex flex-col justify-center items-center gap-8 px-4 container mx-auto">
+      {/* <section className="flex flex-col justify-center items-center gap-8 px-4 container mx-auto">
         <div className="w-full md:w-max">
           <Image
             src={"/assets/about-2.png"}
@@ -106,7 +106,7 @@ export default function Home() {
           final touch, ensuring every client leaves with confidence and style
           that lasts.
         </p>
-      </section>
+      </section> */}
 
       <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10 px-4">
         <div className="w-full md:w-max">

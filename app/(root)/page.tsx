@@ -383,7 +383,7 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10 px-4">
+      <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10">
         <div className="w-full md:w-max">
           <Image
             src={"/assets/main-3.png"}
@@ -460,7 +460,10 @@ export default function Home() {
         <p>OR REACH US THROUGH</p>
 
         <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex gap-2">
+          <a
+            href="https://www.instagram.com/alpha.omega_mens.grooming"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="28"
@@ -483,7 +486,7 @@ export default function Home() {
             </svg>
 
             <p>@alpha.omega_mens.grooming</p>
-          </div>
+          </a>
 
           <a href="tel:+610390125480" className="flex gap-2">
             <svg
