@@ -62,10 +62,12 @@ export function Footer() {
         {/* Contact Info */}
         <div>
           <b className="text-white text-base">Additional Info & Contact</b>
-          <div className="text-white mt-4 space-y-2">
+          <div className="text-white mt-4 flex flex-col space-y-2">
             <p>Alpha Omega</p>
-            <p>+61 03 9012 5480</p>
-            <p>alpha.omega.mens.grooming@gmail.com</p>
+            <a href="tel:+610390125480">+61 03 9012 5480</a>
+            <a href="mailto:alpha.omega.mens.grooming@gmail.com">
+              alpha.omega.mens.grooming@gmail.com
+            </a>
             <a href="https://instagram.com/alpha.omega_mens.grooming">
               IG@alpha.omega_mens.grooming
             </a>

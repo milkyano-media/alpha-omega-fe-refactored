@@ -15,10 +15,10 @@ export default function BarbersPage() {
           />
         </div>
 
-        <p className="text-center text-gray-700">
+        {/* <p className="text-center text-gray-700">
           Precision cuts, classic shaves, and premium grooming to keep you sharp
           and confident.
-        </p>
+        </p> */}
       </section>
 
       {/* Featured Barber */}
@@ -26,7 +26,7 @@ export default function BarbersPage() {
         <div className="w-full md:w-max flex flex-col items-center gap-4">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full flex justify-center items-center">
             <Image
-              src={"/assets/ao-pixelate-black.png"}
+              src={"/assets/christos.jpg"}
               width={500}
               height={500}
               alt="Christos Barber"

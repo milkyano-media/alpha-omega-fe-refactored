@@ -19,7 +19,7 @@ export default function ChristosPage() {
       <Card className="overflow-hidden rounded-2xl shadow-lg">
         <CardHeader className="flex flex-col items-center gap-4">
           <Image
-            src={"/assets/ao-pixelate-black.png"}
+            src={"/assets/christos.jpg"}
             width={300}
             height={300}
             alt="Christos Barber"

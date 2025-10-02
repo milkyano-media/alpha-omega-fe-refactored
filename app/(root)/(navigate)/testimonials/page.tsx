@@ -45,7 +45,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-8 px-4 text-center container mx-auto mb-40">
+      {/* <section className="flex flex-col gap-8 px-4 text-center container mx-auto mb-40">
         <div className="w-full md:w-max mx-auto">
           <Image
             src={"/assets/testi-2.png"}
@@ -69,7 +69,7 @@ export default function Home() {
             <div className="w-40 md:w-[350px] md:h-[600px] h-80 bg-[#D9D9D9] rounded-md"></div>
           </div>
         </div>
-      </section>
+      </section> */}
     </main>
   );
 }

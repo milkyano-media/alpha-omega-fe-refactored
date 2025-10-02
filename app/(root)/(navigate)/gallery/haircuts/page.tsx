@@ -20,13 +20,13 @@ export default function HaircutsGallery() {
           />
         </div>
 
-        <h1 className="text-3xl font-bold">Our Haircut Services</h1>
+        {/* <h1 className="text-3xl font-bold">Our Haircut Services</h1>
 
         <p>
           Discover our precision haircuts and grooming services. Each style is
           crafted with expertise and attention to detail, tailored to enhance
           your individual features and personal style.
-        </p>
+        </p> */}
 
         <div className="w-full flex justify-center">
           <HorizontalCarousel

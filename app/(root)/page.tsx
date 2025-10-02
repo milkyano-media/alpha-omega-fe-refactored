@@ -263,29 +263,21 @@ export default function Home() {
             </p> */}
           </div>
           <p className="mt-4">
-            <b>Our expert barbers</b> are ready to give you recommendations
-            considering your{" "}
-            <b>lifestyle, facial shape, hair type, and hair density</b> in order
-            to ensure that you achieve a{" "}
-            <b>
-              personalized and stylish look that compliments your individual
-              features.
-            </b>
+            Our expert barbers are ready to give you recommendations considering
+            your lifestyle, facial shape, hair type, and hair density in order
+            to ensure that you achieve a personalized and stylish look that
+            compliments your individual features.
           </p>
           <p className="mt-4">
             Through <i>consultation</i> we are dedicated to{" "}
-            <i>understand your unique preferences</i> and{" "}
-            <b>tailor our recommendations to suit your specific needs.</b>{" "}
-            Whether you&apos;re seeking a <b>new haircut, beard trim,</b> or
-            grooming routine, we&apos;re here to{" "}
-            <b>guide you through the process,</b> ensuring that you not only
-            look great but also{" "}
-            <b>feel confident with your chosen aesthetic.</b>{" "}
-            <i>Trust Alpha Omega Team</i> to provide you with{" "}
-            <b>
-              comprehensive options that align with your style and enhance your
-              overall appearance.
-            </b>
+            <i>understand your unique preferences</i> and tailor our
+            recommendations to suit your specific needs. Whether you&apos;re
+            seeking a new haircut, beard trim, or grooming routine, we&apos;re
+            here to guide you through the process, ensuring that you not only
+            look great but also feel confident with your chosen aesthetic.{" "}
+            <i>Trust Alpha Omega Team</i> to provide you with comprehensive
+            options that align with your style and enhance your overall
+            appearance.
           </p>
 
           {/* <div className="mt-6 space-y-0">
@@ -348,17 +340,12 @@ export default function Home() {
             </p> */}
           </div>
           <p className="mt-4">
-            <b>Alpha Omega mens grooming</b> stands as a{" "}
-            <b>beacon of innovation</b>,{" "}
-            <i>ushering in a new era in mens grooming.</i> With a{" "}
-            <b>seamless blend of technical expertise</b> and creative vision, we{" "}
-            <b>
-              redefine the boundaries of traditional barbering and modern
-              hairdressing.
-            </b>{" "}
-            Our <b>dedication is unwavering to unite</b> the timeless charm of
-            the classic barbershop with the refined elegance of{" "}
-            <b>today&apos;s salons.</b>
+            Alpha Omega mens grooming stands as a beacon of innovation,{" "}
+            <i>ushering in a new era in mens grooming.</i> With a seamless blend
+            of technical expertise and creative vision, we redefine the
+            boundaries of traditional barbering and modern hairdressing. Our
+            dedication is unwavering to unite the timeless charm of the classic
+            barbershop with the refined elegance of today&apos;s salons.
           </p>
 
           {/* <div className="mt-6 space-y-0">
@@ -498,7 +485,7 @@ export default function Home() {
             <p>@alpha.omega_mens.grooming</p>
           </div>
 
-          <div className="flex gap-2">
+          <a href="tel:+610390125480" className="flex gap-2">
             <svg
               width="31"
               height="26"
@@ -549,9 +536,12 @@ export default function Home() {
             </svg>
 
             <p>+61 03 9012 5480</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a
+            href="mailto:alpha.omega.mens.grooming@gmail.com"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="22"
@@ -566,7 +556,7 @@ export default function Home() {
             </svg>
 
             <p>alpha.omega.mens.grooming@gmail.com</p>
-          </div>
+          </a>
         </div>
       </section>
 
@@ -587,11 +577,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-8 px-4 container mx-auto">
+      {/* <section className="flex flex-col gap-8 px-4 container mx-auto">
         <h3 className="text-center">Frequently Asked Questions</h3>
 
         <FAQSection />
-      </section>
+      </section> */}
 
       <section className="flex flex-col items-center gap-8 px-4 mb-40 container mx-auto">
         <h3 className="text-center">Join Our Gallery Of Successful Cuts.</h3>

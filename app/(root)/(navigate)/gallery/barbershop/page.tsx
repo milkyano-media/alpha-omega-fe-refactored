@@ -20,15 +20,15 @@ export default function BarbershopGallery() {
           />
         </div>
 
-        <h1 className="text-3xl font-bold">Our Barbershop Gallery</h1>
+        {/* <h1 className="text-3xl font-bold">Our Barbershop Gallery</h1>
 
         <p>
           Discover our precision haircuts and grooming services. Each style is
           crafted with expertise and attention to detail, tailored to enhance
           your individual features and personal style.
-        </p>
+        </p> */}
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <Image
             className="rounded-xl"
             src={"/assets/ao-barbershop-1.png"}
@@ -56,6 +56,38 @@ export default function BarbershopGallery() {
           <Image
             className="rounded-xl"
             src={"/assets/ao-barbershop-4.png"}
+            width={500}
+            height={500}
+            alt="Haircuts Gallery"
+          />
+
+          <Image
+            className="rounded-xl"
+            src={"/assets/ao-barbershop-13.png"}
+            width={500}
+            height={500}
+            alt="Haircuts Gallery"
+          />
+
+          <Image
+            className="rounded-xl"
+            src={"/assets/ao-barbershop-14.png"}
+            width={500}
+            height={500}
+            alt="Haircuts Gallery"
+          />
+
+          <Image
+            className="rounded-xl"
+            src={"/assets/ao-barbershop-17.png"}
+            width={500}
+            height={500}
+            alt="Haircuts Gallery"
+          />
+
+          <Image
+            className="rounded-xl"
+            src={"/assets/ao-barbershop-18.png"}
             width={500}
             height={500}
             alt="Haircuts Gallery"
@@ -127,22 +159,6 @@ export default function BarbershopGallery() {
 
           <Image
             className="rounded-xl"
-            src={"/assets/ao-barbershop-13.png"}
-            width={500}
-            height={500}
-            alt="Haircuts Gallery"
-          />
-
-          <Image
-            className="rounded-xl"
-            src={"/assets/ao-barbershop-14.png"}
-            width={500}
-            height={500}
-            alt="Haircuts Gallery"
-          />
-
-          <Image
-            className="rounded-xl"
             src={"/assets/ao-barbershop-15.png"}
             width={500}
             height={500}
@@ -159,15 +175,7 @@ export default function BarbershopGallery() {
 
           <Image
             className="rounded-xl"
-            src={"/assets/ao-barbershop-17.png"}
-            width={500}
-            height={500}
-            alt="Haircuts Gallery"
-          />
-
-          <Image
-            className="rounded-xl"
-            src={"/assets/ao-barbershop-18.png"}
+            src={"/assets/ao-barbershop-20.png"}
             width={500}
             height={500}
             alt="Haircuts Gallery"
@@ -176,14 +184,6 @@ export default function BarbershopGallery() {
           <Image
             className="rounded-xl"
             src={"/assets/ao-barbershop-19.png"}
-            width={500}
-            height={500}
-            alt="Haircuts Gallery"
-          />
-
-          <Image
-            className="rounded-xl"
-            src={"/assets/ao-barbershop-20.png"}
             width={500}
             height={500}
             alt="Haircuts Gallery"
