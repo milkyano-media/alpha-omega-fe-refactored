@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { BookingService, TeamMember, Service } from "@/lib/booking-service";
+import BookingService, { TeamMember, Service } from "@/lib/booking-service";
 import { preloadBarberImages } from "@/lib/barber-images";
 import { PlusCheckbox } from "@/components/plus-checkbox";
 import { VerificationGuard } from "@/components/verification-guard";
@@ -101,17 +101,14 @@ function ServiceSelectionContent() {
 
   const calculateTotalPrice = () => {
     return selectedServices.reduce(
-      (total, service) => total + service.price_amount,
+      (total, service) => total + service.base_price_cents,
       0,
     );
   };
 
   const calculateTotalDuration = () => {
     return selectedServices.reduce((total, service) => {
-      const duration =
-        service.duration > 10000
-          ? Math.round(service.duration / 60000)
-          : service.duration;
+      const duration = service.duration_minutes;
       return total + duration;
     }, 0);
   };
@@ -267,7 +264,7 @@ function ServiceSelectionContent() {
                               />
                             </svg>
                             <span className="font-semibold text-gray-900">
-                              ${(service.price_amount / 100).toFixed(2)}
+                              ${(service.base_price_cents / 100).toFixed(2)}
                             </span>
                           </div>
 
@@ -287,9 +284,7 @@ function ServiceSelectionContent() {
                               />
                             </svg>
                             <span>
-                              {service.duration > 10000
-                                ? Math.round(service.duration / 60000)
-                                : service.duration}{" "}
+                              {service.duration_minutes}{" "}
                               min
                             </span>
                           </div>

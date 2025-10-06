@@ -1,15 +1,62 @@
 // lib/booking-service.ts
 import { API } from './api-client';
 
-// Define interfaces for booking-related data
-export interface BookingRequest {
-  service_variation_id: string;
-  team_member_id: string;
+// Self-managed booking interfaces (no Square dependencies)
+export interface SelfManagedBookingRequest {
+  service_id: number;
+  team_member_id: number;
   start_at: string;
-  service_variation_version?: number;
   customer_note?: string;
-  // Optional idempotency key for Square API
-  idempotencyKey?: string;
+  deposit_paid_cents?: number;
+  payment_status?: 'unpaid' | 'deposit_paid' | 'fully_paid';
+  payment_data?: any;
+  booking_source?: 'website' | 'admin' | 'phone' | 'walk_in';
+  idempotencyKey: string;
+}
+
+export interface SelfManagedAppointmentSegment {
+  service_id: number;
+  team_member_id: number;
+  duration_minutes: number;
+  start_at: string;
+}
+
+export interface SelfManagedSegmentBookingRequest {
+  start_at: string;
+  appointment_segments: SelfManagedAppointmentSegment[];
+  customer_note?: string;
+  idempotencyKey: string;
+  payment_info?: {
+    paymentId: string;
+    amount: string;
+    currency: string;
+    receiptUrl?: string;
+  };
+}
+
+export interface AvailabilitySearchRequest {
+  start_date: string;
+  end_date: string;
+  service_id: number;
+  team_member_ids?: number[];
+  timezone?: string;
+}
+
+export interface AvailabilitySlot {
+  startAt: string;
+  durationMinutes: number;
+}
+
+export interface TeamMemberAvailability {
+  startAt: string;
+  endAt: string;
+  teamMemberId: string;
+  teamMemberName: string;
+  availabilities: AvailabilitySlot[];
+}
+
+export interface SelfManagedAvailabilityResponse {
+  availability: TeamMemberAvailability[];
 }
 
 export interface UpdateBookingRequest {
@@ -17,20 +64,9 @@ export interface UpdateBookingRequest {
   version: number;
 }
 
-export interface SquareBookingRequest {
-  serviceVariationId: string;
-  teamMemberId: string;
-  customerId?: string;
-  startAt: string;
-  serviceVariationVersion?: number;
-  customerNote?: string;
-  idempotencyKey: string;
-  locationId: string;
-}
-
+// Updated interfaces (removed Square dependencies)
 export interface TeamMember {
   id: number;
-  square_up_id: string;
   first_name: string;
   last_name: string;
   status: string;
@@ -45,21 +81,20 @@ export interface Service {
   price_amount: number;
   price_currency: string;
   duration: number;
-  service_variation_id: string;
-  square_catalog_id: string;
   variation_name?: string;
   is_available?: boolean;
   // Many-to-many relationship with TeamMembers
   teamMembers?: TeamMember[];
 }
 
+// Updated TimeSlot interface (compatible with existing UI)
 export interface TimeSlot {
   start_at: string;
   location_id: string;
   formatted_time?: string;
   appointment_segments: {
     duration_minutes: number;
-    service_variation_id: string;
+    service_id: number;
     team_member_id: string;
     service_variation_version: number;
   }[];
@@ -73,7 +108,6 @@ export interface AvailabilityResponse {
 export interface BookingResponse {
   data: {
     id: number;
-    square_booking_id: string;
     service_name: string;
     start_at: string;
     end_at: string;
@@ -83,442 +117,312 @@ export interface BookingResponse {
   message: string;
 }
 
-export interface BatchBookingRequest {
-  bookings: BookingRequest[];
-  idempotencyKey: string;
-  payment_info?: {
-    paymentId: string;
-    amount: string;
-    currency: string;
-    receiptUrl?: string;
-  };
-}
-
-export interface BatchBookingResponse {
-  success: boolean;
-  created_bookings: Array<{
-    index: number;
-    booking: BookingResponse;
-    success: boolean;
-  }>;
-  errors: Array<{
-    index: number;
-    error: string;
-    bookingData: BookingRequest;
-  }>;
-  total_requested: number;
-  total_created: number;
-  total_failed: number;
-}
-
-export interface AppointmentSegment {
-  service_variation_id: string;
-  team_member_id: string;
-  duration_minutes: number;
-  service_variation_version?: number;
-  start_at: string; // Individual segment start time
-}
-
-export interface SingleBookingRequest {
-  start_at: string; // Overall booking start time (earliest segment)
-  appointment_segments: AppointmentSegment[];
-  customer_note?: string;
-  idempotencyKey: string;
-  payment_info?: {
-    paymentId: string;
-    amount: string;
-    currency: string;
-    receiptUrl: string;
-  };
-}
-
 export interface SingleBookingResponse {
   success: boolean;
   booking?: BookingResponse;
   error?: string;
 }
 
-export interface SquareBookingResponse {
-  success: boolean;
-  booking?: {
-    id: string;
-    status: string;
-    startAt: string;
-    locationId: string;
-    customerId?: string;
-    createdAt: string;
-    version: string;
-  };
-  message?: string;
-  details?: any[];
-  isRetry?: boolean;
-}
-
-export const BookingService = {
+export class BookingService {
   /**
-   * Get all team members (barbers)
-   */
-  async getTeamMembers(): Promise<TeamMember[]> {
-    try {
-      const response = await API.get('/team-members');
-      return response.data || [];
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch barbers");
-    }
-  },
-
-  /**
-   * Get services for a specific team member
-   */
-  async getTeamMemberServices(teamMemberId: number): Promise<Service[]> {
-    try {
-      const response = await API.get(`/services/team-member/${teamMemberId}`);
-      return response.data || [];
-    } catch (error: any) {
-      throw new Error(error.message || `Failed to fetch services for barber ${teamMemberId}`);
-    }
-  },
-
-  /**
-   * Get all services (for reversed flow)
+   * Get all services
    */
   async getAllServices(): Promise<Service[]> {
     try {
       const response = await API.get('/services');
-      return response.data || [];
+      return response.data;
     } catch (error: any) {
+      console.error('Error fetching services:', error);
       throw new Error(error.message || "Failed to fetch services");
     }
-  },
+  }
 
   /**
-   * Get barbers who offer a specific service (for reversed flow)
+   * Get services for a specific team member
+   */
+  async getServicesByTeamMember(teamMemberId: number): Promise<Service[]> {
+    try {
+      const response = await API.get(`/services/team-member/${teamMemberId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching services for team member:', error);
+      throw new Error(error.message || "Failed to fetch services");
+    }
+  }
+
+  /**
+   * Get team members who offer a specific service
    */
   async getBarbersForService(serviceId: number): Promise<TeamMember[]> {
     try {
       const response = await API.get(`/services/${serviceId}/barbers`);
-      return response.data || [];
+      return response.data;
     } catch (error: any) {
-      throw new Error(error.message || `Failed to fetch barbers for service ${serviceId}`);
+      console.error('Error fetching barbers for service:', error);
+      throw new Error(error.message || "Failed to fetch barbers");
     }
-  },
+  }
 
   /**
-   * Create booking directly with Square API
-   * This is more reliable than going through our backend first
+   * Get all team members
    */
-  async createSquareBooking(bookingData: SquareBookingRequest): Promise<SquareBookingResponse> {
+  async getTeamMembers(): Promise<TeamMember[]> {
     try {
-      const response = await fetch('/api/create-square-booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to create Square booking');
-      }
-      
-      return data;
+      const response = await API.get('/team-members');
+      return response.data;
     } catch (error: any) {
-      console.error('Error creating Square booking:', error);
-      throw error;
+      console.error('Error fetching team members:', error);
+      throw new Error(error.message || "Failed to fetch team members");
     }
-  },
+  }
 
   /**
-   * Create a booking in our backend system
-   * This method won't throw errors so the user flow isn't disrupted
-   */
-  async syncBookingWithBackend(
-    bookingData: BookingRequest, 
-    squareBookingId?: string
-  ): Promise<BookingResponse | null> {
-    try {
-      // Add Square booking ID to request if available
-      const requestData = squareBookingId ? 
-        { ...bookingData, square_booking_id: squareBookingId } : 
-        bookingData;
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/bookings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || sessionStorage.getItem("token") || null}`,
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      const data = await response.json();
-      
-      // Even if response is not OK, we don't throw an error
-      // We just return null or the data we got
-      return response.ok ? data : null;
-    } catch (error: any) {
-      // Log error but don't throw - this ensures user flow continues
-      console.error("Error syncing booking with backend:", error);
-      return null;
-    }
-  },
-
-  /**
-   * Create a booking - handles both Square and backend creation
-   * This method remains the same from the caller's perspective for backward compatibility
-   */
-  async createBooking(bookingData: BookingRequest): Promise<BookingResponse> {
-    // First try to create the Square booking directly (more reliable)
-    const idempotencyKey = bookingData.idempotencyKey || crypto.randomUUID();
-
-    // Create the Square booking
-    const squareResponse = await this.createSquareBooking({
-      serviceVariationId: bookingData.service_variation_id,
-      teamMemberId: bookingData.team_member_id,
-      startAt: bookingData.start_at,
-      serviceVariationVersion: bookingData.service_variation_version,
-      customerNote: bookingData.customer_note,
-      idempotencyKey: idempotencyKey,
-      locationId: process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || '',
-      // Include customer ID if available in localStorage
-      customerId: localStorage.getItem('square_customer_id') || undefined,
-    });
-
-    // Now, regardless of backend result, sync with our backend
-    // Use the same idempotency key to avoid duplicates
-    const backendResponse = await this.syncBookingWithBackend(
-      { 
-        ...bookingData,
-        idempotencyKey 
-      },
-      squareResponse.booking?.id
-    );
-
-    // If backend sync failed but Square booking succeeded, create a synthetic response
-    // This ensures the user flow continues smoothly
-    if (!backendResponse && squareResponse.booking) {
-      // Create a minimal response with the essential Square booking data
-      return {
-        data: {
-          id: 0, // Use 0 to indicate it's not synced with backend yet
-          square_booking_id: squareResponse.booking.id,
-          service_name: 'Your appointment', // Generic name
-          start_at: squareResponse.booking.startAt,
-          end_at: new Date(new Date(squareResponse.booking.startAt).getTime() + 3600000).toISOString(), // Add 1 hour for end time
-          status: squareResponse.booking.status || 'ACCEPTED',
-        },
-        status_code: 200,
-        message: 'Booking created in Square but not yet synced with backend',
-      };
-    }
-
-    // If we got here with a backendResponse, return it
-    // Otherwise, something really went wrong (both Square and backend failed)
-    if (backendResponse) {
-      return backendResponse;
-    }
-
-    // Both systems failed - extremely unlikely with our retry logic
-    throw new Error("Failed to create booking in both Square and backend systems");
-  },
-
-  /**
-   * Search for available time slots for a service
+   * Search for available time slots using self-managed system
    */
   async searchAvailability(
-    serviceVariationId: string,
-    startDate: Date,
-    endDate: Date
+    serviceIdOrRequest: number | AvailabilitySearchRequest,
+    startDate?: Date,
+    endDate?: Date,
+    teamMemberIds?: number[]
   ): Promise<AvailabilityResponse> {
-    // Check both localStorage and sessionStorage for token
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    
-    if (!token) {
-      throw new Error("Authentication required. Please log in again.");
+    // Handle both calling patterns
+    let searchRequest: AvailabilitySearchRequest;
+
+    if (typeof serviceIdOrRequest === 'object') {
+      // Called with object parameter
+      searchRequest = serviceIdOrRequest;
+    } else {
+      // Called with individual parameters
+      searchRequest = {
+        service_id: serviceIdOrRequest,
+        start_date: startDate ? startDate.toISOString() : new Date().toISOString(),
+        end_date: endDate ? endDate.toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        team_member_ids: teamMemberIds,
+        timezone: 'Australia/Melbourne'
+      };
     }
-
-    console.log("Making availability request:", {
-      serviceVariationId,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      hasToken: !!token
-    });
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/services/availability/search`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        service_variation_id: serviceVariationId,
-        start_at: startDate.toISOString(),
-        end_at: endDate.toISOString(),
-      }),
-    });
-
-    if (!response.ok) {
-      let errorMessage = "Failed to fetch availability";
-      try {
-        const errorData = await response.json();
-        console.error("Availability API error details:", errorData);
-        
-        // Handle different error response formats
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.error) {
-          // If error is an object, stringify it properly
-          if (typeof errorData.error === 'object') {
-            errorMessage = JSON.stringify(errorData.error);
-          } else {
-            errorMessage = errorData.error;
-          }
-        } else if (errorData.errors && Array.isArray(errorData.errors)) {
-          errorMessage = errorData.errors.map((err: any) => err.message || err).join(', ');
-        }
-      } catch {
-        console.error("Failed to parse error response");
-        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-    return data.data;
-  },
-
-  /**
-   * Cancel a booking
-   */
-  async cancelBooking(bookingId: string): Promise<any> {
     try {
-      const response = await API.post(`/bookings/${bookingId}/cancel`);
-      return response;
+      console.log('🔍 Searching self-managed availability with:', searchRequest);
+
+      // Convert searchRequest to query params for GET request
+      const params = new URLSearchParams();
+
+      // Add required parameters with null checks
+      if (searchRequest.start_date) {
+        params.append('start_date', searchRequest.start_date.split('T')[0]);
+      } else {
+        params.append('start_date', new Date().toISOString().split('T')[0]);
+      }
+
+      if (searchRequest.end_date) {
+        params.append('end_date', searchRequest.end_date.split('T')[0]);
+      } else {
+        params.append('end_date', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      }
+
+      if (searchRequest.service_id !== undefined && searchRequest.service_id !== null) {
+        params.append('service_id', searchRequest.service_id.toString());
+      }
+
+      if (searchRequest.timezone) {
+        params.append('timezone', searchRequest.timezone);
+      }
+
+      if (searchRequest.team_member_ids && searchRequest.team_member_ids.length > 0) {
+        params.append('team_member_ids', searchRequest.team_member_ids.join(','));
+      }
+
+      console.log('📡 Making API call with params:', params.toString());
+
+      const response = await API.get(`/availability/search?${params.toString()}`);
+
+      console.log('✅ Self-managed availability response:', response.data);
+
+      // Check if data is nested or direct
+      if (response.data && response.data.data && response.data.data.availability) {
+        // Convert from self-managed format to existing UI-compatible format
+        return this.convertSelfManagedToSquareFormat(response.data.data, searchRequest.service_id);
+      } else if (response.data && response.data.availability) {
+        // Convert from self-managed format to existing UI-compatible format (if not nested)
+        return this.convertSelfManagedToSquareFormat(response.data, searchRequest.service_id);
+      } else {
+        // Already in expected format
+        return response.data;
+      }
     } catch (error: any) {
-      throw new Error(error.message || "Failed to cancel booking");
+      console.error('Error searching self-managed availability:', error);
+      throw new Error(error.message || "Failed to search availability");
     }
-  },
+  }
 
   /**
-   * Update/reschedule an existing booking
+   * Convert self-managed availability format to UI-compatible format
+   * This ensures existing DateTimeSelector component continues to work
    */
-  async updateBooking(bookingId: string, updateData: UpdateBookingRequest): Promise<any> {
+  convertSelfManagedToSquareFormat(selfManagedResponse: SelfManagedAvailabilityResponse, serviceId: number): AvailabilityResponse {
+    const availabilities_by_date: Record<string, TimeSlot[]> = {};
+
+    console.log('🔄 Converting self-managed availability:', selfManagedResponse);
+
+    if (selfManagedResponse?.availability) {
+      selfManagedResponse.availability.forEach((teamMemberAvail: TeamMemberAvailability) => {
+        const { startAt: date, teamMemberId, teamMemberName, availabilities } = teamMemberAvail;
+
+        // Convert date to YYYY-MM-DD format for grouping (preserve timezone)
+        // Use the date as-is from backend without timezone conversion
+        const dateKey = date.split('T')[0];
+
+        if (!availabilities_by_date[dateKey]) {
+          availabilities_by_date[dateKey] = [];
+        }
+
+        availabilities.forEach((slot: AvailabilitySlot) => {
+          // Convert to UI-compatible TimeSlot format
+          const timeSlot: TimeSlot = {
+            start_at: slot.startAt,
+            location_id: 'alpha-omega-barber-shop', // Self-managed location ID
+            formatted_time: new Date(slot.startAt).toLocaleTimeString('en-AU', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+              timeZone: 'Australia/Melbourne'
+            }),
+            appointment_segments: [{
+              duration_minutes: slot.durationMinutes,
+              service_id: serviceId, // Use the correct service ID passed as parameter
+              team_member_id: teamMemberId,
+              service_variation_version: 1
+            }]
+          };
+
+          // Check if this time slot already exists to avoid duplicates
+          const existingSlot = availabilities_by_date[dateKey].find(
+            (existing: TimeSlot) => existing.start_at === timeSlot.start_at
+          );
+
+          if (!existingSlot) {
+            availabilities_by_date[dateKey].push(timeSlot);
+          }
+        });
+      });
+    }
+
+    const result = { availabilities_by_date, errors: [] };
+    console.log('✅ Converted to UI format:', result);
+    console.log('🔍 Date keys created:', Object.keys(availabilities_by_date));
+    console.log('🔍 Sample availability data:', availabilities_by_date);
+    return result;
+  }
+
+  /**
+   * Create single booking with multiple appointment segments (self-managed)
+   */
+  async createBookingWithSegments(bookingData: SelfManagedSegmentBookingRequest): Promise<SingleBookingResponse> {
+    try {
+      console.log('📝 Creating self-managed booking with segments:', bookingData);
+      const response = await API.post('/bookings/self-managed/segments', bookingData);
+
+      console.log('✅ Self-managed booking created:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating self-managed booking:', error);
+      throw new Error(error.message || "Failed to create booking");
+    }
+  }
+
+  /**
+   * Create booking without payment (for testing and non-payment bookings)
+   */
+  async createBookingWithoutPayment(bookingData: SelfManagedBookingRequest): Promise<BookingResponse> {
+    try {
+      console.log('📝 Creating booking without payment:', bookingData);
+      const response = await API.post('/bookings', {
+        ...bookingData,
+        payment_status: 'unpaid',
+        booking_source: 'website'
+      });
+
+      console.log('✅ Booking created without payment:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating booking without payment:', error);
+      throw new Error(error.message || "Failed to create booking");
+    }
+  }
+
+  /**
+   * Cancel a self-managed booking
+   */
+  async cancelSelfManagedBooking(bookingId: number, reason?: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      console.log(`🗑️ Cancelling self-managed booking ${bookingId}...`);
+      const response = await API.post(`/bookings/${bookingId}/cancel-self-managed`, {
+        reason: reason || 'Cancelled by customer'
+      });
+
+      console.log('✅ Booking cancelled:', response.data);
+      return { success: true, ...response.data };
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to cancel booking'
+      };
+    }
+  }
+
+  /**
+   * Update booking
+   */
+  async updateBooking(bookingId: number, updateData: UpdateBookingRequest): Promise<BookingResponse> {
     try {
       const response = await API.put(`/bookings/${bookingId}`, updateData);
-      return response;
+      return response.data;
     } catch (error: any) {
+      console.error('Error updating booking:', error);
       throw new Error(error.message || "Failed to update booking");
     }
-  },
+  }
 
+  /**
+   * Get booking details
+   */
+  async getBooking(bookingId: number): Promise<BookingResponse> {
+    try {
+      const response = await API.get(`/bookings/${bookingId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching booking:', error);
+      throw new Error(error.message || "Failed to fetch booking");
+    }
+  }
+
+  /**
+   * Delete booking
+   */
+  async deleteBooking(bookingId: number): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await API.delete(`/bookings/${bookingId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error deleting booking:', error);
+      throw new Error(error.message || "Failed to delete booking");
+    }
+  }
 
   /**
    * Get user's bookings
    */
-  async getUserBookings(page = 1, limit = 10): Promise<any> {
+  async getUserBookings(): Promise<BookingResponse[]> {
     try {
-      const response = await API.get(`/bookings?page=${page}&limit=${limit}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch bookings");
-    }
-  },
-
-  /**
-   * Create multiple separate bookings (for additional services with same barber)
-   */
-  async createBatchBookings(batchRequest: BatchBookingRequest): Promise<BatchBookingResponse> {
-    try {
-      const response = await API.post('/bookings/batch', batchRequest);
+      const response = await API.get('/bookings/user');
       return response.data;
     } catch (error: any) {
-      throw new Error(error.message || "Failed to create batch bookings");
+      console.error('Error fetching user bookings:', error);
+      throw new Error(error.message || "Failed to fetch bookings");
     }
-  },
+  }
+}
 
-  /**
-   * Create single booking with multiple appointment segments (Square API compliant)
-   */
-  async createBookingWithSegments(bookingRequest: SingleBookingRequest): Promise<SingleBookingResponse> {
-    try {
-      console.log('🔄 BookingService making API call to /bookings/segments');
-      const response = await API.post('/bookings/segments', bookingRequest);
-      console.log('📨 Raw API response:', JSON.stringify(response, null, 2));
-      
-      // API.post already returns response.data, so response is the actual data
-      return response;
-    } catch (error: any) {
-      console.error('❌ BookingService API call failed:', error);
-      throw new Error(error.message || "Failed to create booking with segments");
-    }
-  },
-
-  // Refund Request Methods
-  
-  /**
-   * Get user's refund requests
-   */
-  async getUserRefundRequests(page = 1, limit = 10): Promise<any> {
-    try {
-      const response = await API.get(`/refund-requests?page=${page}&limit=${limit}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch refund requests");
-    }
-  },
-
-  /**
-   * Create a new refund request
-   */
-  async createRefundRequest(requestData: {
-    booking_id: number;
-    reason: string;
-    description?: string;
-    amount_requested: number;
-  }): Promise<any> {
-    try {
-      const response = await API.post('/refund-requests', requestData);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to create refund request");
-    }
-  },
-
-  /**
-   * Check if a booking is eligible for refund
-   */
-  async checkRefundEligibility(bookingId: number): Promise<any> {
-    try {
-      const response = await API.get(`/refund-requests/eligibility/${bookingId}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to check refund eligibility");
-    }
-  },
-
-  /**
-   * Cancel/withdraw a pending refund request
-   */
-  async cancelRefundRequest(refundRequestId: number): Promise<any> {
-    try {
-      const response = await API.delete(`/refund-requests/${refundRequestId}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to cancel refund request");
-    }
-  },
-
-  /**
-   * Get refund request by ID
-   */
-  async getRefundRequestById(refundRequestId: number): Promise<any> {
-    try {
-      const response = await API.get(`/refund-requests/${refundRequestId}`);
-      return response;
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to fetch refund request");
-    }
-  },
-};
+// Export default instance
+export default new BookingService();

@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Create user object from token payload
           const userFromToken: User = {
             id: payload.id,
-            square_up_id: '', // Not in token
             email: payload.email,
             first_name: payload.first_name,
             last_name: payload.last_name,
@@ -146,10 +145,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (response && response.data === true) {
-        const user = AuthService.getUser();
-        if (user) {
-          user.verified = true;
-          localStorage.setItem("user", JSON.stringify(user));
+        // Fetch fresh user data from backend to get updated verified status
+        try {
+          const userResponse = await AuthService.fetchUser();
+          if (userResponse && userResponse.data) {
+            setUser(userResponse.data);
+            console.log('✅ User data refreshed after verification:', { verified: userResponse.data.verified });
+          }
+        } catch (fetchError) {
+          console.error('Error fetching user data after verification:', fetchError);
+          // Fallback: manually update user object
+          const user = AuthService.getUser();
+          if (user) {
+            user.verified = true;
+            localStorage.setItem("user", JSON.stringify(user));
+            setUser(user);
+          }
         }
       }
 

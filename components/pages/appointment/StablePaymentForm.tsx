@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Service, TimeSlot, BookingService } from "@/lib/booking-service";
+import BookingService, { Service, TimeSlot } from "@/lib/booking-service";
 import { useAuth } from "@/lib/auth-context";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -325,38 +325,21 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       throw new Error("No barber selected for the appointment");
     }
 
-    // Prepare booking request for single booking with multiple segments
+    // Prepare booking request for self-managed system with multiple segments
     const appointmentSegments = selectedServices.map((service, index) => {
-      const segmentStartTime =
-        index === 0
-          ? selectedTime.start_at
-          : dayjs(selectedTime.start_at)
-              .add(
-                selectedServices
-                  .slice(0, index)
-                  .reduce((total, s) => total + s.duration, 0),
-                "minute",
-              )
-              .toISOString();
-
       return {
-        service_variation_id: service.service_variation_id,
-        team_member_id: selectedTime.appointment_segments[0].team_member_id,
-        duration_minutes:
-          service.duration > 10000
-            ? service.duration / 60000
-            : service.duration,
-        start_at: segmentStartTime,
-        service_variation_version: 1,
+        service_id: service.id, // Use database ID instead of service_variation_id
+        team_member_id: parseInt(selectedTime.appointment_segments[0].team_member_id), // Convert to number
+        duration_minutes: service.duration_minutes,
       };
     });
 
     const bookingRequest = {
       start_at: selectedTime.start_at,
       appointment_segments: appointmentSegments,
-      customerNote: `Multi-service booking - payment to be processed separately`,
+      customer_note: `Multi-service booking - payment to be processed separately`,
       idempotencyKey: idempotencyKey,
-      // No payment_info - create booking first
+      // No payment_info - create booking first, payment processed separately
     };
 
     console.log(
@@ -364,10 +347,10 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       JSON.stringify(bookingRequest, null, 2),
     );
 
-    // Create the booking using segments API with timeout
-    console.log("🔄 Calling BookingService.createBookingWithSegments...");
+    // Create the booking using self-managed segments API with timeout
+    console.log("🔄 Calling BookingService.createSelfManagedBookingWithSegments...");
     const bookingPromise =
-      BookingService.createBookingWithSegments(bookingRequest);
+      BookingService.createSelfManagedBookingWithSegments(bookingRequest);
     const response = (await Promise.race([
       bookingPromise,
       timeoutPromise,
@@ -397,7 +380,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       // Store successful booking information with payment
       const bookingInfo = {
         bookingId: bookingResponse.data?.booking?.id,
-        squareBookingId: bookingResponse.data?.booking?.square_booking_id,
+        bookingReference: bookingResponse.data?.booking?.booking_reference, // Self-managed booking reference
         paymentInfo: paymentInfo,
         services: selectedServices,
         teamMemberId: selectedTime?.appointment_segments?.[0]?.team_member_id,
@@ -473,7 +456,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
 
       // Calculate amounts
       const subtotalAmount = selectedServices.reduce(
-        (total, service) => total + service.price_amount,
+        (total, service) => total + service.base_price_cents,
         0,
       );
 
@@ -573,7 +556,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
 
   // Calculate pricing (matching BookingSummary logic)
   const subtotalAmount = selectedServices.reduce((total, service) => {
-    return total + service.price_amount / 100;
+    return total + service.base_price_cents / 100;
   }, 0);
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
@@ -612,11 +595,9 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
               )}
             </div>
             <div className="flex gap-3 text-xs text-gray-600">
-              <span>${(service.price_amount / 100).toFixed(2)}</span>
+              <span>${(service.base_price_cents / 100).toFixed(2)}</span>
               <span>
-                {service.duration > 10000
-                  ? Math.round(service.duration / 60000)
-                  : service.duration}{" "}
+                {service.duration_minutes}{" "}
                 min
               </span>
             </div>

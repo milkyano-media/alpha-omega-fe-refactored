@@ -10,9 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 interface PhoneNumberModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export function PhoneNumberModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-6">
+      <DialogContent className="!max-w-lg p-6">
         <DialogHeader className="space-y-3">
           <DialogTitle className="text-xl font-semibold">Complete Your Registration</DialogTitle>
           <DialogDescription className="text-gray-600 leading-relaxed">
@@ -91,15 +92,17 @@ export function PhoneNumberModal({
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-3">
             <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
-            <Input
-              id="phoneNumber"
-              type="tel"
-              placeholder="+1 (555) 123-4567"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              disabled={isLoading}
-              className="w-full h-11 px-4"
-            />
+            <div className="phone-input-container">
+              <PhoneInput
+                defaultCountry="AU"
+                international
+                value={phoneNumber}
+                onChange={(value) => setPhoneNumber(value || "")}
+                disabled={isLoading}
+                className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                placeholder="+61 412 123 456"
+              />
+            </div>
           </div>
           
           <div className="flex justify-end space-x-3 pt-2">

@@ -97,7 +97,7 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
-      
+
       if (!isMobile) {
         try {
           window.google.accounts.id.prompt();

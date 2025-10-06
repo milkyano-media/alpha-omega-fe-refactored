@@ -3,7 +3,6 @@ import { API } from './api-client';
 
 export interface User {
   id: number;
-  square_up_id: string;
   email: string;
   first_name: string;
   last_name: string;

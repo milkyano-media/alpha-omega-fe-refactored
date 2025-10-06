@@ -16,6 +16,7 @@ interface BookingSummaryProps {
   selectedTime: TimeSlot | null;
   error: string | null;
   onProceedToPayment: () => void;
+  onBookWithoutPayment?: () => void;
   showPaymentForm: boolean;
   selectedServices?: Service[];
 }
@@ -25,6 +26,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   selectedTime,
   error,
   onProceedToPayment,
+  onBookWithoutPayment,
   showPaymentForm,
   selectedServices = [],
 }) => {
@@ -32,7 +34,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   // Calculate total pricing for all selected services
   const subtotalAmount = selectedServices.reduce((total, service) => {
-    return total + (service.price_amount / 100);
+    return total + (service.base_price_cents / 100);
   }, 0);
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
@@ -72,11 +74,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               )}
             </div>
             <div className="flex gap-3 text-xs text-gray-600">
-              <span>${(service.price_amount / 100).toFixed(2)}</span>
+              <span>${(service.base_price_cents / 100).toFixed(2)}</span>
               <span>
-                {service.duration > 10000
-                  ? Math.round(service.duration / 60000)
-                  : service.duration}{" "}
+                {service.duration_minutes}{" "}
                 min
               </span>
             </div>
@@ -127,13 +127,25 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       )}
 
       {!showPaymentForm && (
-        <Button
-        onClick={onProceedToPayment}
-        className="w-full mt-4 py-3 text-base bg-black hover:bg-gray-800 transition-colors text-white rounded-md font-normal"
-          disabled={!selectedTime}
-        >
-          {selectedTime ? "Confirm and Pay Deposit" : "Please Select a Time"}
+        <div className="space-y-2 mt-4">
+          <Button
+            onClick={onProceedToPayment}
+            className="w-full py-3 text-base bg-black hover:bg-gray-800 transition-colors text-white rounded-md font-normal"
+            disabled={!selectedTime}
+          >
+            {selectedTime ? "Confirm and Pay Deposit" : "Please Select a Time"}
           </Button>
+          {onBookWithoutPayment && (
+            <Button
+              onClick={onBookWithoutPayment}
+              variant="outline"
+              className="w-full py-3 text-base border-black text-black hover:bg-gray-100 transition-colors rounded-md font-normal"
+              disabled={!selectedTime}
+            >
+              {selectedTime ? "Book Without Payment (Test)" : "Please Select a Time"}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

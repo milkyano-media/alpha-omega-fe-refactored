@@ -13,6 +13,14 @@ import { Upload, Trash2, Search, RefreshCw, Image as ImageIcon, Eye } from "luci
 import toast from "react-hot-toast"
 import { getErrorMessage } from "@/lib/error-utils"
 
+// Helper function to convert relative URLs to absolute URLs
+const getImageUrl = (url: string) => {
+  if (!url) return ""
+  if (url.startsWith("http")) return url
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+  return `${baseUrl.replace("/api", "")}${url}`
+}
+
 interface UploadedImage {
   id: number
   type: "profile" | "branding" | "gallery"
@@ -47,6 +55,7 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
@@ -55,6 +64,8 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
   const [brandingType, setBrandingType] = useState("")
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<UploadedImage | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [imageToDelete, setImageToDelete] = useState<{ id: number; type: string } | null>(null)
 
   const loadImages = useCallback(async () => {
     setLoading(true)
@@ -62,12 +73,23 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: "20",
-        ...(filterType !== "all" && { type: filterType })
+        ...(filterType !== "all" && { type: filterType }),
+        ...(debouncedSearchTerm.trim() && { search: debouncedSearchTerm.trim() })
       })
       
       const response = await API.get(`/images?${params}`)
-      if (response.data?.data) {
-        setImagesData(response.data.data)
+      console.log("API Response:", response)
+      if (response.data) {
+        // Map backend response to frontend structure
+        setImagesData({
+          images: response.data.images || [],
+          pagination: {
+            currentPage: response.data.currentPage || 1,
+            totalPages: response.data.totalPages || 1,
+            totalItems: response.data.totalCount || 0,
+            itemsPerPage: 20
+          }
+        })
       }
     } catch (error) {
       console.error("Failed to load images:", error)
@@ -75,7 +97,20 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, filterType])
+  }, [currentPage, filterType, debouncedSearchTerm])
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+      // Reset to first page when searching
+      if (searchTerm !== debouncedSearchTerm) {
+        setCurrentPage(1)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm, debouncedSearchTerm])
 
   useEffect(() => {
     loadImages()
@@ -125,12 +160,10 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
     
     // Branding specific validation
     if (uploadType === "branding") {
-      if (!brandingType.trim()) {
-        errors.brandingType = "Please specify branding type (logo, banner, etc.)";
-      } else if (brandingType.length > 50) {
-        errors.brandingType = "Branding type must be less than 50 characters";
+      if (!brandingType) {
+        errors.brandingType = "Please select a branding type";
       }
-      
+
       if (selectedFiles.length > 1) {
         errors.files = "Only one file can be uploaded at a time for branding";
       }
@@ -158,65 +191,78 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
       if (uploadType === "gallery") {
         // Multiple files for gallery
         Array.from(selectedFiles!).forEach(file => {
-          formData.append("images", file)
+          formData.append("gallery_images", file)
         })
         
         const response = await API.post("/images/gallery", formData, {
           headers: { "Content-Type": "multipart/form-data" }
         })
         
-        if (response.data?.status_code === 200) {
-          toast.success(`${selectedFiles!.length} gallery images uploaded successfully`)
-          setUploadDialogOpen(false)
-          setSelectedFiles(null)
-          // Clear validation errors
-          loadImages()
-        }
+        // Always show success toast for 200 responses
+        toast.success(`${selectedFiles!.length} gallery images uploaded successfully`)
+        loadImages()
       } else if (uploadType === "branding") {
         // Single file for branding
-        formData.append("image", selectedFiles![0])
+        formData.append("branding_image", selectedFiles![0])
         formData.append("type", brandingType)
-        
+
         const response = await API.post("/images/branding", formData, {
           headers: { "Content-Type": "multipart/form-data" }
         })
-        
-        if (response.data?.status_code === 200) {
-          toast.success(`${brandingType} image uploaded successfully`)
-          setUploadDialogOpen(false)
-          setSelectedFiles(null)
-          setBrandingType("")
-          // Clear validation errors
-          loadImages()
-        }
+
+        // Always show success toast for 200 responses
+        toast.success(`${brandingType} image uploaded successfully`)
+        loadImages()
       }
     } catch (error: any) {
       console.error("Upload failed:", error)
       toast.error(getErrorMessage(error, "Upload failed"))
     } finally {
       setUploading(false)
+      // Always close dialog and reset form after upload attempt
+      setUploadDialogOpen(false)
+      setSelectedFiles(null)
+      setBrandingType("")
     }
   }
 
-  const handleDeleteImage = async (imageId: number, type: string) => {
-    if (!confirm("Are you sure you want to delete this image?")) {
-      return
-    }
+  const handleDeleteImage = (imageId: number, type: string) => {
+    setImageToDelete({ id: imageId, type })
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDeleteImage = async () => {
+    if (!imageToDelete) return
 
     try {
-      const response = await API.delete(`/images/${imageId}?type=${type}`)
-      
-      if (response.data?.status_code === 200) {
-        toast.success("Image deleted successfully")
-        loadImages()
-        if (selectedImage?.id === imageId) {
-          setViewDialogOpen(false)
-          setSelectedImage(null)
-        }
+      // Optimistically remove image from UI immediately
+      setImagesData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageToDelete.id)
+      }))
+
+      // Close view dialog if this image was being viewed
+      if (selectedImage?.id === imageToDelete.id) {
+        setViewDialogOpen(false)
+        setSelectedImage(null)
       }
+
+      // Show success toast immediately
+      toast.success("Image deleted successfully")
+
+      // Call API in background
+      await API.delete(`/images/${imageToDelete.id}?type=${imageToDelete.type}`)
+
+      // Refresh the list to ensure consistency
+      loadImages()
     } catch (error: any) {
       console.error("Delete failed:", error)
       toast.error(getErrorMessage(error, "Failed to delete image"))
+      // Reload images on error to restore correct state
+      loadImages()
+    } finally {
+      setDeleteConfirmOpen(false)
+      setImageToDelete(null)
     }
   }
 
@@ -324,7 +370,7 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
                   >
                     <div className="aspect-square">
                       <img
-                        src={image.thumbnailUrl || image.url}
+                        src={getImageUrl(image.thumbnailUrl || image.url)}
                         alt={image.originalName}
                         className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => {
@@ -425,12 +471,19 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
               {uploadType === "branding" && (
                 <div>
                   <Label htmlFor="brandingType">Branding Type</Label>
-                  <Input
-                    id="brandingType"
-                    placeholder="logo, banner, hero, etc."
+                  <Select
                     value={brandingType}
-                    onChange={(e) => setBrandingType(e.target.value)}
-                  />
+                    onValueChange={setBrandingType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select branding type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="logo">Logo</SelectItem>
+                      <SelectItem value="banner">Banner</SelectItem>
+                      <SelectItem value="favicon">Favicon</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
@@ -486,7 +539,7 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
                 <div className="space-y-4">
                   <div className="flex justify-center">
                     <img
-                      src={selectedImage.url}
+                      src={getImageUrl(selectedImage.url)}
                       alt={selectedImage.originalName}
                       className="max-w-full max-h-96 object-contain rounded-lg"
                     />
@@ -516,7 +569,7 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
                   <div className="flex gap-2 pt-4">
                     <Button
                       variant="outline"
-                      onClick={() => window.open(selectedImage.url, "_blank")}
+                      onClick={() => window.open(getImageUrl(selectedImage.url), "_blank")}
                       className="flex-1"
                     >
                       <Eye className="h-4 w-4 mr-2" />
@@ -533,6 +586,39 @@ export function ImagesSection({ activeSection }: ImagesSectionProps) {
                 </div>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirm Delete</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                Are you sure you want to delete this image? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirmOpen(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDeleteImage}
+                  className="flex-1"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </CardContent>
