@@ -759,7 +759,7 @@ function CleanAppointmentPageContent() {
       return (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex justify-between items-start">
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-green-800">
                 Closest Available Time Selected
               </p>
@@ -776,16 +776,26 @@ function CleanAppointmentPageContent() {
             </div>
           </div>
 
-          <div className="text-center mt-3">
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => {
+                setTimeAutoSelected(false);
+                setShowManualTimeSelection(true);
+                setShowPaymentForm(false);
+              }}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Change Time/Date
+            </button>
             <button
               onClick={() => {
                 // Use the first service ID for the URL param (barbers page expects single serviceId)
                 const serviceId = selectedServices.length > 0 ? selectedServices[0].id : selectedService?.id || '';
                 router.push(`/book/barbers?serviceId=${serviceId}`);
               }}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="flex-1 px-4 py-2 border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium rounded-lg transition-colors"
             >
-              Choose a different barber/time
+              Change Barber
             </button>
           </div>
         </div>
