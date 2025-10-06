@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Edit, Trash2, Search, RefreshCw, Users, UserPlus, Phone, Mail, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react"
+import { Plus, Edit, Trash2, Search, RefreshCw, Users, UserPlus, Phone, Mail, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Filter, Key, Copy } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -24,6 +24,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { FormImageUpload } from "@/components/ui/form-image-upload"
 import { FormGalleryUpload } from "@/components/ui/form-gallery-upload"
 import { WorkingHoursPicker } from "@/components/ui/time-picker"
+import PhoneInput from "react-phone-number-input"
+import { isPossiblePhoneNumber } from "react-phone-number-input"
+import "react-phone-number-input/style.css"
 
 // Types
 interface TeamMember {
@@ -102,7 +105,25 @@ const teamMemberBasicSchema = z.object({
     z.literal("")
   ]).optional(),
   phone: z.union([
-    z.string().regex(/^[\+]?[1-9][\d]{0,15}$/, "Please enter a valid phone number"),
+    z.string()
+      .refine((value) => !value || value.startsWith("+ ") || value.startsWith("+"), {
+        message: "Phone number must start with a country code (e.g., +61)",
+      })
+      .refine(
+        (value) => {
+          if (!value) return true; // Optional field
+          try {
+            const cleaned = value.replace(/\s+/g, "");
+            if (cleaned.length < 8) return false;
+            return /^\+[1-9]\d{6,14}$/.test(cleaned) || isPossiblePhoneNumber(value);
+          } catch (error) {
+            return false;
+          }
+        },
+        {
+          message: "Please enter a valid phone number with country code",
+        }
+      ),
     z.literal("")
   ]).optional(),
   bio: z.string()
@@ -111,6 +132,13 @@ const teamMemberBasicSchema = z.object({
     .or(z.literal("")),
   hire_date: z.union([
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date (YYYY-MM-DD)"),
+    z.literal("")
+  ]).optional(),
+  password: z.union([
+    z.string()
+      .min(8, "Password must be at least 8 characters")
+      .max(100, "Password must be less than 100 characters")
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number"),
     z.literal("")
   ]).optional()
 })
@@ -203,7 +231,23 @@ const teamMemberSettingsSchema = z.object({
     phone: z.union([
       z.string()
         .min(1, "Emergency contact phone is required")
-        .regex(/^[\+]?[1-9][\d]{0,15}$/, "Please enter a valid phone number"),
+        .refine((value) => value.startsWith("+ ") || value.startsWith("+"), {
+          message: "Phone number must start with a country code (e.g., +61)",
+        })
+        .refine(
+          (value) => {
+            try {
+              const cleaned = value.replace(/\s+/g, "");
+              if (cleaned.length < 8) return false;
+              return /^\+[1-9]\d{6,14}$/.test(cleaned) || isPossiblePhoneNumber(value);
+            } catch (error) {
+              return false;
+            }
+          },
+          {
+            message: "Please enter a valid phone number with country code",
+          }
+        ),
       z.literal("")
     ]).optional(),
     email: z.union([
@@ -211,11 +255,11 @@ const teamMemberSettingsSchema = z.object({
       z.literal("")
     ]).optional()
   }).refine(data => {
-    // If any emergency contact field is filled, name, relationship, and phone become required
-    const hasAnyField = data?.name || data?.relationship || data?.phone || data?.email
+    // If any emergency contact field is filled (and relationship is not "none"), name, relationship, and phone become required
+    const hasAnyField = data?.name || (data?.relationship && data.relationship !== "none") || data?.phone || data?.email
     if (hasAnyField) {
-      return data?.name && data.name.trim() !== "" && 
-             data?.relationship && data.relationship.trim() !== "" && 
+      return data?.name && data.name.trim() !== "" &&
+             data?.relationship && data.relationship.trim() !== "" && data.relationship !== "none" &&
              data?.phone && data.phone.trim() !== ""
     }
     return true
@@ -235,10 +279,13 @@ const servicePricingSchema = z.object({
   price_cents: z.number()
     .min(0, "Price cannot be negative")
     .max(100000, "Price seems too high (max $1000)"),
-  duration_override: z.number()
-    .min(1, "Duration must be at least 1 minute")
-    .max(1440, "Duration cannot exceed 24 hours (1440 minutes)")
-    .optional(),
+  duration_override: z.union([
+    z.number()
+      .min(1, "Duration must be at least 1 minute")
+      .max(1440, "Duration cannot exceed 24 hours (1440 minutes)"),
+    z.null(),
+    z.undefined()
+  ]).optional(),
   is_available: z.boolean(),
   special_notes: z.string()
     .max(500, "Special notes must be less than 500 characters")
@@ -302,7 +349,8 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
       email: "",
       phone: "",
       bio: "",
-      hire_date: ""
+      hire_date: "",
+      password: ""
     },
     mode: "all"
   })
@@ -352,10 +400,33 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
 
   // Utility functions
   const formatPrice = (cents: number) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: 'USD' 
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
     }).format(cents / 100)
+  }
+
+  const generateRandomPassword = () => {
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const numbers = '0123456789'
+    const special = '!@#$%^&*'
+
+    // Ensure at least one of each type
+    let password = ''
+    password += lowercase[Math.floor(Math.random() * lowercase.length)]
+    password += uppercase[Math.floor(Math.random() * uppercase.length)]
+    password += numbers[Math.floor(Math.random() * numbers.length)]
+    password += special[Math.floor(Math.random() * special.length)]
+
+    // Fill the rest with random characters
+    const allChars = lowercase + uppercase + numbers + special
+    for (let i = password.length; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)]
+    }
+
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('')
   }
 
   const showFormValidationErrors = (form: any, formName: string) => {
@@ -596,7 +667,8 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
       email: normalizedMember.email || "",
       phone: normalizedMember.phone || "",
       bio: normalizedMember.bio || "",
-      hire_date: normalizedMember.hire_date ? normalizedMember.hire_date.split('T')[0] : ""
+      hire_date: normalizedMember.hire_date ? normalizedMember.hire_date.split('T')[0] : "",
+      password: "" // Never populate password field for security
     }
     console.log('=== BASIC FORM DEBUG ===')
     console.log('Raw member data from backend:', member) // Debug log
@@ -736,6 +808,16 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
         case 0: // Basic Information
           // currentForm = basicForm
           isValid = await basicForm.trigger()
+
+          // For new team members, password is required
+          if (!editingMember) {
+            const passwordValue = basicForm.getValues('password')
+            if (!passwordValue || passwordValue.trim() === '') {
+              toast.error('Password is required when creating a new team member')
+              return
+            }
+          }
+
           if (!isValid) {
             showFormValidationErrors(basicForm, "Basic Information")
             return
@@ -1165,17 +1247,17 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className="flex flex-col space-y-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
           Team Members
         </CardTitle>
-        <div className="flex items-center gap-3">
-          <Button onClick={fetchTeamMembers} variant="outline" size="sm">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button onClick={fetchTeamMembers} variant="outline" size="sm" className="w-full sm:w-auto">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button onClick={handleAddTeamMember}>
+          <Button onClick={handleAddTeamMember} className="w-full sm:w-auto">
             <UserPlus className="h-4 w-4 mr-2" />
             Add Team Member
           </Button>
@@ -1493,7 +1575,7 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
 
         {/* Multi-step Team Member Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="!max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>
                 {editingMember ? "Edit Team Member" : "Add New Team Member"}
@@ -1501,9 +1583,9 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
             </DialogHeader>
             
             <div className="flex-1 overflow-y-auto">
-              <Tabs value={currentStep.toString()} className="w-full">
+              <Tabs value={currentStep.toString()} onValueChange={(value) => setCurrentStep(parseInt(value))} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-6 h-auto">
-                  <TabsTrigger value="0" disabled={currentStep < 0} className="text-xs sm:text-sm whitespace-nowrap px-2 py-3">
+                  <TabsTrigger value="0" className="text-xs sm:text-sm whitespace-nowrap px-2 py-3">
                     <div className="flex flex-col items-center gap-1">
                       <span className="font-medium">Step 1</span>
                       <span className="hidden sm:inline">Basic Info</span>
@@ -1601,7 +1683,18 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
                             <FormItem>
                               <FormLabel>Phone</FormLabel>
                               <FormControl>
-                                <Input {...field} />
+                                <div className="phone-input-container">
+                                  <PhoneInput
+                                    defaultCountry="AU"
+                                    international
+                                    value={field.value || ""}
+                                    onChange={(value) => {
+                                      field.onChange(value || "");
+                                    }}
+                                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                                    placeholder="+61 412 123 456"
+                                  />
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1633,6 +1726,63 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
                               <Input {...field} type="date" />
                             </FormControl>
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={basicForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {editingMember ? 'Change Login Password (Optional)' : 'Login Password *'}
+                            </FormLabel>
+                            <FormControl>
+                              <div className="flex gap-2">
+                                <Input
+                                  {...field}
+                                  type="text"
+                                  placeholder={editingMember ? "Leave empty to keep current password" : "Enter password or generate"}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const newPassword = generateRandomPassword()
+                                    basicForm.setValue('password', newPassword)
+                                    toast.success('Password generated!')
+                                  }}
+                                >
+                                  <Key className="h-4 w-4 mr-2" />
+                                  Generate
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (field.value) {
+                                      navigator.clipboard.writeText(field.value)
+                                      toast.success('Password copied to clipboard!')
+                                    } else {
+                                      toast.error('No password to copy')
+                                    }
+                                  }}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                            {editingMember ? (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Leave empty to keep the existing password. Enter a new password to update the user account.
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                This password will be used to create a user account with role &quot;barber&quot; for this team member.
+                              </p>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -2039,6 +2189,7 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
                                       <SelectValue placeholder="Select relationship" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
                                       <SelectItem value="spouse">Spouse</SelectItem>
                                       <SelectItem value="parent">Parent</SelectItem>
                                       <SelectItem value="sibling">Sibling</SelectItem>
@@ -2060,11 +2211,18 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
                               <FormItem>
                                 <FormLabel>Phone Number</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    {...field} 
-                                    placeholder="+1234567890"
-                                    type="tel"
-                                  />
+                                  <div className="phone-input-container">
+                                    <PhoneInput
+                                      defaultCountry="AU"
+                                      international
+                                      value={field.value || ""}
+                                      onChange={(value) => {
+                                        field.onChange(value || "");
+                                      }}
+                                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                                      placeholder="+61 412 123 456"
+                                    />
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

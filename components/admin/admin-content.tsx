@@ -5,9 +5,9 @@ import { ServicesManagementSection } from "./sections/services-management-sectio
 import { TeamManagementSection } from "./sections/team-management-section"
 import BusinessSettingsSection from "./sections/business-settings-section"
 import { ImagesSection } from "./sections/images-section"
+import { ScheduleManagementSection } from "./sections/schedule-management-section"
+import { BookingsSection } from "./sections/bookings-section"
 // Import other sections as we create them
-// import { BookingsSection } from "./sections/bookings-section"
-// import { TeamSection } from "./sections/team-section"
 // import { RefundsSection } from "./sections/refunds-section"
 
 interface AdminContentProps {
@@ -37,23 +37,27 @@ export function AdminContent({ activeSection = "overview", onSectionChange }: Ad
       />
 
       {/* Business Settings Section */}
-      <BusinessSettingsSection 
+      <BusinessSettingsSection
         activeSection={activeSection}
       />
 
-      {/* Images Section */}
-      <ImagesSection 
-        activeSection={activeSection} 
-        onSectionChange={onSectionChange} 
+      {/* Schedule Management Section */}
+      <ScheduleManagementSection
+        activeSection={activeSection}
+        onSectionChange={onSectionChange}
       />
 
-      {/* Placeholder for other sections - will be implemented in subsequent tasks */}
-      {activeSection === "bookings" && (
-        <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-medium">Bookings & Payments</h3>
-          <p className="text-sm text-muted-foreground">Coming soon - migrating existing functionality</p>
-        </div>
-      )}
+      {/* Images Section */}
+      <ImagesSection
+        activeSection={activeSection}
+        onSectionChange={onSectionChange}
+      />
+
+      {/* Bookings Section */}
+      <BookingsSection
+        activeSection={activeSection}
+        onSectionChange={onSectionChange}
+      />
 
 
 

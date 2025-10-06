@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { BookingService, TeamMember, Service } from "@/lib/booking-service";
+import BookingService, { TeamMember, Service } from "@/lib/booking-service";
 import { getBarberImageSafe, preloadBarberImages } from "@/lib/barber-images";
 import {
   Dialog,
@@ -88,20 +88,52 @@ function BarberSelectionContent() {
     setSelectedService(serviceData);
     setSelectedServices(servicesData);
 
-    // Fetch barbers for the selected service
+    // Fetch barbers who can perform ALL selected services
     const fetchBarbers = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const serviceBarbers = await BookingService.getBarbersForService(
-          serviceData.id,
+        console.log('Fetching barbers for services:', servicesData.map(s => s.name));
+
+        // Fetch barbers for each selected service
+        const barbersByService = await Promise.all(
+          servicesData.map(async (service) => {
+            const serviceBarbers = await BookingService.getBarbersForService(service.id);
+            return {
+              serviceId: service.id,
+              serviceName: service.name,
+              barbers: serviceBarbers.filter((barber) => !barber.is_owner)
+            };
+          })
         );
-        // Filter out barbers with is_owner=true
-        const availableBarbers = serviceBarbers.filter(
-          (barber) => !barber.is_owner,
-        );
-        setBarbers(availableBarbers);
+
+        console.log('Barbers by service:', barbersByService);
+
+        // Find barbers who appear in ALL services (intersection)
+        if (barbersByService.length === 0) {
+          setBarbers([]);
+          return;
+        }
+
+        // Start with barbers from the first service
+        let commonBarbers = barbersByService[0].barbers;
+
+        // Find intersection with each subsequent service's barbers
+        for (let i = 1; i < barbersByService.length; i++) {
+          const currentServiceBarbers = barbersByService[i].barbers;
+          commonBarbers = commonBarbers.filter(barber =>
+            currentServiceBarbers.some(serviceBarber => serviceBarber.id === barber.id)
+          );
+        }
+
+        console.log(`Found ${commonBarbers.length} barbers who can perform all ${servicesData.length} selected services`);
+
+        if (commonBarbers.length === 0) {
+          setError(`No barbers available who can perform all selected services: ${servicesData.map(s => s.name).join(', ')}. Please adjust your service selection.`);
+        }
+
+        setBarbers(commonBarbers);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load barbers");
         console.error("Error fetching barbers:", err);
@@ -173,9 +205,10 @@ function BarberSelectionContent() {
       );
 
       const availabilityResponse = await BookingService.searchAvailability(
-        selectedService.service_variation_id,
+        selectedService.id,
         now,
         endDate,
+        barbers.map(b => b.id) // Only search for availability of non-owner barbers
       );
 
       console.log("Availability response received:", availabilityResponse);
@@ -398,13 +431,11 @@ function BarberSelectionContent() {
                   </h3>
                   <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
                     <span>
-                      ${(selectedServices[0].price_amount / 100).toFixed(2)}
+                      ${(selectedServices[0].base_price_cents / 100).toFixed(2)}
                     </span>
                     <span>•</span>
                     <span>
-                      {selectedServices[0].duration > 10000
-                        ? Math.round(selectedServices[0].duration / 60000)
-                        : selectedServices[0].duration}{" "}
+                      {selectedServices[0].duration_minutes}{" "}
                       min
                     </span>
                   </div>
@@ -438,13 +469,11 @@ function BarberSelectionContent() {
                           </div>
                           <div className="flex gap-2 text-xs text-gray-600">
                             <span>
-                              ${(service.price_amount / 100).toFixed(2)}
+                              ${(service.base_price_cents / 100).toFixed(2)}
                             </span>
                             <span>•</span>
                             <span>
-                              {service.duration > 10000
-                                ? Math.round(service.duration / 60000)
-                                : service.duration}{" "}
+                              {service.duration_minutes}{" "}
                               min
                             </span>
                           </div>
@@ -460,7 +489,7 @@ function BarberSelectionContent() {
                           $
                           {(
                             selectedServices.reduce(
-                              (total, service) => total + service.price_amount,
+                              (total, service) => total + service.base_price_cents,
                               0,
                             ) / 100
                           ).toFixed(2)}
@@ -468,11 +497,7 @@ function BarberSelectionContent() {
                         <span>•</span>
                         <span className="font-semibold">
                           {selectedServices.reduce((total, service) => {
-                            const duration =
-                              service.duration > 10000
-                                ? Math.round(service.duration / 60000)
-                                : service.duration;
-                            return total + duration;
+                            return total + service.duration_minutes;
                           }, 0)}{" "}
                           min
                         </span>
@@ -506,8 +531,10 @@ function BarberSelectionContent() {
               No Barbers Available
             </h3>
             <p className="text-gray-500 mb-6">
-              No barbers are currently available for this service. Please try
-              another service or contact us directly.
+              {selectedServices.length > 1
+                ? `No barbers can perform all ${selectedServices.length} selected services. Try selecting fewer services or contact us directly.`
+                : 'No barbers are currently available for this service. Please try another service or contact us directly.'
+              }
             </p>
             <Button
               onClick={() => router.push("/book/services")}
@@ -518,11 +545,22 @@ function BarberSelectionContent() {
           </div>
         ) : (
           <>
-            {/* <div className="bg-gray-50 rounded-lg p-3 mb-6 max-w-2xl mx-auto">
-              <p className="text-xs text-gray-700 text-center">
-                🎯 <strong>Limited Availability</strong> - Book your preferred time slot today!
-              </p>
-            </div> */}
+            {selectedServices.length > 1 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-800">
+                      <strong>Filtered for compatibility:</strong> Showing only barbers who can perform all {selectedServices.length} selected services. {barbers.length} barber{barbers.length !== 1 ? 's' : ''} available.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="max-w-4xl mx-auto">
               <div className="grid grid-cols-2 gap-6 md:gap-0">
@@ -794,7 +832,7 @@ function BarberSelectionContent() {
                     with {selectedBarber.first_name}
                   </p>
                   <p className="text-2xl font-bold mt-1">
-                    ${(selectedServices[0].price_amount / 100).toFixed(2)}
+                    ${(selectedServices[0].base_price_cents / 100).toFixed(2)}
                   </p>
                 </>
               ) : (
@@ -817,7 +855,7 @@ function BarberSelectionContent() {
                             : ""}
                         </span>
                         <span className="font-medium">
-                          ${(service.price_amount / 100).toFixed(2)}
+                          ${(service.base_price_cents / 100).toFixed(2)}
                         </span>
                       </div>
                     ))}
@@ -827,7 +865,7 @@ function BarberSelectionContent() {
                       Total: $
                       {(
                         selectedServices.reduce(
-                          (total, service) => total + service.price_amount,
+                          (total, service) => total + service.base_price_cents,
                           0,
                         ) / 100
                       ).toFixed(2)}

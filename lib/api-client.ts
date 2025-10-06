@@ -6,6 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_URL,
+  timeout: 10000, // 10 seconds to handle Windows file deletion retries
   headers: {
     'Content-Type': 'application/json',
   },

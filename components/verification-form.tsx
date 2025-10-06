@@ -59,13 +59,28 @@ export function VerificationForm({
       if (token) {
         try {
           const payload = decodeToken(token);
+
+          // Double check: if user is verified, don't send OTP
+          if (payload.verified) {
+            console.log('User is already verified, redirecting...');
+            router.push("/");
+            return;
+          }
+
           if (payload.phone) {
             console.log('🔍 VerificationForm - Using phone from token:', payload.phone);
             setPhoneNumber(payload.phone);
-            // Automatically send OTP to existing phone number
+            // Automatically send OTP to existing phone number (only if not verified)
             resendOtp(payload.phone).catch(error => {
               console.error('Error sending OTP to existing phone:', error);
-              setError('Failed to send verification code. Please try resending.');
+
+              // Check if error is "User is already verified"
+              if (error.response?.data?.error?.includes('already verified')) {
+                console.log('User already verified, redirecting to home');
+                router.push("/");
+              } else {
+                setError('Failed to send verification code. Please try resending.');
+              }
             });
           } else {
             // No phone in token, user needs to add phone number

@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import {
+import BookingService, {
   Service,
   TimeSlot,
-  BookingService,
   AvailabilityResponse,
   TeamMember,
 } from "@/lib/booking-service";
-import { StablePaymentForm } from "@/components/pages/appointment/StablePaymentForm";
+import { SimpleBookingForm } from "@/components/pages/appointment/SimpleBookingForm";
 import {
   BookingSummary,
   DateTimeSelector,
@@ -28,6 +27,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { VerificationGuard } from "@/components/verification-guard";
 import { FreshaRedirectWrapper } from "@/components/fresha-redirect";
+
+// Note: BookingService.searchAvailability() already handles conversion from self-managed format to UI format
+// No additional transformation is needed in the appointment page
 
 // Additional service interface
 interface AdditionalService {
@@ -76,6 +78,7 @@ function CleanAppointmentPageContent() {
   const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  const [selectedBarber, setSelectedBarber] = useState<TeamMember | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -112,6 +115,21 @@ function CleanAppointmentPageContent() {
     const autoSelectedTimeFlag = localStorage.getItem("autoSelectedTime");
     const selectedBarberId = localStorage.getItem("selectedBarberId");
     const rescheduleBookingId = localStorage.getItem("rescheduleBookingId");
+
+    // Load selected barber information
+    if (selectedBarberId) {
+      BookingService.getTeamMembers()
+        .then(teamMembers => {
+          const barber = teamMembers.find(tm => tm.id === parseInt(selectedBarberId));
+          if (barber) {
+            console.log("Loaded selected barber:", barber);
+            setSelectedBarber(barber);
+          }
+        })
+        .catch(err => {
+          console.error("Error loading barber info:", err);
+        });
+    }
 
     if (autoSelectedTimeFlag === "true") {
       const savedTimeSlot = localStorage.getItem("selectedTimeSlot");
@@ -163,11 +181,14 @@ function CleanAppointmentPageContent() {
       );
       setShowManualTimeSelection(true);
     } else {
-      console.log("No manual selection triggered", {
+      console.log("🔧 ENABLING MANUAL TIME SELECTION BY DEFAULT", {
         hasSelectedBarberId: !!selectedBarberId,
         autoSelectedTimeFlag,
         hasRescheduleId: !!rescheduleBookingId,
       });
+      // Enable manual time selection by default when no auto-selected time
+      setShowManualTimeSelection(true);
+      console.log("✅ Manual time selection enabled:", true);
     }
   }, [isAuthenticated, router]);
 
@@ -192,10 +213,11 @@ function CleanAppointmentPageContent() {
 
   // Fetch availability when service changes or when manual selection is requested
   useEffect(() => {
-    console.log("🔍 Availability useEffect check:", {
+    console.log("🔍 AVAILABILITY USEEFFECT TRIGGERED:", {
       selectedService: !!selectedService,
+      selectedServiceId: selectedService?.id,
       showManualTimeSelection,
-      serviceVariationId: selectedService?.service_variation_id,
+      selectedDate: selectedDate.toISOString(),
     });
 
     if (!selectedService || !showManualTimeSelection) {
@@ -213,10 +235,11 @@ function CleanAppointmentPageContent() {
       try {
         const selectedMonth = selectedDate.getMonth() + 1;
         const selectedYear = selectedDate.getFullYear();
+        const selectedBarberId = localStorage.getItem("selectedBarberId");
         const cacheKey = `${selectedYear}-${String(selectedMonth).padStart(
           2,
           "0",
-        )}`;
+        )}-barber-${selectedBarberId || 'all'}`;
 
         // Check cache first
         if (monthCache[cacheKey]) {
@@ -283,16 +306,28 @@ function CleanAppointmentPageContent() {
         });
 
         console.log(
-          `Fetching availability for ${
-            selectedService.service_variation_id
+          `Fetching self-managed availability for service ${
+            selectedService.id
           } from ${startDate.toISOString()} to ${endDate.toISOString()}`,
         );
 
-        const data = await BookingService.searchAvailability(
-          selectedService.service_variation_id,
-          startDate,
-          endDate,
-        );
+        // Get selected barber ID for filtering (already retrieved above for cache key)
+        const teamMemberIds = selectedBarberId ? [parseInt(selectedBarberId)] : undefined;
+
+        console.log(`🔍 Fetching availability - Service: ${selectedService.id}, Barber: ${selectedBarberId || 'all'}`);
+
+        const selfManagedData = await BookingService.searchAvailability({
+          service_id: selectedService.id,
+          start_date: startDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+          end_date: endDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+          timezone: 'Australia/Melbourne',
+          ...(teamMemberIds && { team_member_ids: teamMemberIds })
+        });
+
+
+        // BookingService.searchAvailability() already returns data in UI format, no need to transform again
+        const data = selfManagedData;
+        console.log('✅ Availability data from BookingService (already converted):', data);
 
         // Cache the result
         setMonthCache((prev) => ({ ...prev, [cacheKey]: data }));
@@ -305,10 +340,15 @@ function CleanAppointmentPageContent() {
         // Update time slots for selected date
         const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
         const availabilities = data.availabilities_by_date?.[dateKey] || [];
+        console.log("📅 Selected date key:", dateKey);
+        console.log("📅 Available availabilities for this date:", availabilities);
+        console.log("📅 All available dates in data:", Object.keys(data.availabilities_by_date || {}));
+
         availabilities.sort(
           (a, b) =>
             new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
         );
+        console.log("📅 Setting availableTimes to:", availabilities);
         setAvailableTimes(availabilities);
       } catch (err: any) {
         console.error("Error fetching availability:", err);
@@ -323,11 +363,26 @@ function CleanAppointmentPageContent() {
 
   // Update available times when selected date changes
   useEffect(() => {
-    if (!availabilityData || !showManualTimeSelection) return;
+    console.log("🔄 Date change useEffect triggered", {
+      availabilityData: !!availabilityData,
+      showManualTimeSelection,
+      selectedDate: selectedDate.toISOString()
+    });
+
+    if (!availabilityData || !showManualTimeSelection) {
+      console.log("🔄 Date change useEffect early return - no data or manual selection disabled");
+      return;
+    }
 
     const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
     const availabilities =
       availabilityData.availabilities_by_date?.[dateKey] || [];
+    console.log("🔄 Date change useEffect - setting availabilities:", {
+      dateKey,
+      availabilities,
+      allAvailableDates: Object.keys(availabilityData.availabilities_by_date || {})
+    });
+
     availabilities.sort(
       (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
     );
@@ -358,6 +413,85 @@ function CleanAppointmentPageContent() {
     setShowPaymentForm(true);
   };
 
+  const handleBookWithoutPayment = async () => {
+    if (!selectedService || !selectedTime || !user) {
+      setError("Please select a service and time first");
+      return;
+    }
+
+    try {
+      setError(null);
+      console.log("📅 Creating booking without payment...");
+
+      // Prepare all services (main + additional)
+      const allServices = [
+        selectedService,
+        ...additionalServices.map((as) => as.service),
+      ];
+
+      // Build appointment segments for all services
+      const appointment_segments = allServices.map((service, index) => {
+        let segmentStartTime: Date;
+
+        if (index === 0) {
+          // Main service starts at selected time
+          segmentStartTime = new Date(selectedTime.start_at);
+        } else {
+          // Additional services start after previous service ends
+          const previousEndTime = new Date(selectedTime.start_at);
+          let totalPreviousDuration = 0;
+
+          // Calculate total duration of all previous services
+          for (let i = 0; i < index; i++) {
+            totalPreviousDuration += allServices[i].duration_minutes;
+          }
+
+          previousEndTime.setMinutes(previousEndTime.getMinutes() + totalPreviousDuration);
+          segmentStartTime = previousEndTime;
+        }
+
+        return {
+          duration_minutes: service.duration_minutes,
+          service_id: service.id,
+          team_member_id: selectedTime.appointment_segments[0].team_member_id,
+          service_variation_version: 1,
+          start_at: segmentStartTime.toISOString()
+        };
+      });
+
+      // Create booking request
+      const bookingRequest = {
+        start_at: selectedTime.start_at,
+        appointment_segments,
+        customer_note: "Booking created without payment (test)",
+        idempotencyKey: crypto.randomUUID()
+      };
+
+      console.log("📋 Booking request:", bookingRequest);
+
+      // Create the booking
+      const response = await BookingService.createBookingWithSegments(bookingRequest);
+      console.log("📨 Booking response:", response);
+
+      if (response.success) {
+        console.log("✅ Booking created successfully!");
+        setBookingConfirmed(true);
+
+        // Clear form data
+        localStorage.removeItem("selectedServices");
+        localStorage.removeItem("selectedService");
+        localStorage.removeItem("selectedBarberId");
+        localStorage.removeItem("rescheduleBookingId");
+        setAdditionalServices([]);
+      } else {
+        setError(response.error || "Failed to create booking");
+      }
+    } catch (error: any) {
+      console.error("❌ Error creating booking:", error);
+      setError(error.message || "Failed to create booking");
+    }
+  };
+
   // Recalculate additional service times when main service time changes
   useEffect(() => {
     if (!selectedTime || !selectedService) {
@@ -379,20 +513,14 @@ function CleanAppointmentPageContent() {
 
           if (index === 0) {
             calculatedStartTime = new Date(selectedTime.start_at);
-            const mainServiceDuration =
-              selectedService.duration > 10000
-                ? selectedService.duration / 60000
-                : selectedService.duration;
+            const mainServiceDuration = selectedService.duration_minutes;
             calculatedStartTime.setMinutes(
               calculatedStartTime.getMinutes() + mainServiceDuration,
             );
           } else {
             const previousService = currentServices[index - 1];
             calculatedStartTime = new Date(previousService.timeSlot.start_at);
-            const previousDuration =
-              previousService.service.duration > 10000
-                ? previousService.service.duration / 60000
-                : previousService.service.duration;
+            const previousDuration = previousService.service.duration_minutes;
             calculatedStartTime.setMinutes(
               calculatedStartTime.getMinutes() + previousDuration,
             );
@@ -436,14 +564,20 @@ function CleanAppointmentPageContent() {
       return;
     }
 
+    const selectedBarberId = localStorage.getItem("selectedBarberId");
+    if (!selectedBarberId) {
+      setError("No barber selected. Please go back and select a barber.");
+      return;
+    }
+
     try {
       setIsLoadingServices(true);
       setError(null);
       console.log(
-        "Fetching services and barbers for additional service dialog...",
+        `Fetching services for barber ${selectedBarberId} for additional service dialog...`,
       );
 
-      const serviceList = await BookingService.getAllServices();
+      const serviceList = await BookingService.getServicesByTeamMember(parseInt(selectedBarberId));
       console.log(
         `Fetched ${serviceList.length} services:`,
         serviceList.map((s) => s.name),
@@ -517,7 +651,7 @@ function CleanAppointmentPageContent() {
 
     let barberObj = flattenedBarbers.find(
       (barber) =>
-        barber.square_up_id === mainBarber || barber.square_up_id == mainBarber,
+        barber.id === mainBarber || barber.id == mainBarber,
     );
 
     if (!barberObj) {
@@ -530,8 +664,8 @@ function CleanAppointmentPageContent() {
 
         barberObj = allTeamMembers.find(
           (barber) =>
-            barber.square_up_id === mainBarber ||
-            barber.square_up_id == mainBarber,
+            barber.id === mainBarber ||
+            barber.id == mainBarber,
         );
 
         if (!barberObj) {
@@ -542,7 +676,7 @@ function CleanAppointmentPageContent() {
           return;
         }
         console.log(
-          `Found main barber: ${barberObj.first_name} (${barberObj.square_up_id})`,
+          `Found main barber: ${barberObj.first_name} (ID: ${barberObj.id})`,
         );
       } catch (error) {
         console.error("Error fetching team members:", error);
@@ -557,10 +691,7 @@ function CleanAppointmentPageContent() {
 
       if (additionalServices.length === 0) {
         lastServiceEndTime = new Date(selectedTime.start_at);
-        const mainServiceDuration =
-          selectedService.duration > 10000
-            ? selectedService.duration / 60000
-            : selectedService.duration;
+        const mainServiceDuration = selectedService.duration_minutes;
         lastServiceEndTime.setMinutes(
           lastServiceEndTime.getMinutes() + mainServiceDuration,
         );
@@ -568,10 +699,7 @@ function CleanAppointmentPageContent() {
         const lastAddedService =
           additionalServices[additionalServices.length - 1];
         lastServiceEndTime = new Date(lastAddedService.timeSlot.start_at);
-        const lastServiceDuration =
-          lastAddedService.service.duration > 10000
-            ? lastAddedService.service.duration / 60000
-            : lastAddedService.service.duration;
+        const lastServiceDuration = lastAddedService.service.duration_minutes;
         lastServiceEndTime.setMinutes(
           lastServiceEndTime.getMinutes() + lastServiceDuration,
         );
@@ -597,11 +725,8 @@ function CleanAppointmentPageContent() {
         appointment_segments: [
           {
             team_member_id: mainBarber,
-            service_variation_id: service.service_variation_id,
-            duration_minutes:
-              service.duration > 10000
-                ? Math.round(service.duration / 60000)
-                : service.duration,
+            service_id: service.id,
+            duration_minutes: service.duration_minutes,
             service_variation_version: 1,
           },
         ],
@@ -625,8 +750,7 @@ function CleanAppointmentPageContent() {
     setAdditionalServices((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handlePaymentStateChange = (processingPayment: boolean, creatingBooking: boolean) => {
-    setIsProcessingPayment(processingPayment);
+  const handleBookingStateChange = (creatingBooking: boolean) => {
     setIsCreatingBooking(creatingBooking);
   };
 
@@ -654,7 +778,11 @@ function CleanAppointmentPageContent() {
 
           <div className="text-center mt-3">
             <button
-              onClick={() => router.push("/book/barbers")}
+              onClick={() => {
+                // Use the first service ID for the URL param (barbers page expects single serviceId)
+                const serviceId = selectedServices.length > 0 ? selectedServices[0].id : selectedService?.id || '';
+                router.push(`/book/barbers?serviceId=${serviceId}`);
+              }}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               Choose a different barber/time
@@ -711,7 +839,11 @@ function CleanAppointmentPageContent() {
                       Select your preferred date and time
                     </span>
                     <button
-                      onClick={() => router.push("/book/barbers")}
+                      onClick={() => {
+                        // Use the first service ID for the URL param (barbers page expects single serviceId)
+                        const serviceId = selectedServices.length > 0 ? selectedServices[0].id : selectedService?.id || '';
+                        router.push(`/book/barbers?serviceId=${serviceId}`);
+                      }}
                       className="text-sm text-blue-600 hover:text-blue-800"
                     >
                       Back to Barber Selection
@@ -746,25 +878,53 @@ function CleanAppointmentPageContent() {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-base font-semibold mb-3">BOOKING SUMMARY</h2>
 
+            {/* Selected Barber Info */}
+            {selectedBarber && (
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  Your Barber
+                </p>
+                <div className="flex items-center gap-3">
+                  {selectedBarber.profile_image_url && (
+                    <img
+                      src={selectedBarber.profile_image_url}
+                      alt={`${selectedBarber.first_name} ${selectedBarber.last_name}`}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  )}
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {selectedBarber.first_name} {selectedBarber.last_name}
+                    </p>
+                    {selectedBarber.specialties && selectedBarber.specialties.length > 0 && (
+                      <p className="text-xs text-gray-600">
+                        {selectedBarber.specialties.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {showPaymentForm ? (
-              <StablePaymentForm
+              <SimpleBookingForm
                 selectedService={selectedService}
                 selectedTime={selectedTime}
                 selectedServices={[
                   ...selectedServices,
                   ...additionalServices.map((as) => as.service),
                 ]}
-                onPaymentComplete={() => {
-                  console.log("✅ Payment completed successfully");
+                onBookingComplete={() => {
+                  console.log("✅ Booking completed successfully");
                   setBookingConfirmed(true);
                 }}
                 onCancel={() => {
-                  console.log("❌ Payment cancelled");
+                  console.log("❌ Booking cancelled");
                   setShowPaymentForm(false);
                 }}
                 onAddAdditionalService={handleAddAdditionalService}
                 isLoadingServices={isLoadingServices}
-                onPaymentStateChange={handlePaymentStateChange}
+                onBookingStateChange={handleBookingStateChange}
               />
             ) : (
               <>
@@ -773,6 +933,7 @@ function CleanAppointmentPageContent() {
                   selectedTime={selectedTime}
                   error={error}
                   onProceedToPayment={handleShowPaymentForm}
+                  onBookWithoutPayment={handleBookWithoutPayment}
                   showPaymentForm={showPaymentForm}
                   selectedServices={[
                     ...selectedServices,
@@ -803,9 +964,7 @@ function CleanAppointmentPageContent() {
                               -
                               {dayjs(additionalService.timeSlot.start_at)
                                 .add(
-                                  additionalService.service.duration > 10000
-                                    ? additionalService.service.duration / 60000
-                                    : additionalService.service.duration,
+                                  additionalService.service.duration_minutes,
                                   "minute",
                                 )
                                 .tz("Australia/Melbourne")
@@ -816,7 +975,7 @@ function CleanAppointmentPageContent() {
                             <span className="font-medium">
                               $
                               {(
-                                additionalService.service.price_amount / 100
+                                additionalService.service.base_price_cents / 100
                               ).toFixed(2)}
                             </span>
                             <button
@@ -939,14 +1098,12 @@ function CleanAppointmentPageContent() {
                         <div className="flex items-center gap-4">
                           <span className="flex items-center gap-1">
                             <span className="font-medium">Duration:</span>
-                            {service.duration > 10000
-                              ? Math.round(service.duration / 60000)
-                              : service.duration}{" "}
+                            {service.duration_minutes}{" "}
                             min
                           </span>
                           <span className="flex items-center gap-1">
                             <span className="font-medium">Price:</span>$
-                            {(service.price_amount / 100).toFixed(2)}
+                            {(service.base_price_cents / 100).toFixed(2)}
                           </span>
                         </div>
                       </div>

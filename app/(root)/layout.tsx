@@ -15,8 +15,11 @@ export default function RootLayout({
 
   return (
     <>
-      <Navbar />
-      <div className="pt-8">
+      {/* Show navbar on all pages, but hide on mobile for admin pages */}
+      <div className={isAdminPage ? "hidden lg:block" : ""}>
+        <Navbar />
+      </div>
+      <div className={isAdminPage ? "lg:pt-8" : "pt-8"}>
         <VerificationRequired>{children}</VerificationRequired>
       </div>
       {!isAdminPage && <Footer />}

@@ -1782,7 +1782,11 @@ function ServicesManagementSection({ activeSection }: ServicesManagementSectionP
                 <Textarea id="pricing_notes" {...pricingForm.register("special_notes")} />
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="pricing_available" {...pricingForm.register("is_available")} />
+                <Checkbox
+                  id="pricing_available"
+                  checked={pricingForm.watch("is_available")}
+                  onCheckedChange={(checked) => pricingForm.setValue("is_available", checked as boolean)}
+                />
                 <Label htmlFor="pricing_available">Available</Label>
               </div>
               <div className="flex justify-end gap-3">
