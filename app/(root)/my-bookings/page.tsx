@@ -90,10 +90,10 @@ export default function MyBookingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  
+
   // Refund requests state
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
-  
+
   // Refund request states
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -129,21 +129,16 @@ export default function MyBookingsPage() {
       setLoading(true);
       setError(null);
       console.log("Fetching bookings for page:", page);
-      const response = await BookingService.getUserBookings(page, 10);
-      
+      const response = await BookingService.getUserBookings();
+
       console.log("API Response:", response);
-      
-      // The API client extracts response.data, so response is the actual API response
-      // Expected structure: { data: { bookings: [], pagination: {} }, status_code: 200, message: "" }
-      if (response.status_code === 200 && response.data) {
-        const bookingData: BookingListResponse = response.data;
-        console.log("Booking data:", bookingData);
-        setBookings(bookingData.bookings || []);
-        setCurrentPage(bookingData.pagination?.currentPage || page);
-        setTotalPages(bookingData.pagination?.totalPages || 1);
-      } else {
-        console.error("API returned error:", response);
-        setError(response.message || "Failed to fetch bookings");
+
+      // The API returns an array of bookings directly
+      if (response && Array.isArray(response)) {
+        console.log("Bookings:", response);
+        setBookings(response);
+        setCurrentPage(page);
+        setTotalPages(1); // Pagination not supported in current API
       }
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
@@ -155,17 +150,17 @@ export default function MyBookingsPage() {
 
   // Fetch user's refund requests
   const fetchRefundRequests = async () => {
-    try {
-      const response = await BookingService.getUserRefundRequests(1, 100); // Get all refund requests
-      
-      if (response.status_code === 200 && response.data) {
-        setRefundRequests(response.data.refund_requests || []);
-      } else {
-        console.error("Failed to fetch refund requests:", response);
-      }
-    } catch (error: any) {
-      console.error("Error fetching refund requests:", error);
-    }
+//     try {
+// //       const response = await BookingService.getUserRefundRequests(1, 100); // Get all refund requests
+//       
+//       if (response && Array.isArray(response)) {
+// //         setRefundRequests(response.data.refund_requests || []);
+//       } else {
+//         console.error("Failed to fetch refund requests:", response);
+//       }
+//     } catch (error: any) {
+//       console.error("Error fetching refund requests:", error);
+//     }
   };
 
   useEffect(() => {
@@ -209,8 +204,8 @@ export default function MyBookingsPage() {
     return dayjs(dateTime).tz("Australia/Melbourne").format("MMM D, YYYY");
   };
 
-  const filteredBookings = statusFilter === "all" 
-    ? bookings 
+  const filteredBookings = statusFilter === "all"
+    ? bookings
     : bookings.filter(booking => booking.status.toLowerCase() === statusFilter.toLowerCase());
 
   // Helper function to get refund status for a booking
@@ -220,15 +215,9 @@ export default function MyBookingsPage() {
 
   // Helper function to determine if refund button should be shown
   const shouldShowRefundButton = (booking: Booking): boolean => {
-    const refundStatus = getRefundStatus(booking.id);
-    
-    // Don't show if there's already a refund request
-    if (refundStatus) {
-      return false;
-    }
-    
-    // Check basic eligibility
-    return isRefundEligible(booking);
+    // TODO: Implement refund eligibility check
+    // Refund functionality is currently unavailable
+    return false;
   };
 
   // Helper function to get refund status badge
@@ -255,166 +244,136 @@ export default function MyBookingsPage() {
     setRefundReason("");
     setRefundDescription("");
     setError(null);
-    setRefundAmount(""); // Clear amount while loading
     setLoadingRefundAmount(true);
-    
-    // Get accurate refundable amount from backend
-    try {
-      const response = await BookingService.checkRefundEligibility(booking.id);
-      
-      if (response.status_code === 200 && response.data?.eligible && response.data?.payment_info) {
-        const paymentInfo = response.data.payment_info;
-        
-        // Use the actual remaining refundable amount
-        const refundableAmount = paymentInfo.remaining_refundable_dollars || "25.00";
-        setRefundAmount(refundableAmount);
-        
-        // If there's a sync issue, show a warning
-        if (paymentInfo.sync_error) {
-          setError(`Warning: Could not sync with Square. Using local data. ${paymentInfo.sync_error}`);
-        } else if (paymentInfo.sync_performed) {
-          console.log("Payment synced with Square - using accurate refundable amount");
-        }
-      } else {
-        // Fallback to payment amount from booking data
-        let defaultAmount = "25.00";
-        if (booking.payments && booking.payments.length > 0) {
-          const completedPayment = booking.payments.find(p => p.status === "COMPLETED") || booking.payments[0];
-          if (completedPayment) {
-            defaultAmount = (completedPayment.amount_cents / 100).toFixed(2);
-          }
-        }
-        setRefundAmount(defaultAmount);
+
+    // Get refund amount from booking payments
+    let defaultAmount = "25.00";
+    if (booking.payments && booking.payments.length > 0) {
+      const completedPayment = booking.payments.find(p => p.status === "COMPLETED") || booking.payments[0];
+      if (completedPayment) {
+        defaultAmount = (completedPayment.amount_cents / 100).toFixed(2);
       }
-    } catch (error) {
-      console.error("Error checking refund eligibility:", error);
-      
-      // Fallback to payment amount from booking data
-      let defaultAmount = "25.00";
-      if (booking.payments && booking.payments.length > 0) {
-        const completedPayment = booking.payments.find(p => p.status === "COMPLETED") || booking.payments[0];
-        if (completedPayment) {
-          defaultAmount = (completedPayment.amount_cents / 100).toFixed(2);
-        }
-      }
-      setRefundAmount(defaultAmount);
-      setError("Could not verify refundable amount. Please check the amount before submitting.");
-    } finally {
-      setLoadingRefundAmount(false);
     }
+    setRefundAmount(defaultAmount);
+    setLoadingRefundAmount(false);
     
     setShowRefundDialog(true);
   };
 
   // Note: Amount validation now happens on the backend since field is read-only
   const handleSubmitRefund = async () => {
-    setError(null);
-
-    // Validate required fields
-    if (!selectedBooking || !refundReason || !refundAmount) {
-      setError("Please fill in all required fields");
-      return;
-    }
-
-    // Basic amount validation (detailed validation happens on backend)
-    const numAmount = parseFloat(refundAmount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setError("No refundable amount available");
-      return;
-    }
-
-    // Show loading toast at the function level
-    const loadingToast = toast.loading('Submitting refund request...', {
-      position: 'top-center',
-    });
-
-    try {
-      setSubmittingRefund(true);
-
-      const requestData = {
-        booking_id: selectedBooking.id,
-        reason: refundReason,
-        description: refundDescription || undefined,
-        amount_requested: parseFloat(refundAmount)
-      };
-
-      const response = await BookingService.createRefundRequest(requestData);
-
-      if (response.status_code === 200) {
-        // Check if the response contains error information
-        if (response.data?.error || response.data?.success === false) {
-          // Handle backend validation errors
-          const errorMessage = response.data.details || response.data.message || response.message || "Failed to submit refund request";
-          setError(errorMessage);
-          toast.dismiss(loadingToast);
-          toast.error(errorMessage, {
-            duration: 5000,
-            position: 'top-center',
-          });
-          return;
-        }
-
-        // Success case
-        setShowRefundDialog(false);
-        setSelectedBooking(null);
-        setRefundReason("");
-        setRefundDescription("");
-        setRefundAmount("");
-        
-        // Dismiss loading toast and show success
-        toast.dismiss(loadingToast);
-        toast.success("Refund request submitted successfully! We'll review your request and contact you within 2-3 business days.", {
-          duration: 6000,
-          position: 'top-center',
-        });
-        
-        // Refresh both bookings and refund requests to show status changes
-        fetchBookings(currentPage);
-        fetchRefundRequests();
-      } else {
-        const errorMsg = response.message || "Failed to submit refund request";
-        setError(errorMsg);
-        toast.dismiss(loadingToast);
-        toast.error(errorMsg, {
-          duration: 5000,
-          position: 'top-center',
-        });
-      }
-    } catch (error: any) {
-      console.error("Error submitting refund request:", error);
-      
-      // Parse error response if it's from the API
-      let errorMsg = error.message || "Failed to submit refund request";
-      if (error.response?.data?.data?.details) {
-        errorMsg = error.response.data.data.details;
-      } else if (error.response?.data?.message) {
-        errorMsg = error.response.data.message;
-      }
-      
-      setError(errorMsg);
-      toast.dismiss(loadingToast);
-      toast.error(errorMsg, {
-        duration: 5000,
-        position: 'top-center',
-      });
-    } finally {
-      setSubmittingRefund(false);
-    }
+    // TODO: Implement refund submission
+    setError("Refund functionality is currently unavailable");
   };
 
-  const isRefundEligible = (booking: Booking) => {
-    // Check if booking is confirmed or completed
-    if (!['confirmed', 'completed'].includes(booking.status.toLowerCase())) {
-      return false;
-    }
-
-    // Check if booking is at least 24 hours away
-    const bookingDate = new Date(booking.start_at);
-    const now = new Date();
-    const hoursUntilBooking = (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    return hoursUntilBooking >= 24;
-  };
+//   const handleSubmitRefund_OLD = async () => {
+//     setError(null);
+// 
+//     // Validate required fields
+//     if (!selectedBooking || !refundReason || !refundAmount) {
+//       setError("Please fill in all required fields");
+//       return;
+//     }
+// 
+//     // Basic amount validation (detailed validation happens on backend)
+//     const numAmount = parseFloat(refundAmount);
+//     if (isNaN(numAmount) || numAmount <= 0) {
+//       setError("No refundable amount available");
+//       return;
+//     }
+// 
+//     // Show loading toast at the function level
+//     const loadingToast = toast.loading('Submitting refund request...', {
+//       position: 'top-center',
+//     });
+// 
+//     try {
+//       setSubmittingRefund(true);
+// 
+//       const requestData = {
+//         booking_id: selectedBooking.id,
+//         reason: refundReason,
+//         description: refundDescription || undefined,
+//         amount_requested: parseFloat(refundAmount)
+//       };
+// 
+//       const response = await BookingService.createRefundRequest(requestData);
+// 
+//       if (response.status_code === 200) {
+//         // Check if the response contains error information
+//         if (response.data?.error || response.data?.success === false) {
+//           // Handle backend validation errors
+//           const errorMessage = response.data.details || response.data.message || response.message || "Failed to submit refund request";
+//           setError(errorMessage);
+//           toast.dismiss(loadingToast);
+//           toast.error(errorMessage, {
+//             duration: 5000,
+//             position: 'top-center',
+//           });
+//           return;
+//         }
+// 
+//         // Success case
+//         setShowRefundDialog(false);
+//         setSelectedBooking(null);
+//         setRefundReason("");
+//         setRefundDescription("");
+//         setRefundAmount("");
+//         
+//         // Dismiss loading toast and show success
+//         toast.dismiss(loadingToast);
+//         toast.success("Refund request submitted successfully! We'll review your request and contact you within 2-3 business days.", {
+//           duration: 6000,
+//           position: 'top-center',
+//         });
+//         
+//         // Refresh both bookings and refund requests to show status changes
+//         fetchBookings(currentPage);
+//         fetchRefundRequests();
+//       } else {
+//         const errorMsg = response.message || "Failed to submit refund request";
+//         setError(errorMsg);
+//         toast.dismiss(loadingToast);
+//         toast.error(errorMsg, {
+//           duration: 5000,
+//           position: 'top-center',
+//         });
+//       }
+//     } catch (error: any) {
+//       console.error("Error submitting refund request:", error);
+//       
+//       // Parse error response if it's from the API
+//       let errorMsg = error.message || "Failed to submit refund request";
+//       if (error.response?.data?.data?.details) {
+//         errorMsg = error.response.data.data.details;
+//       } else if (error.response?.data?.message) {
+//         errorMsg = error.response.data.message;
+//       }
+//       
+//       setError(errorMsg);
+//       toast.dismiss(loadingToast);
+//       toast.error(errorMsg, {
+//         duration: 5000,
+//         position: 'top-center',
+//       });
+//     } finally {
+//       setSubmittingRefund(false);
+//     }
+//   };
+// 
+//   const isRefundEligible = (booking: Booking) => {
+//     // Check if booking is confirmed or completed
+//     if (!['confirmed', 'completed'].includes(booking.status.toLowerCase())) {
+//       return false;
+//     }
+//
+//     // Check if booking is at least 24 hours away
+//     const bookingDate = new Date(booking.start_at);
+//     const now = new Date();
+//     const hoursUntilBooking = (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+//
+//     return hoursUntilBooking >= 24;
+//   };
 
   const refundReasons = [
     { value: 'change_of_plans', label: 'Change of Plans' },

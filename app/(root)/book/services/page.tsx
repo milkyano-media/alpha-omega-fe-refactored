@@ -101,14 +101,14 @@ function ServiceSelectionContent() {
 
   const calculateTotalPrice = () => {
     return selectedServices.reduce(
-      (total, service) => total + service.base_price_cents,
+      (total, service) => total + (service.base_price_cents || service.price_amount || 0),
       0,
     );
   };
 
   const calculateTotalDuration = () => {
     return selectedServices.reduce((total, service) => {
-      const duration = service.duration_minutes;
+      const duration = service.duration_minutes || service.duration || 0;
       return total + duration;
     }, 0);
   };
@@ -264,7 +264,7 @@ function ServiceSelectionContent() {
                               />
                             </svg>
                             <span className="font-semibold text-gray-900">
-                              ${(service.base_price_cents / 100).toFixed(2)}
+                              ${((service.base_price_cents || service.price_amount || 0) / 100).toFixed(2)}
                             </span>
                           </div>
 
@@ -284,7 +284,7 @@ function ServiceSelectionContent() {
                               />
                             </svg>
                             <span>
-                              {service.duration_minutes}{" "}
+                              {service.duration_minutes || service.duration}{" "}
                               min
                             </span>
                           </div>

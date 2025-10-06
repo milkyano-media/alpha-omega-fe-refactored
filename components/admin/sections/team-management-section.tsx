@@ -116,7 +116,7 @@ const teamMemberBasicSchema = z.object({
             const cleaned = value.replace(/\s+/g, "");
             if (cleaned.length < 8) return false;
             return /^\+[1-9]\d{6,14}$/.test(cleaned) || isPossiblePhoneNumber(value);
-          } catch (error) {
+          } catch {
             return false;
           }
         },
@@ -240,7 +240,7 @@ const teamMemberSettingsSchema = z.object({
               const cleaned = value.replace(/\s+/g, "");
               if (cleaned.length < 8) return false;
               return /^\+[1-9]\d{6,14}$/.test(cleaned) || isPossiblePhoneNumber(value);
-            } catch (error) {
+            } catch {
               return false;
             }
           },

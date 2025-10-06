@@ -443,7 +443,7 @@ function CleanAppointmentPageContent() {
 
           // Calculate total duration of all previous services
           for (let i = 0; i < index; i++) {
-            totalPreviousDuration += allServices[i].duration_minutes;
+            totalPreviousDuration += (allServices[i].duration_minutes || allServices[i].duration || 0);
           }
 
           previousEndTime.setMinutes(previousEndTime.getMinutes() + totalPreviousDuration);
@@ -451,9 +451,9 @@ function CleanAppointmentPageContent() {
         }
 
         return {
-          duration_minutes: service.duration_minutes,
+          duration_minutes: service.duration_minutes || service.duration,
           service_id: service.id,
-          team_member_id: selectedTime.appointment_segments[0].team_member_id,
+          team_member_id: parseInt(selectedTime.appointment_segments[0].team_member_id),
           service_variation_version: 1,
           start_at: segmentStartTime.toISOString()
         };
@@ -513,14 +513,14 @@ function CleanAppointmentPageContent() {
 
           if (index === 0) {
             calculatedStartTime = new Date(selectedTime.start_at);
-            const mainServiceDuration = selectedService.duration_minutes;
+            const mainServiceDuration = selectedService.duration_minutes || selectedService.duration || 0;
             calculatedStartTime.setMinutes(
               calculatedStartTime.getMinutes() + mainServiceDuration,
             );
           } else {
             const previousService = currentServices[index - 1];
             calculatedStartTime = new Date(previousService.timeSlot.start_at);
-            const previousDuration = previousService.service.duration_minutes;
+            const previousDuration = previousService.service.duration_minutes || previousService.service.duration || 0;
             calculatedStartTime.setMinutes(
               calculatedStartTime.getMinutes() + previousDuration,
             );
@@ -651,7 +651,7 @@ function CleanAppointmentPageContent() {
 
     let barberObj = flattenedBarbers.find(
       (barber) =>
-        barber.id === mainBarber || barber.id == mainBarber,
+        barber.id === parseInt(mainBarber) || barber.id == parseInt(mainBarber),
     );
 
     if (!barberObj) {
@@ -664,8 +664,8 @@ function CleanAppointmentPageContent() {
 
         barberObj = allTeamMembers.find(
           (barber) =>
-            barber.id === mainBarber ||
-            barber.id == mainBarber,
+            barber.id === parseInt(mainBarber) ||
+            barber.id == parseInt(mainBarber),
         );
 
         if (!barberObj) {
@@ -691,7 +691,7 @@ function CleanAppointmentPageContent() {
 
       if (additionalServices.length === 0) {
         lastServiceEndTime = new Date(selectedTime.start_at);
-        const mainServiceDuration = selectedService.duration_minutes;
+        const mainServiceDuration = selectedService.duration_minutes || selectedService.duration || 0;
         lastServiceEndTime.setMinutes(
           lastServiceEndTime.getMinutes() + mainServiceDuration,
         );
@@ -699,7 +699,7 @@ function CleanAppointmentPageContent() {
         const lastAddedService =
           additionalServices[additionalServices.length - 1];
         lastServiceEndTime = new Date(lastAddedService.timeSlot.start_at);
-        const lastServiceDuration = lastAddedService.service.duration_minutes;
+        const lastServiceDuration = lastAddedService.service.duration_minutes || lastAddedService.service.duration || 0;
         lastServiceEndTime.setMinutes(
           lastServiceEndTime.getMinutes() + lastServiceDuration,
         );
@@ -726,7 +726,7 @@ function CleanAppointmentPageContent() {
           {
             team_member_id: mainBarber,
             service_id: service.id,
-            duration_minutes: service.duration_minutes,
+            duration_minutes: service.duration_minutes || service.duration,
             service_variation_version: 1,
           },
         ],
@@ -964,7 +964,7 @@ function CleanAppointmentPageContent() {
                               -
                               {dayjs(additionalService.timeSlot.start_at)
                                 .add(
-                                  additionalService.service.duration_minutes,
+                                  additionalService.service.duration_minutes || additionalService.service.duration || 0,
                                   "minute",
                                 )
                                 .tz("Australia/Melbourne")
@@ -975,7 +975,7 @@ function CleanAppointmentPageContent() {
                             <span className="font-medium">
                               $
                               {(
-                                additionalService.service.base_price_cents / 100
+                                (additionalService.service.base_price_cents || additionalService.service.price_amount) / 100
                               ).toFixed(2)}
                             </span>
                             <button
@@ -1098,12 +1098,12 @@ function CleanAppointmentPageContent() {
                         <div className="flex items-center gap-4">
                           <span className="flex items-center gap-1">
                             <span className="font-medium">Duration:</span>
-                            {service.duration_minutes}{" "}
+                            {service.duration_minutes || service.duration}{" "}
                             min
                           </span>
                           <span className="flex items-center gap-1">
                             <span className="font-medium">Price:</span>$
-                            {(service.base_price_cents / 100).toFixed(2)}
+                            {((service.base_price_cents || service.price_amount) / 100).toFixed(2)}
                           </span>
                         </div>
                       </div>

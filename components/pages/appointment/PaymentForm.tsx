@@ -300,7 +300,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
 
   // Calculate card fee from full subtotal, entire fee goes to deposit
   const subtotalAmount = selectedServices.reduce(
-    (total, service) => total + (service.base_price_cents / 100),
+    (total, service) => total + ((service.base_price_cents ?? service.price_amount ?? 0) / 100),
     0
   );
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
@@ -397,7 +397,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
               <span className="text-gray-600">
                 {service.name}{index === 0 && selectedServices.length > 1 ? ' (Primary)' : ''}:
               </span>
-              <span className="font-medium">${(service.base_price_cents / 100).toFixed(2)} AUD</span>
+              <span className="font-medium">${((service.base_price_cents ?? service.price_amount ?? 0) / 100).toFixed(2)} AUD</span>
             </div>
           ))}
           

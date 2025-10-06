@@ -327,10 +327,26 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
 
     // Prepare booking request for self-managed system with multiple segments
     const appointmentSegments = selectedServices.map((service, index) => {
+      // Calculate start time for each segment (sequential booking)
+      let segmentStartTime = selectedTime.start_at;
+      if (index > 0) {
+        // For subsequent services, add duration of previous services
+        const previousDuration = selectedServices.slice(0, index)
+          .reduce((total, prevService) => total + (prevService.duration_minutes || prevService.duration || 0), 0);
+        const startDate = new Date(selectedTime.start_at);
+        if (isNaN(startDate.getTime())) {
+          console.error('Invalid date from selectedTime.start_at:', selectedTime.start_at);
+          throw new Error('Invalid booking start time');
+        }
+        startDate.setMinutes(startDate.getMinutes() + previousDuration);
+        segmentStartTime = startDate.toISOString();
+      }
+
       return {
         service_id: service.id, // Use database ID instead of service_variation_id
         team_member_id: parseInt(selectedTime.appointment_segments[0].team_member_id), // Convert to number
-        duration_minutes: service.duration_minutes,
+        duration_minutes: service.duration_minutes || service.duration,
+        start_at: segmentStartTime,
       };
     });
 
@@ -348,9 +364,9 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
     );
 
     // Create the booking using self-managed segments API with timeout
-    console.log("🔄 Calling BookingService.createSelfManagedBookingWithSegments...");
+    console.log("🔄 Calling BookingService.createBookingWithSegments...");
     const bookingPromise =
-      BookingService.createSelfManagedBookingWithSegments(bookingRequest);
+      BookingService.createBookingWithSegments(bookingRequest);
     const response = (await Promise.race([
       bookingPromise,
       timeoutPromise,
@@ -446,9 +462,9 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
       const updatedCustomerId =
         bookingResponse.updatedCustomerId ||
         bookingResponse.booking?.user?.square_up_id ||
-        user.square_up_id;
+        (user as any).square_up_id;
       console.log("💳 Using customer ID for payment:", {
-        originalUserId: user.square_up_id,
+        originalUserId: (user as any).square_up_id,
         updatedFromBookingResponse: bookingResponse.updatedCustomerId,
         updatedFromBookingUser: bookingResponse.booking?.user?.square_up_id,
         finalCustomerId: updatedCustomerId,
@@ -456,7 +472,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
 
       // Calculate amounts
       const subtotalAmount = selectedServices.reduce(
-        (total, service) => total + service.base_price_cents,
+        (total, service) => total + (service.base_price_cents ?? service.price_amount ?? 0),
         0,
       );
 
@@ -556,7 +572,7 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
 
   // Calculate pricing (matching BookingSummary logic)
   const subtotalAmount = selectedServices.reduce((total, service) => {
-    return total + service.base_price_cents / 100;
+    return total + (service.base_price_cents ?? service.price_amount ?? 0) / 100;
   }, 0);
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
@@ -595,9 +611,9 @@ export const StablePaymentForm: React.FC<StablePaymentFormProps> = ({
               )}
             </div>
             <div className="flex gap-3 text-xs text-gray-600">
-              <span>${(service.base_price_cents / 100).toFixed(2)}</span>
+              <span>${((service.base_price_cents ?? service.price_amount ?? 0) / 100).toFixed(2)}</span>
               <span>
-                {service.duration_minutes}{" "}
+                {service.duration}{" "}
                 min
               </span>
             </div>

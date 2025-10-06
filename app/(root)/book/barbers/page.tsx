@@ -431,11 +431,11 @@ function BarberSelectionContent() {
                   </h3>
                   <div className="flex justify-center gap-4 mt-2 text-sm text-gray-600">
                     <span>
-                      ${(selectedServices[0].base_price_cents / 100).toFixed(2)}
+                      ${((selectedServices[0]?.base_price_cents || selectedServices[0]?.price_amount || 0) / 100).toFixed(2)}
                     </span>
                     <span>•</span>
                     <span>
-                      {selectedServices[0].duration_minutes}{" "}
+                      {selectedServices[0].duration_minutes || selectedServices[0].duration}{" "}
                       min
                     </span>
                   </div>
@@ -469,11 +469,11 @@ function BarberSelectionContent() {
                           </div>
                           <div className="flex gap-2 text-xs text-gray-600">
                             <span>
-                              ${(service.base_price_cents / 100).toFixed(2)}
+                              ${((service.base_price_cents || service.price_amount || 0) / 100).toFixed(2)}
                             </span>
                             <span>•</span>
                             <span>
-                              {service.duration_minutes}{" "}
+                              {service.duration_minutes || service.duration}{" "}
                               min
                             </span>
                           </div>
@@ -489,7 +489,7 @@ function BarberSelectionContent() {
                           $
                           {(
                             selectedServices.reduce(
-                              (total, service) => total + service.base_price_cents,
+                              (total, service) => total + (service.base_price_cents || service.price_amount || 0),
                               0,
                             ) / 100
                           ).toFixed(2)}
@@ -497,7 +497,7 @@ function BarberSelectionContent() {
                         <span>•</span>
                         <span className="font-semibold">
                           {selectedServices.reduce((total, service) => {
-                            return total + service.duration_minutes;
+                            return total + (service.duration_minutes || service.duration || 0);
                           }, 0)}{" "}
                           min
                         </span>
@@ -832,7 +832,7 @@ function BarberSelectionContent() {
                     with {selectedBarber.first_name}
                   </p>
                   <p className="text-2xl font-bold mt-1">
-                    ${(selectedServices[0].base_price_cents / 100).toFixed(2)}
+                    ${((selectedServices[0]?.base_price_cents || selectedServices[0]?.price_amount || 0) / 100).toFixed(2)}
                   </p>
                 </>
               ) : (
@@ -855,7 +855,7 @@ function BarberSelectionContent() {
                             : ""}
                         </span>
                         <span className="font-medium">
-                          ${(service.base_price_cents / 100).toFixed(2)}
+                          ${((service.base_price_cents || service.price_amount || 0) / 100).toFixed(2)}
                         </span>
                       </div>
                     ))}
@@ -865,7 +865,7 @@ function BarberSelectionContent() {
                       Total: $
                       {(
                         selectedServices.reduce(
-                          (total, service) => total + service.base_price_cents,
+                          (total, service) => total + (service.base_price_cents || service.price_amount || 0),
                           0,
                         ) / 100
                       ).toFixed(2)}

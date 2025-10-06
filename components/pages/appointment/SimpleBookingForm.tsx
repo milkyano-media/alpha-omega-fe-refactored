@@ -40,11 +40,11 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
 
   // Calculate total price and duration
   const totalPrice = selectedServices.reduce(
-    (sum, service) => sum + service.base_price_cents,
+    (sum, service) => sum + (service.base_price_cents ?? service.price_amount ?? 0),
     0
   );
   const totalDuration = selectedServices.reduce(
-    (sum, service) => sum + service.duration_minutes,
+    (sum, service) => sum + (service.duration_minutes || service.duration || 0),
     0
   );
 
@@ -75,8 +75,12 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         if (index > 0) {
           // For subsequent services, add duration of previous services
           const previousDuration = selectedServices.slice(0, index)
-            .reduce((total, prevService) => total + prevService.duration_minutes, 0);
+            .reduce((total, prevService) => total + (prevService.duration_minutes || prevService.duration || 0), 0);
           const startDate = new Date(selectedTime.start_at);
+          if (isNaN(startDate.getTime())) {
+            console.error('Invalid date from selectedTime.start_at:', selectedTime.start_at);
+            throw new Error('Invalid booking start time');
+          }
           startDate.setMinutes(startDate.getMinutes() + previousDuration);
           segmentStartTime = startDate.toISOString();
         }
@@ -84,7 +88,7 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         return {
           service_id: service.id,
           team_member_id: parseInt(teamMemberId || "1"),
-          duration_minutes: service.duration_minutes,
+          duration_minutes: service.duration_minutes || service.duration,
           start_at: segmentStartTime,
         };
       });
@@ -105,11 +109,11 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
       console.log("📨 Response keys:", Object.keys(bookingResponse || {}));
 
       // Handle the actual response format from the backend
-      if (bookingResponse && (bookingResponse.success === true || (bookingResponse.data && !bookingResponse.data.error))) {
+      if (bookingResponse && bookingResponse.success === true && !bookingResponse.error) {
         console.log("✅ Booking created successfully:", bookingResponse);
 
         // Save booking details to localStorage for thank-you page
-        const bookingData = bookingResponse.data?.booking || bookingResponse.booking;
+        const bookingData = bookingResponse.booking;
         if (bookingData) {
           localStorage.setItem('lastBooking', JSON.stringify(bookingData));
           console.log("💾 Saved booking to localStorage:", bookingData);
@@ -119,11 +123,7 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
       } else {
         // Handle error cases - check multiple possible error message locations
         const errorMessage =
-          bookingResponse?.details ||
-          bookingResponse?.data?.details ||
-          bookingResponse?.message ||
-          bookingResponse?.data?.message ||
-          (typeof bookingResponse?.error === 'string' ? bookingResponse.error : null) ||
+          bookingResponse?.error ||
           "Failed to create booking";
         throw new Error(errorMessage);
       }
@@ -171,11 +171,11 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
               <div>
                 <span className="font-medium">{service.name}</span>
                 <span className="text-sm text-gray-600 ml-2">
-                  ({service.duration_minutes} min)
+                  ({service.duration_minutes || service.duration} min)
                 </span>
               </div>
               <span className="font-semibold">
-                ${(service.base_price_cents / 100).toFixed(2)}
+                ${((service.base_price_cents ?? service.price_amount ?? 0) / 100).toFixed(2)}
               </span>
             </div>
           ))}

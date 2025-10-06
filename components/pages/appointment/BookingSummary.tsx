@@ -34,7 +34,8 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   // Calculate total pricing for all selected services
   const subtotalAmount = selectedServices.reduce((total, service) => {
-    return total + (service.base_price_cents / 100);
+    const priceCents = service.base_price_cents ?? service.price_amount ?? 0;
+    return total + (priceCents / 100);
   }, 0);
   const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
   const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
@@ -74,9 +75,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               )}
             </div>
             <div className="flex gap-3 text-xs text-gray-600">
-              <span>${(service.base_price_cents / 100).toFixed(2)}</span>
+              <span>${((service.base_price_cents ?? service.price_amount ?? 0) / 100).toFixed(2)}</span>
               <span>
-                {service.duration_minutes}{" "}
+                {service.duration_minutes || service.duration}{" "}
                 min
               </span>
             </div>
