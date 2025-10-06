@@ -145,22 +145,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (response && response.data === true) {
-        // Fetch fresh user data from backend to get updated verified status
-        try {
-          const userResponse = await AuthService.fetchUser();
-          if (userResponse && userResponse.data) {
-            setUser(userResponse.data);
-            console.log('✅ User data refreshed after verification:', { verified: userResponse.data.verified });
-          }
-        } catch (fetchError) {
-          console.error('Error fetching user data after verification:', fetchError);
-          // Fallback: manually update user object
-          const user = AuthService.getUser();
-          if (user) {
-            user.verified = true;
-            localStorage.setItem("user", JSON.stringify(user));
-            setUser(user);
-          }
+        // TODO: Fetch fresh user data from backend to get updated verified status
+        // AuthService.fetchUser() method doesn't exist yet
+        // For now, manually update user object
+        const user = AuthService.getUser();
+        if (user) {
+          user.verified = true;
+          localStorage.setItem("user", JSON.stringify(user));
+          setUser(user);
         }
       }
 

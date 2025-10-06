@@ -230,7 +230,7 @@ export default function BusinessSettingsSection({ activeSection }: BusinessSetti
         }
 
         // For branding images, save to 'branding' category with underscore-based key (backend validation requires lowercase, numbers, underscores only)
-        if (setting.type === 'branding_image') {
+        if (setting.type === 'branding_image' && 'brandingType' in setting) {
           const brandingKey = `branding_${setting.brandingType}_url`;
           console.log(`[SAVE DEBUG] Branding image: setting.key=${setting.key}, brandingType=${setting.brandingType}, generated key=${brandingKey}`);
 
@@ -281,7 +281,7 @@ export default function BusinessSettingsSection({ activeSection }: BusinessSetti
       await BusinessSettingsService.bulkUpdateBusinessSettings(updates);
 
       // Delete image files that were marked for deletion
-      const deletePromises = [];
+      const deletePromises: Promise<void>[] = [];
       categorySettings.forEach(setting => {
         if (setting.type === 'branding_image' || setting.type === 'image') {
           const uploadKey = `${category}-${setting.key}`;

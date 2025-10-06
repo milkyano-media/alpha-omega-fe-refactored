@@ -72,6 +72,10 @@ export interface TeamMember {
   status: string;
   email_address?: string;
   is_owner?: boolean;
+  profile_image_url?: string;
+  specialties?: string[];
+  square_up_id?: string;
+  phone_number?: string;
 }
 
 export interface Service {
@@ -81,8 +85,10 @@ export interface Service {
   price_amount: number;
   price_currency: string;
   duration: number;
+  duration_minutes?: number; // Some APIs return this instead of duration
   variation_name?: string;
   is_available?: boolean;
+  base_price_cents?: number; // Alternative price field
   // Many-to-many relationship with TeamMembers
   teamMembers?: TeamMember[];
 }
@@ -413,7 +419,7 @@ export class BookingService {
   /**
    * Get user's bookings
    */
-  async getUserBookings(): Promise<BookingResponse[]> {
+  async getUserBookings(): Promise<any[]> {
     try {
       const response = await API.get('/bookings/user');
       return response.data;
