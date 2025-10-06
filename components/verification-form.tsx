@@ -159,13 +159,18 @@ export function VerificationForm({
       // Just pass it as-is - backend will handle proper formatting
       const response = await verify(phoneNumber, otpCode);
 
-      // On successful verification, redirect to home or dashboard
-      if (response && response.data === true) {
-        // Add a small delay to allow the auth context to update
-        // from the user data fetched in the verification process
-        setTimeout(() => {
-          router.push("/");
-        }, 100);
+      // Backend now returns { token, user } after successful verification
+      if (response && response.data && typeof response.data === 'object') {
+        const { user } = response.data as { token: string; user: any };
+
+        if (user && user.verified) {
+          // Verification successful, redirect to home
+          setTimeout(() => {
+            router.push("/");
+          }, 100);
+        } else {
+          throw new Error("Verification failed");
+        }
       } else {
         throw new Error("Verification failed");
       }

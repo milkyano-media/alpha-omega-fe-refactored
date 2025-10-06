@@ -124,25 +124,26 @@ export const AuthService = {
   async verify(data: VerifyRequest): Promise<VerifyResponse> {
     try {
       const verifyResponse = await API.post<VerifyResponse>('/auth/verify', data);
-      
-      // If verification was successful, we need to get user data
-      // We have to make an additional request to get user info
-      // since we don't have it from registration
-      if (verifyResponse.data === true) {
-        try {
-          // Get user data from /me endpoint
-          const userData = await API.get('/auth/me');
-          
-          // Now we can store the verified user
-          if (userData.user) {
-            localStorage.setItem("user", JSON.stringify(userData.user));
-          }
-        } catch (error) {
-          console.error("Error fetching user data after verification:", error);
-          // We still return the verification response even if user fetch fails
-        }
+
+      // Backend now returns { token, user } after successful verification
+      if (verifyResponse.data && typeof verifyResponse.data === 'object') {
+        const { token, user } = verifyResponse.data as { token: string; user: User };
+
+        // Store the new token with verified: true
+        localStorage.setItem("token", token);
+
+        // Store the updated user data
+        localStorage.setItem("user", JSON.stringify(user));
+
+        // Also set as cookie for middleware access
+        const expires = '; expires=' + new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
+        const isProduction = process.env.NODE_ENV === 'production';
+        const secureFlag = isProduction ? '; secure' : '';
+        document.cookie = `token=${token}; path=/${expires}${secureFlag}; samesite=lax`;
+
+        console.log('🔍 Verification successful - stored new token with verified: true');
       }
-      
+
       return verifyResponse;
     } catch (error: any) {
       throw new Error(error.message || "Failed to verify OTP");

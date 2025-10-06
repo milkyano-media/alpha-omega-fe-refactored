@@ -144,16 +144,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         otp_code: otpCode,
       });
 
-      if (response && response.data === true) {
-        // TODO: Fetch fresh user data from backend to get updated verified status
-        // AuthService.fetchUser() method doesn't exist yet
-        // For now, manually update user object
-        const user = AuthService.getUser();
-        if (user) {
-          user.verified = true;
-          localStorage.setItem("user", JSON.stringify(user));
-          setUser(user);
-        }
+      // Backend now returns { token, user } after successful verification
+      if (response && response.data && typeof response.data === 'object') {
+        const { user: verifiedUser } = response.data as { token: string; user: User };
+
+        // Update the user state with the verified user data
+        // The token has already been stored by AuthService.verify()
+        setUser(verifiedUser);
+        console.log('🔍 AuthContext - User state updated with verified user:', { verified: verifiedUser.verified });
       }
 
       setIsLoading(false);
