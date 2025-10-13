@@ -113,34 +113,42 @@ export default function BarbershopGallery() {
       {/* Lightbox Modal */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
           onClick={closeLightbox}
         >
           <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl font-light z-50"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeLightbox();
+            }}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl font-light w-12 h-12 flex items-center justify-center"
             aria-label="Close"
           >
             ×
           </button>
 
           <button
+            type="button"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               goToPrevious();
             }}
-            className="absolute left-4 text-white hover:text-gray-300 text-4xl font-bold z-50"
+            className="absolute left-4 text-white hover:text-gray-300 text-4xl font-bold z-50 w-12 h-12 flex items-center justify-center bg-black/30 rounded-full hover:bg-black/50 transition-colors"
             aria-label="Previous"
           >
             ‹
           </button>
 
           <button
+            type="button"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               goToNext();
             }}
-            className="absolute right-4 text-white hover:text-gray-300 text-4xl font-bold z-50"
+            className="absolute right-4 text-white hover:text-gray-300 text-4xl font-bold z-50 w-12 h-12 flex items-center justify-center bg-black/30 rounded-full hover:bg-black/50 transition-colors"
             aria-label="Next"
           >
             ›
@@ -159,7 +167,7 @@ export default function BarbershopGallery() {
             />
           </div>
 
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
             {selectedIndex + 1} / {galleryImages.length}
           </div>
         </div>
