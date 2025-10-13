@@ -586,6 +586,7 @@ export default function Home() {
         <FAQSection />
       </section> */}
 
+        {/* GALLERY SECTION */}
       <section className="flex flex-col items-center gap-8 px-4 mb-40 container mx-auto">
         <h3 className="text-center">Join Our Gallery Of Successful Cuts.</h3>
 
@@ -603,7 +604,7 @@ export default function Home() {
           Book appointment
         </Button>
 
-        <ServicesCarousel />
+        <ServicesCarousel className="mb-10 md:mb-50" />
 
         {/* <div className="w-full flex justify-center">
           <HorizontalCarousel
