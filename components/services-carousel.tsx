@@ -1,6 +1,6 @@
 "use client";
 
-import { FanCarousel } from "@/components/ui/fan-carousel";
+import { Circular3DCarousel } from "@/components/ui/circular-3d-carousel";
 
 interface ServiceCarouselProps {
   className?: string;
@@ -9,89 +9,77 @@ interface ServiceCarouselProps {
 const carouselItems = [
   {
     id: "1",
-    title: "",
     image: "/assets/main-8.png",
-    gradient: "from-slate-800 to-slate-900",
+    alt: "Haircut showcase 1",
   },
   {
     id: "2",
-    title: "",
     image: "/assets/cuts-01.jpg",
-    gradient: "from-amber-800 to-amber-900",
+    alt: "Haircut showcase 2",
   },
   {
     id: "3",
-    title: "",
     image: "/assets/cuts-02.jpg",
-    gradient: "from-blue-800 to-blue-900",
+    alt: "Haircut showcase 3",
   },
   {
     id: "4",
-    title: "",
     image: "/assets/cuts-03.jpg",
-    gradient: "from-purple-800 to-purple-900",
+    alt: "Haircut showcase 4",
   },
   {
     id: "5",
-    title: "",
     image: "/assets/cuts-04.jpg",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 5",
   },
   {
     id: "6",
-    title: "",
     image: "/assets/cuts-05.jpg",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 6",
   },
   {
     id: "7",
-    title: "",
     image: "/assets/cuts-06.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 7",
   },
   {
     id: "8",
-    title: "",
     image: "/assets/cuts-07.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 8",
   },
   {
     id: "9",
-    title: "",
     image: "/assets/cuts-08.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 9",
   },
   {
     id: "10",
-    title: "",
     image: "/assets/cuts-09.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 10",
   },
   {
     id: "11",
-    title: "",
     image: "/assets/cuts-10.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 11",
   },
   {
     id: "12",
-    title: "",
     image: "/assets/cuts-11.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 12",
   },
   {
     id: "13",
-    title: "",
     image: "/assets/cuts-12.png",
-    gradient: "from-emerald-800 to-emerald-900",
+    alt: "Haircut showcase 13",
   },
 ];
 
 export function ServicesCarousel({ className }: ServiceCarouselProps) {
   return (
-    <FanCarousel
+    <Circular3DCarousel
       items={carouselItems}
-      autoRotate={false}
+      autoRotate={true}
+      radius={550}
       className={className}
     />
   );

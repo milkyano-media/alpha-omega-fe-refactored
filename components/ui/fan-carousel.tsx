@@ -84,19 +84,19 @@ export function FanCarousel({
             relativeIndex += items.length;
           }
 
-          // Calculate position for fan effect with active card at center
-          const rotation = relativeIndex * 15; // degrees
-          const translateX = relativeIndex * 140; // pixels
-          const translateY = Math.abs(relativeIndex) * 20; // vertical offset
-          const scale = isActive ? 1 : 0.85 - Math.abs(relativeIndex) * 0.1;
+          // Calculate position for circular carousel with active card at center
+          const rotation = relativeIndex * 5; // minimal rotation for circular images
+          const translateX = relativeIndex * 180; // horizontal spacing
+          const translateY = Math.abs(relativeIndex) * 10; // minimal vertical offset
+          const scale = isActive ? 1 : 0.8 - Math.abs(relativeIndex) * 0.08;
           const zIndex = items.length - Math.abs(relativeIndex);
-          const opacity = Math.max(0.2, 1 - Math.abs(relativeIndex) * 0.15);
+          const opacity = Math.max(0.3, 1 - Math.abs(relativeIndex) * 0.15);
 
           return (
             <motion.div
               key={`${item.id}-${index}`}
               className={cn(
-                "absolute top-1/2 left-1/2 w-80 h-80 md:w-96 md:h-96 cursor-pointer",
+                "absolute top-1/2 left-1/2 w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 lg:w-80 lg:h-80 cursor-pointer",
               )}
               animate={{
                 opacity,
@@ -113,8 +113,8 @@ export function FanCarousel({
                 mass: 1,
               }}
               whileHover={{
-                scale: scale * 1.05,
-                rotate: rotation - 5,
+                scale: scale * 1.08,
+                rotate: 0,
                 transition: {
                   type: "spring",
                   stiffness: 400,
@@ -129,7 +129,7 @@ export function FanCarousel({
             >
               <motion.div
                 className={cn(
-                  "relative w-full h-full rounded-2xl overflow-hidden",
+                  "relative w-full h-full rounded-full overflow-hidden aspect-square",
                   "bg-gradient-to-br",
                   item.gradient,
                   isActive && "ring-4 ring-white ring-opacity-50",
