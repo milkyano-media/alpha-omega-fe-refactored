@@ -2296,11 +2296,11 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
                             </Button>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-4">
                             <div>
                               <Label>Service</Label>
-                              <Select 
-                                value={serviceData.service_id.toString()} 
+                              <Select
+                                value={serviceData.service_id.toString()}
                                 onValueChange={(value) => updateServicePricing(index, 'service_id', parseInt(value))}
                               >
                                 <SelectTrigger>
@@ -2316,29 +2316,7 @@ export function TeamManagementSection({ activeSection }: TeamManagementSectionPr
                               </Select>
                             </div>
 
-                            <div>
-                              <Label>Your Price ($)</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={serviceData.price_cents}
-                                onChange={(e) => updateServicePricing(index, 'price_cents', parseFloat(e.target.value) || 0)}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>Duration Override (min)</Label>
-                              <Input
-                                type="number"
-                                value={serviceData.duration_override || ""}
-                                onChange={(e) => updateServicePricing(index, 'duration_override', e.target.value ? parseInt(e.target.value) : undefined)}
-                                placeholder="Leave empty for default"
-                              />
-                            </div>
-
-                            <div className="flex items-center space-x-2 pt-6">
+                            <div className="flex items-center space-x-2">
                               <Checkbox
                                 checked={serviceData.is_available}
                                 onCheckedChange={(checked) => updateServicePricing(index, 'is_available', checked)}

@@ -33,6 +33,8 @@ function ServiceSelectionContent() {
 
       try {
         const serviceList = await BookingService.getAllServices();
+        console.log('📦 Fetched services:', serviceList);
+        console.log('📊 Total services:', serviceList.length);
         setServices(serviceList);
 
         const barbersByService: Record<number, TeamMember[]> = {};
@@ -41,10 +43,13 @@ function ServiceSelectionContent() {
             const serviceBarbers = await BookingService.getBarbersForService(
               service.id,
             );
+            console.log(`👔 Service "${service.name}" has ${serviceBarbers.length} total barbers`);
+
             // Filter out barbers with is_owner=true
             const availableBarbers = serviceBarbers.filter(
               (barber) => !barber.is_owner,
             );
+            console.log(`✅ After filtering owners: ${availableBarbers.length} available barbers`);
             barbersByService[service.id] = availableBarbers;
           } catch (barberErr) {
             console.error(
@@ -205,10 +210,11 @@ function ServiceSelectionContent() {
         ) : (
           <div className="max-w-md mx-auto space-y-3">
             {services
-              .filter(
-                (service) =>
-                  barbers[service.id] && barbers[service.id].length > 0,
-              )
+              // Temporarily removed barber filter - show all services
+              // .filter(
+              //   (service) =>
+              //     barbers[service.id] && barbers[service.id].length > 0,
+              // )
               .map((service) => {
                 const isSelected = selectedServices.some(
                   (s) => s.id === service.id,

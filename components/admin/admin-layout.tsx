@@ -9,9 +9,17 @@ import { Menu, X } from "lucide-react"
 
 interface AdminLayoutProps {
   children: React.ReactNode
+  title?: string
+  description?: string
+  NavigationComponent?: React.ComponentType<any>
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function AdminLayout({
+  children,
+  title = "Admin Dashboard",
+  description = "Manage your business settings, services, team members, and more.",
+  NavigationComponent = SidebarNav
+}: AdminLayoutProps) {
   const [activeSection, setActiveSection] = useState("overview")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -26,7 +34,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <div className="lg:hidden sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <div>
-            <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+            <h2 className="text-lg font-semibold">{title}</h2>
             <p className="text-xs text-muted-foreground">Manage your business</p>
           </div>
           <Button
@@ -68,7 +76,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </Button>
         </div>
         <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 80px)' }}>
-          <SidebarNav
+          <NavigationComponent
             activeSection={activeSection}
             onNavigate={handleNavigation}
             className="w-full"
@@ -80,9 +88,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <div className="lg:p-10 lg:pb-16">
         {/* Desktop Header - adjusted for main navbar */}
         <div className="hidden lg:block space-y-0.5 mb-6 mt-8">
-          <h2 className="text-2xl font-bold tracking-tight">Admin Dashboard</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
           <p className="text-muted-foreground">
-            Manage your business settings, services, team members, and more.
+            {description}
           </p>
         </div>
         <Separator className="hidden lg:block my-6" />
@@ -90,7 +98,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex flex-col lg:flex-row lg:space-x-12 lg:space-y-0">
           {/* Desktop Sidebar */}
           <aside className="hidden lg:block lg:w-1/5">
-            <SidebarNav
+            <NavigationComponent
               activeSection={activeSection}
               onNavigate={handleNavigation}
               className="w-full sticky top-24"

@@ -21,7 +21,7 @@ interface BookingData {
   deposit_paid_cents: number;
   status: string;
   customer_note?: string;
-  payment_status: string;
+  payment_status?: string;
   booking_data?: {
     appointmentSegments?: Array<{
       service_name: string;
@@ -39,6 +39,7 @@ interface BookingData {
   team_member?: {
     id: number;
     name: string;
+    phone?: string;
   };
 }
 
@@ -47,8 +48,11 @@ export default function ThankYou() {
   const { isAuthenticated, user } = useAuth();
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const [barberPhone, setBarberPhone] = useState<string | null>(null);
+  const [barberPhoneError, setBarberPhoneError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -65,8 +69,13 @@ export default function ThankYou() {
         setBookingData(booking);
         console.log('📋 Loaded booking data:', booking);
 
-        // Fetch barber details to get phone number
-        if (booking.team_member?.id) {
+        // Check if phone is already in booking data (optimization)
+        if (booking.team_member?.phone) {
+          console.log('✅ Barber phone already available in booking data');
+          setBarberPhone(booking.team_member.phone);
+        } else if (booking.team_member?.id) {
+          // Fetch barber details to get phone number (fallback)
+          console.log('🔄 Barber phone not in booking data, fetching from API...');
           fetchBarberPhone(booking.team_member.id);
         }
       } catch (err) {
@@ -84,13 +93,31 @@ export default function ThankYou() {
 
   const fetchBarberPhone = async (teamMemberId: number) => {
     try {
+      console.log('🔍 Fetching team members to get barber phone...');
+      setBarberPhoneError(null); // Clear any previous errors
+
       const barbers = await BookingService.getTeamMembers();
+      console.log('📋 Total barbers fetched:', barbers.length);
+
       const barber = barbers.find((b) => b.id === teamMemberId);
-      if (barber && barber.phone_number) {
-        setBarberPhone(barber.phone_number);
+      console.log('👤 Found barber:', barber ? `${barber.first_name} ${barber.last_name}` : 'NOT FOUND');
+
+      if (barber) {
+        console.log('📞 Barber phone_number field:', barber.phone_number);
+        if (barber.phone_number) {
+          setBarberPhone(barber.phone_number);
+          console.log('✅ Barber phone set successfully');
+        } else {
+          console.warn('⚠️ Barber found but phone_number field is empty');
+          setBarberPhoneError('Contact information not available for this barber. Please call our shop directly.');
+        }
+      } else {
+        console.warn('⚠️ Barber not found with ID:', teamMemberId);
+        setBarberPhoneError('Unable to load barber contact information.');
       }
     } catch (error) {
-      console.error('Failed to fetch barber phone:', error);
+      console.error('❌ Failed to fetch barber phone:', error);
+      setBarberPhoneError('Failed to load contact information. Please try again later.');
     }
   };
 
@@ -131,44 +158,86 @@ export default function ThankYou() {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleCancelBooking = async () => {
+  const handleCancelBooking = () => {
+    setShowCancelModal(true);
+    setCancelError(null);
+  };
+
+  const confirmCancel = async () => {
     if (!bookingData) return;
-
-    const confirmed = window.confirm(
-      'Are you sure you want to cancel this booking? This action cannot be undone.\n\nNote: Cancellations must be made at least 24 hours in advance.'
-    );
-
-    if (!confirmed) return;
 
     try {
       setCancelling(true);
+      setCancelError(null);
       const response = await BookingService.cancelSelfManagedBooking(
         bookingData.id,
         'Cancelled by customer via thank you page'
       );
 
       if (response.success) {
-        alert('Booking cancelled successfully');
+        // Close modal and redirect
+        setShowCancelModal(false);
         router.push('/');
       } else {
-        alert(response.message || 'Failed to cancel booking. Please contact us.');
+        setCancelError(response.message || 'Failed to cancel booking. Please contact us.');
       }
     } catch (error: any) {
       console.error('Error cancelling booking:', error);
-      alert(error.message || 'Failed to cancel booking. Please try again or contact us.');
+      setCancelError(error.message || 'Failed to cancel booking. Please try again or contact us.');
     } finally {
       setCancelling(false);
     }
   };
 
-  const handleReschedule = () => {
+  const handleReschedule = async () => {
     if (!bookingData) return;
 
-    // Save booking ID for reschedule flow
-    localStorage.setItem('rescheduleBookingId', bookingData.id.toString());
+    try {
+      console.log('🔄 Starting reschedule flow for booking:', bookingData.id);
 
-    // Redirect to services selection to start reschedule flow
-    router.push('/book/services');
+      // Save booking ID for reschedule mode
+      localStorage.setItem('rescheduleBookingId', bookingData.id.toString());
+
+      // Save barber ID for appointment page
+      if (bookingData.team_member_id) {
+        localStorage.setItem('selectedBarberId', bookingData.team_member_id.toString());
+        console.log('💾 Saved barber ID:', bookingData.team_member_id);
+      }
+
+      // Reconstruct services array for appointment page
+      // If multi-service booking, get from appointmentSegments
+      if (bookingData.booking_data?.appointmentSegments && bookingData.booking_data.appointmentSegments.length > 0) {
+        console.log('📦 Multi-service booking detected');
+
+        // Fetch all services to match by name
+        const allServices = await BookingService.getAllServices();
+        const selectedServices = bookingData.booking_data.appointmentSegments
+          .map(segment => allServices.find(s => s.name === segment.service_name))
+          .filter(Boolean); // Remove any undefined matches
+
+        if (selectedServices.length > 0) {
+          localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
+          console.log('💾 Saved services:', selectedServices.map(s => s?.name));
+        }
+      } else {
+        // Single service booking - fetch service by name
+        console.log('📦 Single service booking:', bookingData.service_name);
+        const allServices = await BookingService.getAllServices();
+        const service = allServices.find(s => s.name === bookingData.service_name);
+
+        if (service) {
+          localStorage.setItem('selectedServices', JSON.stringify([service]));
+          console.log('💾 Saved service:', service.name);
+        }
+      }
+
+      // Redirect to appointment page to select new time
+      console.log('➡️ Redirecting to appointment page');
+      router.push('/book/appointment');
+    } catch (error) {
+      console.error('❌ Error preparing reschedule:', error);
+      alert('Failed to initiate reschedule. Please try again.');
+    }
   };
 
   if (loading) {
@@ -342,7 +411,7 @@ export default function ThankYou() {
                 <div className='grid grid-cols-2 gap-2'>
                   <p className='text-gray-600'>Payment Status:</p>
                   <p className='font-medium capitalize'>
-                    {bookingData.payment_status.replace(/_/g, ' ')}
+                    {bookingData.payment_status?.replace(/_/g, ' ') || 'Unknown'}
                   </p>
                 </div>
               </div>
@@ -381,8 +450,31 @@ export default function ThankYou() {
 
             {/* Action Buttons */}
             <div className='space-y-3 mb-6'>
-              {/* WhatsApp Button */}
-              {barberPhone && (
+              {/* WhatsApp Button or Error Message */}
+              {barberPhoneError ? (
+                <div className='p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
+                  <div className='flex items-start'>
+                    <svg
+                      className='h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0'
+                      xmlns='http://www.w3.org/2000/svg'
+                      viewBox='0 0 20 20'
+                      fill='currentColor'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                    <div>
+                      <p className='text-sm font-medium text-yellow-800'>{barberPhoneError}</p>
+                      <p className='text-xs text-yellow-700 mt-1'>
+                        You can still contact us at: <a href='tel:+61395632211' className='font-semibold underline'>03 9563 2211</a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : barberPhone ? (
                 <Button
                   onClick={handleWhatsAppClick}
                   className='w-full bg-green-600 hover:bg-green-700 text-white'
@@ -397,7 +489,7 @@ export default function ThankYou() {
                   </svg>
                   Contact {bookingData.team_member?.name || 'Barber'} via WhatsApp
                 </Button>
-              )}
+              ) : null}
 
               {/* Reschedule Button */}
               <Button
@@ -490,6 +582,93 @@ export default function ThankYou() {
             </div>
           </div>
         </section>
+
+        {/* Cancel Confirmation Modal */}
+        {showCancelModal && (
+          <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50'>
+            <div className='bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200'>
+              {/* Icon */}
+              <div className='w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+                <svg
+                  className='w-8 h-8 text-red-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-1.952-1.333-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z'
+                  />
+                </svg>
+              </div>
+
+              {/* Title */}
+              <h3 className='text-xl font-bold text-gray-900 text-center mb-2'>
+                Cancel Appointment?
+              </h3>
+
+              {/* Description */}
+              <p className='text-gray-600 text-center mb-4'>
+                Are you sure you want to cancel this booking? This action cannot be undone.
+              </p>
+
+              {/* Important Notice */}
+              <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4'>
+                <p className='text-sm text-yellow-800'>
+                  <strong>Note:</strong> Cancellations must be made at least 24 hours in advance.
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {cancelError && (
+                <div className='bg-red-50 border border-red-200 rounded-lg p-3 mb-4'>
+                  <div className='flex items-start'>
+                    <svg
+                      className='h-5 w-5 text-red-600 mt-0.5 mr-2 flex-shrink-0'
+                      fill='currentColor'
+                      viewBox='0 0 20 20'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                    <p className='text-sm text-red-700'>{cancelError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className='flex gap-3'>
+                <Button
+                  onClick={() => setShowCancelModal(false)}
+                  variant='outline'
+                  className='flex-1'
+                  disabled={cancelling}
+                >
+                  Go Back
+                </Button>
+                <Button
+                  onClick={confirmCancel}
+                  className='flex-1 bg-red-600 hover:bg-red-700 text-white'
+                  disabled={cancelling}
+                >
+                  {cancelling ? (
+                    <div className='flex items-center justify-center'>
+                      <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2'></div>
+                      Cancelling...
+                    </div>
+                  ) : (
+                    'Yes, Cancel Booking'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </VerificationGuard>
   );

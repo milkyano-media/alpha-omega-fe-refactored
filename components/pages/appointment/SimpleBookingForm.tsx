@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import BookingService, { Service, TimeSlot, SelfManagedSegmentBookingRequest } from "@/lib/booking-service";
 import { useAuth } from "@/lib/auth-context";
+import { calculateBookingPricing } from "@/lib/pricing-utils";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -37,12 +38,22 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [customerNote, setCustomerNote] = useState("");
+  const [rescheduleBookingId, setRescheduleBookingId] = useState<number | null>(null);
+  const [isRescheduleMode, setIsRescheduleMode] = useState(false);
 
-  // Calculate total price and duration
-  const totalPrice = selectedServices.reduce(
-    (sum, service) => sum + (service.base_price_cents ?? service.price_amount ?? 0),
-    0
-  );
+  // Check if we're in reschedule mode
+  useEffect(() => {
+    const rescheduleId = localStorage.getItem('rescheduleBookingId');
+    if (rescheduleId) {
+      setRescheduleBookingId(parseInt(rescheduleId));
+      setIsRescheduleMode(true);
+      console.log('🔄 Reschedule mode detected, booking ID:', rescheduleId);
+    }
+  }, []);
+
+  // Calculate pricing with tax and deposit using pricing utility
+  const pricing = calculateBookingPricing(selectedServices);
+
   const totalDuration = selectedServices.reduce(
     (sum, service) => sum + (service.duration_minutes || service.duration || 0),
     0
@@ -59,6 +70,35 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
       setBookingError(null);
       onBookingStateChange?.(true);
 
+      // RESCHEDULE MODE - Update existing booking
+      if (isRescheduleMode && rescheduleBookingId) {
+        console.log("📅 Rescheduling booking", rescheduleBookingId, "to:", selectedTime.start_at);
+
+        const rescheduleResponse = await BookingService.rescheduleBooking(
+          rescheduleBookingId,
+          selectedTime.start_at
+        );
+
+        if (rescheduleResponse.success) {
+          console.log("✅ Booking rescheduled successfully:", rescheduleResponse);
+
+          // Save updated booking details to localStorage
+          if (rescheduleResponse.booking) {
+            localStorage.setItem('lastBooking', JSON.stringify(rescheduleResponse.booking));
+            console.log("💾 Saved rescheduled booking to localStorage");
+          }
+
+          // Don't clear rescheduleBookingId here - let the appointment page handle it
+          // so it can detect reschedule mode and redirect appropriately
+          onBookingComplete();
+        } else {
+          throw new Error(rescheduleResponse.message || "Failed to reschedule booking");
+        }
+
+        return;
+      }
+
+      // CREATE MODE - Create new booking
       console.log("📝 Creating booking without payment...");
       console.log("🕐 Selected time details:");
       console.log("  - Raw start_at:", selectedTime.start_at);
@@ -128,8 +168,8 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         throw new Error(errorMessage);
       }
     } catch (error: any) {
-      console.error("❌ Error creating booking:", error);
-      setBookingError(error.message || "Failed to create booking");
+      console.error(`❌ Error ${isRescheduleMode ? 'rescheduling' : 'creating'} booking:`, error);
+      setBookingError(error.message || `Failed to ${isRescheduleMode ? 'reschedule' : 'create'} booking`);
     } finally {
       setCreatingBooking(false);
       onBookingStateChange?.(false);
@@ -154,10 +194,12 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
       {/* Header */}
       <div className="text-center">
         <h3 className="text-xl font-bold text-gray-900 mb-2">
-          Confirm Your Booking
+          {isRescheduleMode ? 'Reschedule Your Booking' : 'Confirm Your Booking'}
         </h3>
         <p className="text-gray-600">
-          Review your appointment details below
+          {isRescheduleMode
+            ? 'Select a new date and time for your appointment'
+            : 'Review your appointment details below'}
         </p>
       </div>
 
@@ -205,14 +247,39 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         </div>
 
         {/* Totals */}
-        <div className="border-t pt-4">
-          <div className="flex justify-between items-center text-lg font-bold">
-            <span>Total ({totalDuration} min)</span>
-            <span>${(totalPrice / 100).toFixed(2)}</span>
+        <div className="border-t pt-4 space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">Subtotal</span>
+            <span>${pricing.subtotal}</span>
           </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Payment will be processed in-store
-          </p>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">Tax (GST 10%)</span>
+            <span>${pricing.tax}</span>
+          </div>
+          <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
+            <span>Total ({totalDuration} min)</span>
+            <span>${pricing.total}</span>
+          </div>
+          {!isRescheduleMode && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Deposit Required (50% + Tax)</p>
+                  <p className="text-xs text-blue-700 mt-0.5">Pay ${pricing.deposit} to secure booking</p>
+                </div>
+                <span className="text-lg font-bold text-blue-900">${pricing.deposit}</span>
+              </div>
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-blue-200">
+                <p className="text-xs text-gray-600">Balance due at appointment</p>
+                <span className="text-sm font-medium text-gray-700">${pricing.balance}</span>
+              </div>
+            </div>
+          )}
+          {isRescheduleMode && (
+            <p className="text-sm text-gray-600 mt-1">
+              Original payment terms apply
+            </p>
+          )}
         </div>
       </div>
 
@@ -230,8 +297,8 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         />
       </div>
 
-      {/* Add Additional Service Button */}
-      {onAddAdditionalService && (
+      {/* Add Additional Service Button - Only show for new bookings, not reschedules */}
+      {onAddAdditionalService && !isRescheduleMode && (
         <Button
           onClick={onAddAdditionalService}
           variant="outline"
@@ -240,6 +307,15 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         >
           {isLoadingServices ? "Loading..." : "Add Another Service"}
         </Button>
+      )}
+
+      {/* Show info message during reschedule */}
+      {isRescheduleMode && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            💡 To add or change services, please cancel this booking and create a new one with your preferred services.
+          </p>
+        </div>
       )}
 
       {/* Error Display */}
@@ -287,10 +363,10 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
           {creatingBooking ? (
             <div className="flex items-center">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Creating...
+              {isRescheduleMode ? 'Updating...' : 'Creating...'}
             </div>
           ) : (
-            "Confirm Booking"
+            isRescheduleMode ? 'Update Booking' : 'Confirm Booking'
           )}
         </Button>
       </div>

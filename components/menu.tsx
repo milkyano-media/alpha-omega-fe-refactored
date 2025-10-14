@@ -106,11 +106,10 @@ export function Menu() {
                       Logged in as {user?.first_name || "User"}
                     </div>
                     <ListItem href="/profile" title="PROFILE" />
-                    {/* Temporarily hidden - see DOCS/HIDDEN_MENU_ITEMS.md for details */}
-                    {/* <ListItem href="/my-bookings" title="MY BOOKINGS" /> */}
-                    {/* {user?.role === "admin" && (
+                    <ListItem href="/my-bookings" title="MY BOOKINGS" />
+                    {user?.role === "admin" && (
                       <ListItem href="/admin" title="ADMIN DASHBOARD" />
-                    )} */}
+                    )}
                     <li>
                       <NavigationMenuLink asChild>
                         <button

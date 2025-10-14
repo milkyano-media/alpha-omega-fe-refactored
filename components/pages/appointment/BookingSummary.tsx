@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { TimeSlot, Service } from "@/lib/booking-service";
+import { calculateBookingPricing } from "@/lib/pricing-utils";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -32,16 +33,8 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 }) => {
   if (!selectedService) return null;
 
-  // Calculate total pricing for all selected services
-  const subtotalAmount = selectedServices.reduce((total, service) => {
-    const priceCents = service.base_price_cents ?? service.price_amount ?? 0;
-    return total + (priceCents / 100);
-  }, 0);
-  const cardFee = subtotalAmount * 0.022; // 2.2% card fee on full subtotal
-  const baseDepositAmount = subtotalAmount * 0.5; // 50% deposit of services
-  const depositAmount = baseDepositAmount + cardFee; // Deposit + entire card fee
-  const totalAmount = subtotalAmount + cardFee; // Total including card fee
-  const balanceAmount = subtotalAmount - baseDepositAmount; // Balance due (exactly 50% of subtotal)
+  // Calculate total pricing for all selected services using pricing utility
+  const pricing = calculateBookingPricing(selectedServices);
 
   // Format time for display in Melbourne timezone (for Australian users)
   const formatTime = (isoTime: string) => {
@@ -87,23 +80,26 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         {/* Totals */}
         <div className="p-3 flex justify-between items-center">
           <p className="text-sm">Subtotal</p>
-          <p className="font-medium">${subtotalAmount.toFixed(2)}</p>
+          <p className="font-medium">${pricing.subtotal}</p>
         </div>
         <div className="p-3 border-t border-gray-100 flex justify-between items-center">
-          <p className="text-sm">Card Payment Fee (2.2%)</p>
-          <p className="font-medium">${cardFee.toFixed(2)}</p>
+          <p className="text-sm">Tax (GST 10%)</p>
+          <p className="font-medium">${pricing.tax}</p>
         </div>
         <div className="p-3 border-t border-gray-100 flex justify-between items-center">
           <p className="text-sm font-semibold">Total</p>
-          <p className="font-semibold">${totalAmount.toFixed(2)}</p>
+          <p className="font-semibold">${pricing.total}</p>
         </div>
-        <div className="p-3 border-t border-gray-100 flex justify-between items-center">
-          <p className="text-sm">Deposit (50%)</p>
-          <p className="font-medium">${depositAmount.toFixed(2)}</p>
+        <div className="p-3 border-t border-gray-100 flex justify-between items-center bg-blue-50">
+          <div>
+            <p className="text-sm font-medium">Deposit (50% + Tax)</p>
+            <p className="text-xs text-gray-600">Pay now to secure booking</p>
+          </div>
+          <p className="font-semibold text-blue-700">${pricing.deposit}</p>
         </div>
         <div className="p-3 border-t border-gray-100 flex justify-between items-center text-gray-500 text-sm">
           <p>Balance due at appointment</p>
-          <p>${balanceAmount.toFixed(2)}</p>
+          <p className="font-medium">${pricing.balance}</p>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import BookingService, {
   AvailabilityResponse,
   TeamMember,
 } from "@/lib/booking-service";
+import { calculateBookingPricing, getPaymentBreakdown } from "@/lib/pricing-utils";
 import { SimpleBookingForm } from "@/components/pages/appointment/SimpleBookingForm";
 import {
   BookingSummary,
@@ -79,6 +80,7 @@ function CleanAppointmentPageContent() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [selectedBarber, setSelectedBarber] = useState<TeamMember | null>(null);
+  const [isRescheduleMode, setIsRescheduleMode] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -169,6 +171,7 @@ function CleanAppointmentPageContent() {
           rescheduleBookingId,
         },
       );
+      setIsRescheduleMode(true);
       setShowManualTimeSelection(true);
     } else if (selectedBarberId && autoSelectedTimeFlag !== "true") {
       // Manual barber selection - show manual time selection immediately
@@ -195,6 +198,9 @@ function CleanAppointmentPageContent() {
   // Handle booking confirmation
   useEffect(() => {
     if (bookingConfirmed) {
+      // Check if this was a reschedule
+      const wasReschedule = localStorage.getItem("rescheduleBookingId");
+
       // Clear localStorage
       localStorage.removeItem("selectedServices");
       localStorage.removeItem("selectedService");
@@ -204,9 +210,15 @@ function CleanAppointmentPageContent() {
       // Clear additional services
       setAdditionalServices([]);
 
-      // Redirect to thank you page
+      // Redirect based on whether it was a reschedule or new booking
       setTimeout(() => {
-        router.push("/book/thank-you");
+        if (wasReschedule) {
+          // Redirect to My Bookings with success indicator
+          router.push("/my-bookings?rescheduleSuccess=true");
+        } else {
+          // Redirect to thank you page for new bookings
+          router.push("/book/thank-you");
+        }
       }, 400);
     }
   }, [bookingConfirmed, router]);
@@ -429,6 +441,19 @@ function CleanAppointmentPageContent() {
         ...additionalServices.map((as) => as.service),
       ];
 
+      // Calculate pricing with tax and deposit
+      const pricing = calculateBookingPricing(allServices);
+      const paymentBreakdown = getPaymentBreakdown(pricing);
+
+      console.log("💰 Pricing breakdown:", {
+        subtotal: `$${pricing.subtotal}`,
+        tax: `$${pricing.tax}`,
+        total: `$${pricing.total}`,
+        deposit: `$${pricing.deposit}`,
+        balance: `$${pricing.balance}`,
+        breakdown: paymentBreakdown
+      });
+
       // Build appointment segments for all services
       const appointment_segments = allServices.map((service, index) => {
         let segmentStartTime: Date;
@@ -459,11 +484,15 @@ function CleanAppointmentPageContent() {
         };
       });
 
-      // Create booking request
+      // Create booking request with pricing information
       const bookingRequest = {
         start_at: selectedTime.start_at,
         appointment_segments,
         customer_note: "Booking created without payment (test)",
+        price_cents: pricing.totalCents,
+        deposit_paid_cents: 0, // No payment made yet
+        payment_status: 'unpaid' as const,
+        payment_data: paymentBreakdown,
         idempotencyKey: crypto.randomUUID()
       };
 
@@ -475,14 +504,9 @@ function CleanAppointmentPageContent() {
 
       if (response.success) {
         console.log("✅ Booking created successfully!");
+        // Don't clear localStorage here - let the booking confirmation useEffect handle it
+        // so it can detect reschedule mode and redirect appropriately
         setBookingConfirmed(true);
-
-        // Clear form data
-        localStorage.removeItem("selectedServices");
-        localStorage.removeItem("selectedService");
-        localStorage.removeItem("selectedBarberId");
-        localStorage.removeItem("rescheduleBookingId");
-        setAdditionalServices([]);
       } else {
         setError(response.error || "Failed to create booking");
       }
@@ -1003,8 +1027,8 @@ function CleanAppointmentPageContent() {
                   </div>
                 )}
 
-                {/* Add Additional Service Button */}
-                {selectedTime && !showPaymentForm && (
+                {/* Add Additional Service Button - Only show for new bookings */}
+                {selectedTime && !showPaymentForm && !isRescheduleMode && (
                   <div className="mt-4">
                     <Button
                       onClick={handleAddAdditionalService}
@@ -1023,6 +1047,15 @@ function CleanAppointmentPageContent() {
                         "Select Time First"
                       )}
                     </Button>
+                  </div>
+                )}
+
+                {/* Show info message during reschedule */}
+                {isRescheduleMode && !showPaymentForm && (
+                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                      💡 To add or change services, please cancel this booking and create a new one with your preferred services.
+                    </p>
                   </div>
                 )}
               </>

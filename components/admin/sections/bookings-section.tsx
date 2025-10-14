@@ -26,6 +26,7 @@ import {
   Check,
   ChevronDown
 } from "lucide-react"
+import { RescheduleBookingDialog } from "@/components/admin/dialogs/reschedule-booking-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
@@ -50,6 +51,7 @@ interface Booking {
   booking_reference: string
   user_id: number
   team_member_id: number
+  service_id: number
   service_name: string
   start_at: string
   end_at: string
@@ -105,6 +107,8 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [updatingBookingId, setUpdatingBookingId] = useState<number | null>(null)
   const [barberComboboxOpen, setBarberComboboxOpen] = useState(false)
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false)
+  const [bookingToReschedule, setBookingToReschedule] = useState<Booking | null>(null)
 
   // Fetch bookings for the current month
   const fetchBookings = async () => {
@@ -385,6 +389,7 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
   }
 
   return (
+    <>
     <Card className="w-full">
       <CardHeader className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -815,6 +820,19 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
 
                           {booking.status !== "CANCELLED" && booking.status !== "COMPLETED" && (
                             <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setBookingToReschedule(booking)
+                                  setRescheduleDialogOpen(true)
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Clock className="h-4 w-4" />
+                                Reschedule
+                              </Button>
+
                               <Select
                                 value={booking.status}
                                 onValueChange={(value) => updateBookingStatus(booking.id, value)}
@@ -1007,5 +1025,18 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
         </DialogContent>
       </Dialog>
     </Card>
+
+    {/* Reschedule Dialog - Rendered outside Card for proper z-index layering */}
+    <RescheduleBookingDialog
+      open={rescheduleDialogOpen}
+      onOpenChange={setRescheduleDialogOpen}
+      booking={bookingToReschedule}
+      onSuccess={() => {
+        setRescheduleDialogOpen(false)
+        setBookingToReschedule(null)
+        fetchBookings() // Refresh bookings after successful reschedule
+      }}
+    />
+    </>
   )
 }

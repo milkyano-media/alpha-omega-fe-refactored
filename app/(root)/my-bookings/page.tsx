@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import BookingService from "@/lib/booking-service";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -35,8 +35,7 @@ interface Payment {
   id: number;
   amount_cents: number;
   status: string;
-  square_payment_id: string;
-  square_receipt_url?: string;
+  receipt_url?: string;
 }
 
 interface RefundRequest {
@@ -54,19 +53,30 @@ interface RefundRequest {
 
 interface Booking {
   id: number;
-  square_booking_id: string;
+  booking_reference: string;
   service_name: string;
-  service_variation_id?: string;
   start_at: string;
   end_at: string;
+  duration_minutes: number;
+  price_cents: number;
+  deposit_paid_cents: number;
   status: string;
   customer_note?: string;
+  payment_status?: string;
+  booking_source?: string;
   createdAt: string;
-  booking_data?: any; // Contains Square booking details and other metadata
+  booking_data?: {
+    appointmentSegments?: Array<{
+      service_name: string;
+      team_member_name: string;
+      duration_minutes: number;
+      price_cents: number;
+    }>;
+  };
   team_member?: {
     id: number;
     name: string;
-    square_up_id: string;
+    phone?: string;
   };
   payments?: Payment[];
 }
@@ -81,15 +91,17 @@ interface BookingListResponse {
   };
 }
 
-export default function MyBookingsPage() {
+function MyBookingsPageContent() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [timeFilter, setTimeFilter] = useState<string>("upcoming"); // "all", "upcoming", "past"
 
   // Refund requests state
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
@@ -107,6 +119,13 @@ export default function MyBookingsPage() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<Booking | null>(null);
 
+  // Cancel modal states
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedBookingForCancel, setSelectedBookingForCancel] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  // Removed reschedule modal states - now using redirect flow like thank-you page
 
   // Hydration safety
   const [mounted, setMounted] = useState(false);
@@ -114,6 +133,18 @@ export default function MyBookingsPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Show success toast if redirected from reschedule
+  useEffect(() => {
+    if (mounted && searchParams.get('rescheduleSuccess') === 'true') {
+      toast.success('Booking rescheduled successfully!', {
+        duration: 5000,
+        position: 'top-center',
+      });
+      // Clean up the URL parameter
+      router.replace('/my-bookings');
+    }
+  }, [mounted, searchParams, router]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -133,12 +164,28 @@ export default function MyBookingsPage() {
 
       console.log("API Response:", response);
 
-      // The API returns an array of bookings directly
-      if (response && Array.isArray(response)) {
-        console.log("Bookings:", response);
+      // getUserBookings() returns response.data, which can be either:
+      // 1. Array of bookings: Booking[]
+      // 2. Object with bookings and pagination: { bookings: Booking[], pagination: {...} }
+      if (Array.isArray(response)) {
+        // Direct array response
+        console.log("Bookings (array format):", response);
         setBookings(response);
         setCurrentPage(page);
-        setTotalPages(1); // Pagination not supported in current API
+        setTotalPages(1);
+      } else if (response && typeof response === 'object' && 'bookings' in response && Array.isArray(response.bookings)) {
+        // Object with bookings property
+        console.log("Bookings (object format):", response.bookings);
+        setBookings(response.bookings);
+
+        // Handle pagination if provided
+        if (response.pagination) {
+          setCurrentPage(response.pagination.currentPage || page);
+          setTotalPages(response.pagination.totalPages || 1);
+        } else {
+          setCurrentPage(page);
+          setTotalPages(1);
+        }
       }
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
@@ -204,9 +251,37 @@ export default function MyBookingsPage() {
     return dayjs(dateTime).tz("Australia/Melbourne").format("MMM D, YYYY");
   };
 
-  const filteredBookings = statusFilter === "all"
-    ? bookings
-    : bookings.filter(booking => booking.status.toLowerCase() === statusFilter.toLowerCase());
+  // Filter bookings by status and time
+  const filteredBookings = bookings
+    .filter(booking => {
+      // Status filter
+      const statusMatch = statusFilter === "all" || booking.status.toLowerCase() === statusFilter.toLowerCase();
+
+      // Time filter - compare with current time
+      const now = dayjs();
+      const bookingStart = dayjs(booking.start_at).tz("Australia/Melbourne");
+      let timeMatch = true;
+
+      if (timeFilter === "upcoming") {
+        timeMatch = bookingStart.isAfter(now);
+      } else if (timeFilter === "past") {
+        timeMatch = bookingStart.isBefore(now);
+      }
+
+      return statusMatch && timeMatch;
+    })
+    .sort((a, b) => {
+      // Sort upcoming appointments by soonest first (ascending)
+      // Sort past appointments by most recent first (descending)
+      const dateA = dayjs(a.start_at).tz("Australia/Melbourne");
+      const dateB = dayjs(b.start_at).tz("Australia/Melbourne");
+
+      if (timeFilter === "upcoming") {
+        return dateA.diff(dateB); // Ascending - soonest first
+      } else {
+        return dateB.diff(dateA); // Descending - most recent first
+      }
+    });
 
   // Helper function to get refund status for a booking
   const getRefundStatus = (bookingId: number): RefundRequest | null => {
@@ -390,6 +465,111 @@ export default function MyBookingsPage() {
     setShowDetailsDialog(true);
   };
 
+  // Cancel booking handlers
+  const handleCancelClick = (booking: Booking) => {
+    setSelectedBookingForCancel(booking);
+    setCancelError(null);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelBooking = async () => {
+    if (!selectedBookingForCancel) return;
+
+    try {
+      setCancelling(true);
+      setCancelError(null);
+
+      const response = await BookingService.cancelSelfManagedBooking(
+        selectedBookingForCancel.id,
+        'Cancelled by customer via My Bookings page'
+      );
+
+      if (response.success) {
+        toast.success('Booking cancelled successfully!', {
+          duration: 4000,
+          position: 'top-center',
+        });
+        setShowCancelModal(false);
+        setSelectedBookingForCancel(null);
+        // Refresh bookings list
+        fetchBookings(currentPage);
+      } else {
+        setCancelError(response.message || 'Failed to cancel booking');
+      }
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error);
+      setCancelError(error.message || 'Failed to cancel booking');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Reschedule booking handler - redirects to appointment page like thank-you page
+  const handleRescheduleClick = async (booking: Booking) => {
+    try {
+      console.log('🔄 Starting reschedule flow for booking:', booking.id);
+
+      // Save booking ID for reschedule mode
+      localStorage.setItem('rescheduleBookingId', booking.id.toString());
+
+      // Save barber ID for appointment page
+      if (booking.team_member?.id) {
+        localStorage.setItem('selectedBarberId', booking.team_member.id.toString());
+        console.log('💾 Saved barber ID:', booking.team_member.id);
+      }
+
+      // Reconstruct services array for appointment page
+      // If multi-service booking, get from appointmentSegments
+      if (booking.booking_data?.appointmentSegments && booking.booking_data.appointmentSegments.length > 0) {
+        console.log('📦 Multi-service booking detected');
+
+        // Fetch all services to match by name
+        const allServices = await BookingService.getAllServices();
+        const selectedServices = booking.booking_data.appointmentSegments
+          .map(segment => allServices.find(s => s.name === segment.service_name))
+          .filter(Boolean); // Remove any undefined matches
+
+        if (selectedServices.length > 0) {
+          localStorage.setItem('selectedServices', JSON.stringify(selectedServices));
+          console.log('💾 Saved services:', selectedServices.map(s => s?.name));
+        }
+      } else {
+        // Single service booking - fetch service by name
+        console.log('📦 Single service booking:', booking.service_name);
+        const allServices = await BookingService.getAllServices();
+        const service = allServices.find(s => s.name === booking.service_name);
+
+        if (service) {
+          localStorage.setItem('selectedServices', JSON.stringify([service]));
+          console.log('💾 Saved service:', service.name);
+        }
+      }
+
+      // Redirect to appointment page to select new time
+      console.log('➡️ Redirecting to appointment page');
+      router.push('/book/appointment');
+    } catch (error) {
+      console.error('❌ Error preparing reschedule:', error);
+      toast.error('Failed to initiate reschedule. Please try again.', {
+        duration: 4000,
+        position: 'top-center',
+      });
+    }
+  };
+
+  // Helper to check if booking can be cancelled or rescheduled
+  const canModifyBooking = (booking: Booking): boolean => {
+    // Only allow modifications for confirmed bookings
+    if (booking.status.toLowerCase() !== 'confirmed') {
+      return false;
+    }
+
+    // Check if booking is in the future
+    const now = dayjs();
+    const bookingStart = dayjs(booking.start_at).tz("Australia/Melbourne");
+    return bookingStart.isAfter(now);
+  };
+
 
 
 
@@ -453,25 +633,40 @@ export default function MyBookingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
           <p className="mt-2 text-gray-600">
-            View and manage your appointment history
+            View and manage your appointments - showing upcoming by default
           </p>
         </div>
 
         {/* Filters */}
         <div className="mb-6">
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Filter by status:</label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium text-gray-700">Show:</label>
+              <Select value={timeFilter} onValueChange={setTimeFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All appointments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Appointments</SelectItem>
+                  <SelectItem value="upcoming">Upcoming Only</SelectItem>
+                  <SelectItem value="past">Past Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium text-gray-700">Status:</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -511,8 +706,16 @@ export default function MyBookingsPage() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
                 <p className="text-gray-500 mb-4">
-                  {statusFilter === "all" 
-                    ? "You haven't made any bookings yet." 
+                  {timeFilter === "upcoming" && statusFilter === "all"
+                    ? "You have no upcoming appointments."
+                    : timeFilter === "past" && statusFilter === "all"
+                    ? "You have no past appointments."
+                    : timeFilter === "upcoming"
+                    ? `No upcoming ${statusFilter} appointments found.`
+                    : timeFilter === "past"
+                    ? `No past ${statusFilter} appointments found.`
+                    : statusFilter === "all"
+                    ? "You haven't made any bookings yet."
                     : `No ${statusFilter} bookings found.`}
                 </p>
                 <Button 
@@ -533,11 +736,16 @@ export default function MyBookingsPage() {
                             {booking.service_name}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            Booking ID: {booking.square_booking_id}
+                            Booking Ref: {booking.booking_reference || `#${booking.id}`}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <Badge variant={getStatusBadgeVariant(booking.status)}>
+                          <Badge
+                            variant={getStatusBadgeVariant(booking.status)}
+                            className={booking.status.toLowerCase() === 'cancelled'
+                              ? 'text-white'
+                              : ''}
+                          >
                             {booking.status.toUpperCase()}
                           </Badge>
                           {(() => {
@@ -642,12 +850,32 @@ export default function MyBookingsPage() {
                       
                       <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
                         <span className="text-xs text-gray-500">
-                          Duration: {dayjs(booking.end_at).diff(dayjs(booking.start_at), 'minute')} minutes
+                          Duration: {booking.duration_minutes} minutes
                         </span>
-                        <div className="space-x-2">
+                        <div className="flex flex-wrap gap-2">
+                          {canModifyBooking(booking) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRescheduleClick(booking)}
+                                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                              >
+                                Reschedule
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelClick(booking)}
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          )}
                           {shouldShowRefundButton(booking) && (
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleRefundRequest(booking)}
                               className="text-red-600 border-red-600 hover:bg-red-50"
@@ -655,8 +883,8 @@ export default function MyBookingsPage() {
                               Request Refund
                             </Button>
                           )}
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleViewDetails(booking)}
                           >
@@ -712,7 +940,7 @@ export default function MyBookingsPage() {
                   {formatDateTime(selectedBooking.start_at)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Booking ID: {selectedBooking.square_booking_id}
+                  Booking Ref: {selectedBooking.booking_reference || `#${selectedBooking.id}`}
                 </p>
               </div>
             )}
@@ -760,9 +988,9 @@ export default function MyBookingsPage() {
                 )}
               </div>
               <p className="text-xs text-gray-500">
-                {loadingRefundAmount 
-                  ? "Checking available refund amount from Square..." 
-                  : "Amount automatically calculated based on your payment and Square records"
+                {loadingRefundAmount
+                  ? "Checking available refund amount..."
+                  : "Amount automatically calculated based on your payment records"
                 }
               </p>
             </div>
@@ -819,12 +1047,16 @@ export default function MyBookingsPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="font-medium text-gray-700">Booking ID:</span>
-                    <span className="ml-2 text-gray-900">{selectedBookingForDetails.square_booking_id}</span>
+                    <span className="font-medium text-gray-700">Booking Ref:</span>
+                    <span className="ml-2 text-gray-900">{selectedBookingForDetails.booking_reference || `#${selectedBookingForDetails.id}`}</span>
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Status:</span>
-                    <Badge variant={getStatusBadgeVariant(selectedBookingForDetails.status)} className="ml-2">
+                    <Badge variant={getStatusBadgeVariant(selectedBookingForDetails.status)}
+                    className={selectedBookingForDetails.status.toLowerCase() === 'cancelled'
+                              ? 'text-white ml-2'
+                              : 'ml-2'}
+                    >
                       {selectedBookingForDetails.status.toUpperCase()}
                     </Badge>
                   </div>
@@ -842,7 +1074,7 @@ export default function MyBookingsPage() {
                   <div>
                     <span className="font-medium text-gray-700">Duration:</span>
                     <p className="text-gray-900 mt-1">
-                      {dayjs(selectedBookingForDetails.end_at).diff(dayjs(selectedBookingForDetails.start_at), 'minute')} minutes
+                      {selectedBookingForDetails.duration_minutes} minutes
                     </p>
                   </div>
                   {selectedBookingForDetails.team_member && (
@@ -859,43 +1091,38 @@ export default function MyBookingsPage() {
               </div>
 
               {/* Payment Information */}
-              {selectedBookingForDetails.payments && selectedBookingForDetails.payments.length > 0 && (
+              {selectedBookingForDetails.payment_status && (
                 <div>
                   <h4 className="font-medium text-gray-900 mb-3">Payment Information</h4>
-                  <div className="space-y-3">
-                    {selectedBookingForDetails.payments.map((payment) => (
-                      <div key={payment.id} className="bg-blue-50 p-3 rounded-lg">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">Amount:</span>
-                            <span className="ml-2 text-gray-900">${(payment.amount_cents / 100).toFixed(2)}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Status:</span>
-                            <Badge variant={payment.status === 'COMPLETED' ? 'default' : 'secondary'} className="ml-2">
-                              {payment.status}
-                            </Badge>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Payment ID:</span>
-                            <span className="ml-2 text-gray-900 font-mono text-xs">{payment.square_payment_id}</span>
-                          </div>
-                          {payment.square_receipt_url && (
-                            <div>
-                              <span className="font-medium text-gray-700">Receipt:</span>
-                              <a 
-                                href={payment.square_receipt_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="ml-2 text-blue-600 hover:text-blue-800 underline"
-                              >
-                                View Receipt
-                              </a>
-                            </div>
-                          )}
-                        </div>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">Total Price:</span>
+                        <span className="ml-2 text-gray-900">${(selectedBookingForDetails.price_cents / 100).toFixed(2)}</span>
                       </div>
-                    ))}
+                      <div>
+                        <span className="font-medium text-gray-700">Payment Status:</span>
+                        <Badge className="ml-2 capitalize">
+                          {selectedBookingForDetails.payment_status.replace(/_/g, ' ')}
+                        </Badge>
+                      </div>
+                      {selectedBookingForDetails.deposit_paid_cents > 0 && (
+                        <>
+                          <div>
+                            <span className="font-medium text-gray-700">Deposit Paid:</span>
+                            <span className="ml-2 text-green-600 font-semibold">
+                              ${(selectedBookingForDetails.deposit_paid_cents / 100).toFixed(2)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Balance Due:</span>
+                            <span className="ml-2 text-orange-600 font-semibold">
+                              ${((selectedBookingForDetails.price_cents - selectedBookingForDetails.deposit_paid_cents) / 100).toFixed(2)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -986,7 +1213,77 @@ export default function MyBookingsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Cancel Confirmation Modal */}
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+          </DialogHeader>
+          {selectedBookingForCancel && (
+            <div className="space-y-4 py-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900">{selectedBookingForCancel.service_name}</h4>
+                <p className="text-sm text-gray-600">
+                  {formatDateTime(selectedBookingForCancel.start_at)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Booking Ref: {selectedBookingForCancel.booking_reference || `#${selectedBookingForCancel.id}`}
+                </p>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Important:</strong> Please cancel at least 24 hours before your appointment to avoid cancellation fees.
+                  Are you sure you want to cancel this booking?
+                </p>
+              </div>
+
+              {cancelError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-600 text-sm">{cancelError}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={cancelling}
+                >
+                  Go Back
+                </Button>
+                <Button
+                  onClick={confirmCancelBooking}
+                  disabled={cancelling}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {cancelling ? "Cancelling..." : "Yes, Cancel Booking"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Modal removed - now using redirect flow to appointment page */}
+
     </div>
     </>
+  );
+}
+
+// Wrapper component with Suspense boundary for Next.js 15 compatibility
+export default function MyBookingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading bookings...</p>
+        </div>
+      </div>
+    }>
+      <MyBookingsPageContent />
+    </Suspense>
   );
 }

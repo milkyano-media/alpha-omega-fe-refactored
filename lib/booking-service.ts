@@ -26,6 +26,10 @@ export interface SelfManagedSegmentBookingRequest {
   appointment_segments: SelfManagedAppointmentSegment[];
   customer_note?: string;
   idempotencyKey: string;
+  price_cents?: number;
+  deposit_paid_cents?: number;
+  payment_status?: 'unpaid' | 'deposit_paid' | 'fully_paid';
+  payment_data?: any;
   payment_info?: {
     paymentId: string;
     amount: string;
@@ -378,6 +382,46 @@ export class BookingService {
   }
 
   /**
+   * Reschedule a self-managed booking (update start time)
+   */
+  async rescheduleBooking(bookingId: number, newStartTime: string): Promise<{ success: boolean; booking?: any; message?: string }> {
+    try {
+      console.log(`📅 Rescheduling booking ${bookingId} to ${newStartTime}...`);
+      const response = await API.put(`/bookings/${bookingId}/self-managed`, {
+        start_at: newStartTime
+      });
+
+      console.log('✅ Booking rescheduled:', response.data);
+
+      // Check if response indicates success
+      if (response.data && response.data.data) {
+        return {
+          success: true,
+          booking: response.data.data,
+          message: response.data.message || 'Booking rescheduled successfully'
+        };
+      } else if (response.data && !response.data.error) {
+        return {
+          success: true,
+          booking: response.data,
+          message: 'Booking rescheduled successfully'
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || response.data?.details || 'Failed to reschedule booking'
+        };
+      }
+    } catch (error: any) {
+      console.error('Error rescheduling booking:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.response?.data?.details || error.message || 'Failed to reschedule booking'
+      };
+    }
+  }
+
+  /**
    * Update booking
    */
   async updateBooking(bookingId: number, updateData: UpdateBookingRequest): Promise<BookingResponse> {
@@ -418,14 +462,99 @@ export class BookingService {
 
   /**
    * Get user's bookings
+   * Note: Backend automatically returns user's own bookings based on JWT token
+   * Returns either array of bookings or object with bookings and pagination
    */
-  async getUserBookings(): Promise<any[]> {
+  async getUserBookings(): Promise<any[] | { bookings: any[], pagination?: any }> {
     try {
-      const response = await API.get('/bookings/user');
+      const response = await API.get('/bookings');
       return response.data;
     } catch (error: any) {
       console.error('Error fetching user bookings:', error);
       throw new Error(error.message || "Failed to fetch bookings");
+    }
+  }
+
+  /**
+   * Get available time slots for a specific team member on a specific date
+   * Used for admin reschedule functionality
+   */
+  async getAvailableTimesForTeamMember(
+    teamMemberId: number,
+    date: string, // YYYY-MM-DD format
+    durationMinutes: number,
+    serviceId?: number // Optional service ID for better filtering
+  ): Promise<TimeSlot[]> {
+    try {
+      console.log(`🔍 Fetching availability for team member ${teamMemberId} on ${date} (service: ${serviceId || 'any'})`);
+
+      // Build params - service_id is required by backend
+      const params: any = {
+        start_date: date,
+        end_date: date, // Same day
+        team_member_ids: [teamMemberId].join(','),
+        timezone: 'Australia/Melbourne'
+      };
+
+      // Add service_id if provided, otherwise use a placeholder
+      // Note: Backend requires service_id, so if not provided, we need to handle it
+      if (serviceId) {
+        params.service_id = serviceId;
+      } else {
+        // If no service_id provided, we can't fetch availability
+        // because backend requires it. Return empty array.
+        console.warn('⚠️ No service_id provided, cannot fetch availability');
+        return [];
+      }
+
+      const response = await API.get(`/availability/search`, { params });
+
+      console.log('✅ Availability response:', response.data);
+
+      // Extract time slots - handle both nested and direct response formats
+      let availability = null;
+      if (response.data && response.data.data && response.data.data.availability) {
+        availability = response.data.data.availability;
+      } else if (response.data && response.data.availability) {
+        availability = response.data.availability;
+      }
+
+      if (availability && Array.isArray(availability)) {
+        const timeSlots: TimeSlot[] = [];
+
+        availability.forEach((teamMemberAvail: TeamMemberAvailability) => {
+          if (teamMemberAvail.availabilities && Array.isArray(teamMemberAvail.availabilities)) {
+            teamMemberAvail.availabilities.forEach((slot: AvailabilitySlot) => {
+              timeSlots.push({
+                start_at: slot.startAt,
+                location_id: 'alpha-omega-barber-shop',
+                formatted_time: new Date(slot.startAt).toLocaleTimeString('en-AU', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                  timeZone: 'Australia/Melbourne'
+                }),
+                appointment_segments: [{
+                  duration_minutes: slot.durationMinutes,
+                  service_id: serviceId || 0,
+                  team_member_id: teamMemberId.toString(),
+                  service_variation_version: 1
+                }]
+              });
+            });
+          }
+        });
+
+        console.log(`✅ Found ${timeSlots.length} available time slots`);
+        return timeSlots;
+      }
+
+      console.warn('⚠️ No availability data found in response');
+      return [];
+    } catch (error: any) {
+      console.error('Error fetching available times for team member:', error);
+      // Return empty array instead of throwing, so UI can show "no availability"
+      return [];
     }
   }
 }

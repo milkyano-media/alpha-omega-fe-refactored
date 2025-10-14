@@ -188,6 +188,12 @@
   .z-dialog {
     z-index: 1100;
   }
+  .z-dialog-nested-overlay {
+    z-index: 1110;
+  }
+  .z-dialog-nested {
+    z-index: 1120;
+  }
 }
 
 @layer components {
