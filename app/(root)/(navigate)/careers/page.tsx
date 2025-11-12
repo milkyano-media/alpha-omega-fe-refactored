@@ -1,13 +1,14 @@
 import { BarberApplicationForm } from "@/components/barber-application-form";
-import Image from "next/image";
+// import { EnvDebugComponent } from "@/components/debug/env-debug";
+// import Image from "next/image";
 
 export default function Home() {
   return (
     <main className="flex flex-col gap-20">
-      <section className="flex flex-col gap-8 px-4 mt-40 text-center container mx-auto">
+      {/* <section className="flex flex-col gap-8 px-4 mt-40 text-center container mx-auto">
         <div className="w-full md:w-max self-center">
           <Image
-            src={"/assets/careers-1.png"}
+            src={"/assets/careers-1.jpg"}
             width={500}
             height={500}
             alt="Shave Cut"
@@ -22,10 +23,10 @@ export default function Home() {
             alt="What We Do Offer?"
           />
         </div>
-      </section>
+      </section> */}
 
-      <section className="flex flex-col gap-8 px-4 items-center bg-[#EFEFEF] py-10 pb-40">
-        <div className="w-full md:w-max self-center">
+      <section className="flex flex-col gap-8 px-4 items-center bg-[#EFEFEF] py-10 pb-40 md:pt-32 pt-32">
+        {/* <div className="w-full md:w-max self-center">
           <Image
             src={"/assets/careers-3.png"}
             width={500}
@@ -40,7 +41,10 @@ export default function Home() {
         </p>
 
         <div className="flex flex-col self-center gap-8">
-          <div className="flex gap-2">
+          <a
+            href="https://www.instagram.com/alpha.omega_mens.grooming"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="28"
@@ -63,9 +67,9 @@ export default function Home() {
             </svg>
 
             <p>@alpha.omega_mens.grooming</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a href="tel:+610390125480" className="flex gap-2">
             <svg
               width="31"
               height="26"
@@ -116,9 +120,12 @@ export default function Home() {
             </svg>
 
             <p>+61 03 9012 5480</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a
+            href="mailto:alpha.omega.mens.grooming@gmail.com"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="22"
@@ -133,11 +140,14 @@ export default function Home() {
             </svg>
 
             <p>alpha.omega.mens.grooming@gmail.com</p>
-          </div>
-        </div>
+          </a>
+        </div> */}
 
         <BarberApplicationForm />
       </section>
+
+      {/* Temporary debug component - remove in production */}
+      {/* <EnvDebugComponent /> */}
     </main>
   );
 }

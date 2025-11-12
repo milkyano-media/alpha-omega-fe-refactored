@@ -1,13 +1,14 @@
 "use client";
 
-import { FAQSection } from "@/components/faq";
+// import { FAQSection } from "@/components/faq";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ServicesGrid } from "@/components/services-grid";
-import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
+// import { HorizontalCarousel } from "@/components/ui/horizontal-carousel";
 import { TestimonialCarousel } from "@/components/testimonial-carousel";
 import Image from "next/image";
+import { ServicesCarousel } from "@/components/services-carousel";
 
 export default function Home() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function Home() {
 
   return (
     <main className="flex flex-col gap-20">
-      <section className="bg-black md:bg-black bg-[url('/bg/main-hero-mobile-1.jpeg')] md:bg-none bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-10 relative gap-5">
+      <section className="bg-black md:bg-[url('/bg/main-hero.png')] bg-[url('/bg/main-hero-mobile-1.jpeg')] bg-cover bg-center h-screen flex flex-col justify-center items-center text-center text-white pt-10 relative gap-5">
         <div className="absolute inset-0 bg-black/50 md:hidden"></div>
         <div className="w-full md:w-max flex justify-center relative z-10">
           <Image
@@ -243,7 +244,7 @@ export default function Home() {
         <div className="flex flex-col gap-2">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/bg/main-alpha-section.jpeg"}
+              src={"/bg/main-section-2.jpeg"}
               fill
               alt=""
               className="object-cover"
@@ -262,29 +263,21 @@ export default function Home() {
             </p> */}
           </div>
           <p className="mt-4">
-            <b>Our expert barbers</b> are ready to give you recommendations
-            considering your{" "}
-            <b>lifestyle, facial shape, hair type, and hair density</b> in order
-            to ensure that you achieve a{" "}
-            <b>
-              personalized and stylish look that compliments your individual
-              features.
-            </b>
+            Our expert barbers are ready to give you recommendations considering
+            your lifestyle, facial shape, hair type, and hair density in order
+            to ensure that you achieve a personalized and stylish look that
+            compliments your individual features.
           </p>
           <p className="mt-4">
             Through <i>consultation</i> we are dedicated to{" "}
-            <i>understand your unique preferences</i> and{" "}
-            <b>tailor our recommendations to suit your specific needs.</b>{" "}
-            Whether you&apos;re seeking a <b>new haircut, beard trim,</b> or
-            grooming routine, we&apos;re here to{" "}
-            <b>guide you through the process,</b> ensuring that you not only
-            look great but also{" "}
-            <b>feel confident with your chosen aesthetic.</b>{" "}
-            <i>Trust Alpha Omega Team</i> to provide you with{" "}
-            <b>
-              comprehensive options that align with your style and enhance your
-              overall appearance.
-            </b>
+            <i>understand your unique preferences</i> and tailor our
+            recommendations to suit your specific needs. Whether you&apos;re
+            seeking a new haircut, beard trim, or grooming routine, we&apos;re
+            here to guide you through the process, ensuring that you not only
+            look great but also feel confident with your chosen aesthetic.{" "}
+            <i>Trust Alpha Omega Team</i> to provide you with comprehensive
+            options that align with your style and enhance your overall
+            appearance.
           </p>
 
           {/* <div className="mt-6 space-y-0">
@@ -323,7 +316,7 @@ export default function Home() {
         <div className="flex flex-col gap-2 order-first">
           <div className="bg-[#D9D9D9] rounded-xl aspect-square w-full relative overflow-hidden">
             <Image
-              src={"/bg/main-omega-section.jpeg"}
+              src={"/bg/main-section-1.jpeg"}
               fill
               alt=""
               className="object-cover"
@@ -347,17 +340,12 @@ export default function Home() {
             </p> */}
           </div>
           <p className="mt-4">
-            <b>Alpha Omega mens grooming</b> stands as a{" "}
-            <b>beacon of innovation</b>,{" "}
-            <i>ushering in a new era in mens grooming.</i> With a{" "}
-            <b>seamless blend of technical expertise</b> and creative vision, we{" "}
-            <b>
-              redefine the boundaries of traditional barbering and modern
-              hairdressing.
-            </b>{" "}
-            Our <b>dedication is unwavering to unite</b> the timeless charm of
-            the classic barbershop with the refined elegance of{" "}
-            <b>today&apos;s salons.</b>
+            Alpha Omega mens grooming stands as a beacon of innovation,{" "}
+            <i>ushering in a new era in mens grooming.</i> With a seamless blend
+            of technical expertise and creative vision, we redefine the
+            boundaries of traditional barbering and modern hairdressing. Our
+            dedication is unwavering to unite the timeless charm of the classic
+            barbershop with the refined elegance of today&apos;s salons.
           </p>
 
           {/* <div className="mt-6 space-y-0">
@@ -395,7 +383,7 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10 px-4">
+      <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10">
         <div className="w-full md:w-max">
           <Image
             src={"/assets/main-3.png"}
@@ -444,16 +432,19 @@ export default function Home() {
 
         {/* <div className="rounded-xl shadow-xl w-60 md:w-2xl h-96" /> */}
 
-        <p className="mt-10 md:mt-0">OR FIND US AT</p>
+        {/* <p className="mt-10 md:mt-0">OR FIND US AT</p> */}
 
-        <div className="w-full md:w-max">
+        <a
+          href="https://maps.app.goo.gl/HaRjZaFAR8YpbfQN6"
+          className="w-full md:w-max"
+        >
           <Image
             src={"/assets/main-5.png"}
             width={500}
             height={500}
             alt="Alpha Omega on the map"
           />
-        </div>
+        </a>
       </section>
 
       <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10 px-4">
@@ -469,7 +460,10 @@ export default function Home() {
         <p>OR REACH US THROUGH</p>
 
         <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex gap-2">
+          <a
+            href="https://www.instagram.com/alpha.omega_mens.grooming"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="28"
@@ -492,9 +486,9 @@ export default function Home() {
             </svg>
 
             <p>@alpha.omega_mens.grooming</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a href="tel:+610390125480" className="flex gap-2">
             <svg
               width="31"
               height="26"
@@ -545,9 +539,12 @@ export default function Home() {
             </svg>
 
             <p>+61 03 9012 5480</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a
+            href="mailto:alpha.omega.mens.grooming@gmail.com"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="22"
@@ -562,7 +559,7 @@ export default function Home() {
             </svg>
 
             <p>alpha.omega.mens.grooming@gmail.com</p>
-          </div>
+          </a>
         </div>
       </section>
 
@@ -583,20 +580,21 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-8 px-4 container mx-auto">
+      {/* <section className="flex flex-col gap-8 px-4 container mx-auto">
         <h3 className="text-center">Frequently Asked Questions</h3>
 
         <FAQSection />
-      </section>
+      </section> */}
 
+        {/* GALLERY SECTION */}
       <section className="flex flex-col items-center gap-8 px-4 mb-40 container mx-auto">
         <h3 className="text-center">Join Our Gallery Of Successful Cuts.</h3>
 
-        <p>
+        {/* <p>
           Experience the real barbershop experience. Ultimate grooming with
           luxury service designed for you. Our team of expert barbers doesn’t
           disappoint!
-        </p>
+        </p> */}
 
         <Button
           variant={"secondary"}
@@ -606,7 +604,9 @@ export default function Home() {
           Book appointment
         </Button>
 
-        <div className="w-full flex justify-center">
+        <ServicesCarousel className="mb-10 md:mb-50" />
+
+        {/* <div className="w-full flex justify-center">
           <HorizontalCarousel
             items={[
               {
@@ -692,7 +692,7 @@ export default function Home() {
             autoRotateInterval={4000}
             className="my-8"
           />
-        </div>
+        </div> */}
       </section>
     </main>
   );

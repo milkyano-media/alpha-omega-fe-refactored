@@ -101,8 +101,17 @@ export function BarberApplicationForm() {
     setError(null);
 
     try {
-      // Submit application using the flexible form submission service
-      await FormSubmissionService.submitBarberApplication(values);
+      // Submit using the new form submission service
+      await FormSubmissionService.submitBarberApplication({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        experience: values.experience,
+        specializations: values.specializations,
+        availability: values.availability,
+        portfolio: values.portfolio
+      });
 
       // Show success toast
       toast.success("Thank you for your application! We'll be in touch soon.", {

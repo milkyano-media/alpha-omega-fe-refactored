@@ -28,12 +28,15 @@ export default function Home() {
           />
         </div>
 
-        <h3>Need a hand with an Issue?</h3>
+        {/* <h3>Need a hand with an Issue?</h3> */}
 
-        <p>OR REACH US THROUGH</p>
+        {/* <p>OR REACH US THROUGH</p> */}
 
         <div className="flex flex-col self-center gap-8">
-          <div className="flex gap-2">
+          <a
+            href="https://www.instagram.com/alpha.omega_mens.grooming"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="28"
@@ -56,9 +59,9 @@ export default function Home() {
             </svg>
 
             <p>@alpha.omega_mens.grooming</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a href="tel:+610390125480" className="flex gap-2">
             <svg
               width="31"
               height="26"
@@ -109,9 +112,12 @@ export default function Home() {
             </svg>
 
             <p>+61 03 9012 5480</p>
-          </div>
+          </a>
 
-          <div className="flex gap-2">
+          <a
+            href="mailto:alpha.omega.mens.grooming@gmail.com"
+            className="flex gap-2"
+          >
             <svg
               width="29"
               height="22"
@@ -126,7 +132,7 @@ export default function Home() {
             </svg>
 
             <p>alpha.omega.mens.grooming@gmail.com</p>
-          </div>
+          </a>
         </div>
       </section>
 

@@ -1,57 +1,85 @@
 "use client";
 
-import { FanCarousel } from "@/components/ui/fan-carousel";
-import { getServiceImageSafe } from "@/lib/service-images";
+import { Circular3DCarousel } from "@/components/ui/circular-3d-carousel";
 
 interface ServiceCarouselProps {
   className?: string;
 }
 
-// Sample services data for the carousel
-const SERVICES_DATA = [
+const carouselItems = [
   {
-    id: "haircut",
-    name: "Precision Haircut",
-    description: "Expert scissor cuts tailored to your face shape and style preferences",
+    id: "1",
+    image: "/assets/main-8.png",
+    alt: "Haircut showcase 1",
   },
   {
-    id: "beard",
-    name: "Beard Styling",
-    description: "Professional beard trimming and shaping with razor precision",
+    id: "2",
+    image: "/assets/cuts-01.jpg",
+    alt: "Haircut showcase 2",
   },
   {
-    id: "wash",
-    name: "Hair Wash & Treatment",
-    description: "Refreshing hair washing with premium conditioning treatments",
+    id: "3",
+    image: "/assets/cuts-02.jpg",
+    alt: "Haircut showcase 3",
   },
   {
-    id: "package",
-    name: "Premium Package",
-    description: "Complete grooming experience combining our best services",
+    id: "4",
+    image: "/assets/cuts-03.jpg",
+    alt: "Haircut showcase 4",
   },
   {
-    id: "color",
-    name: "Color & Styling",
-    description: "Professional coloring and styling for the modern gentleman",
+    id: "5",
+    image: "/assets/cuts-04.jpg",
+    alt: "Haircut showcase 5",
+  },
+  {
+    id: "6",
+    image: "/assets/cuts-05.jpg",
+    alt: "Haircut showcase 6",
+  },
+  {
+    id: "7",
+    image: "/assets/cuts-06.png",
+    alt: "Haircut showcase 7",
+  },
+  {
+    id: "8",
+    image: "/assets/cuts-07.png",
+    alt: "Haircut showcase 8",
+  },
+  {
+    id: "9",
+    image: "/assets/cuts-08.png",
+    alt: "Haircut showcase 9",
+  },
+  {
+    id: "10",
+    image: "/assets/cuts-09.png",
+    alt: "Haircut showcase 10",
+  },
+  {
+    id: "11",
+    image: "/assets/cuts-10.png",
+    alt: "Haircut showcase 11",
+  },
+  {
+    id: "12",
+    image: "/assets/cuts-11.png",
+    alt: "Haircut showcase 12",
+  },
+  {
+    id: "13",
+    image: "/assets/cuts-12.png",
+    alt: "Haircut showcase 13",
   },
 ];
 
 export function ServicesCarousel({ className }: ServiceCarouselProps) {
-  const carouselItems = SERVICES_DATA.map((service) => {
-    const imageData = getServiceImageSafe(service.name, service.description);
-    
-    return {
-      id: service.id,
-      title: service.name,
-      image: imageData.src,
-      gradient: imageData.gradient,
-    };
-  });
-
   return (
-    <FanCarousel
+    <Circular3DCarousel
       items={carouselItems}
-      autoRotate={false}
+      autoRotate={true}
+      radius={550}
       className={className}
     />
   );

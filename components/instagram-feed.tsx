@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { API } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
 
@@ -193,22 +194,24 @@ export default function InstagramFeed() {
             <div key={item.id} className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
               {/* Media Content */}
               {item.media_type === 'IMAGE' && (
-                <div className="aspect-square overflow-hidden bg-gray-50">
-                  <img
+                <div className="aspect-square overflow-hidden bg-gray-50 relative">
+                  <Image
                     src={item.media_url}
                     alt={item.caption || 'Instagram post'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                   />
                 </div>
               )}
               {item.media_type === 'VIDEO' && (
                 <div className="aspect-square overflow-hidden relative bg-gray-50">
-                  <img
+                  <Image
                     src={item.thumbnail_url || item.media_url}
                     alt={item.caption || 'Instagram video'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="bg-black bg-opacity-75 rounded-full p-4 group-hover:bg-opacity-90 transition-all duration-300">
@@ -227,11 +230,12 @@ export default function InstagramFeed() {
               )}
               {item.media_type === 'CAROUSEL_ALBUM' && (
                 <div className="aspect-square overflow-hidden relative bg-gray-50">
-                  <img
+                  <Image
                     src={item.media_url}
                     alt={item.caption || 'Instagram carousel'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                   />
                   {/* Carousel Indicator */}
                   <div className="absolute top-3 right-3 bg-black bg-opacity-80 text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center shadow-lg">
@@ -246,10 +250,12 @@ export default function InstagramFeed() {
                       <div className="flex space-x-1.5 overflow-x-auto scrollbar-hide">
                         {item.carousel_children.slice(0, 5).map((child: any, index: number) => (
                           <div key={child.id} className="relative flex-shrink-0">
-                            <img
+                            <Image
                               src={child.thumbnail_url || child.media_url}
                               alt={`Carousel item ${index + 1}`}
-                              className="w-8 h-8 object-cover rounded-lg border-2 border-white shadow-sm"
+                              width={32}
+                              height={32}
+                              className="object-cover rounded-lg border-2 border-white shadow-sm"
                             />
                           </div>
                         ))}

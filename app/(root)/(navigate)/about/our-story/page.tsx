@@ -4,9 +4,9 @@ import Image from "next/image";
 export default function Home() {
   return (
     <main className="flex flex-col gap-20 -mt-20">
-      <section className="bg-[url('/bg/about-1.png')] bg-cover bg-center h-80 md:h-[600px] md:mt-20 hidden md:flex flex-col justify-center items-center text-center text-white"></section>
+      {/* <section className="bg-[url('/bg/about-1.jpg')] bg-cover bg-center h-80 md:h-[600px] md:mt-20 hidden md:flex flex-col justify-center items-center text-center text-white"></section> */}
 
-      <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl md:mt-0 mt-44 container mx-auto">
+      <section className="flex flex-col md:grid grid-cols-2 gap-8 px-4 md:w-4xl md:mt-56 mt-44 container mx-auto">
         <div className="w-full md:w-max mx-auto col-span-2">
           <Image
             src={"/assets/about-1.png"}
@@ -86,7 +86,7 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="flex flex-col justify-center items-center gap-8 px-4 container mx-auto">
+      {/* <section className="flex flex-col justify-center items-center gap-8 px-4 container mx-auto">
         <div className="w-full md:w-max">
           <Image
             src={"/assets/about-2.png"}
@@ -106,7 +106,7 @@ export default function Home() {
           final touch, ensuring every client leaves with confidence and style
           that lasts.
         </p>
-      </section>
+      </section> */}
 
       <section className="flex flex-col items-center gap-8 bg-[#F8F8F8] py-10 px-4">
         <div className="w-full md:w-max">
