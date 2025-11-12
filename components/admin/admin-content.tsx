@@ -7,8 +7,7 @@ import BusinessSettingsSection from "./sections/business-settings-section"
 import { ImagesSection } from "./sections/images-section"
 import { ScheduleManagementSection } from "./sections/schedule-management-section"
 import { BookingsSection } from "./sections/bookings-section"
-// Import other sections as we create them
-// import { RefundsSection } from "./sections/refunds-section"
+import { RefundRequestsSection } from "./sections/refund-requests-section"
 
 interface AdminContentProps {
   activeSection?: string
@@ -59,14 +58,9 @@ export function AdminContent({ activeSection = "overview", onSectionChange }: Ad
         onSectionChange={onSectionChange}
       />
 
-
-
-
+      {/* Refund Requests Section */}
       {activeSection === "refunds" && (
-        <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-medium">Refund Requests</h3>
-          <p className="text-sm text-muted-foreground">Coming soon - migrating existing refund functionality</p>
-        </div>
+        <RefundRequestsSection />
       )}
     </div>
   )

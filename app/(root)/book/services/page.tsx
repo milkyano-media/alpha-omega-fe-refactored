@@ -118,6 +118,35 @@ function ServiceSelectionContent() {
     }, 0);
   };
 
+  // Calculate price range for a service based on barber-specific pricing
+  const getServicePriceDisplay = (service: Service): string => {
+    const serviceBarbers = barbers[service.id] || [];
+    const basePriceCents = service.base_price_cents || service.price_amount || 0;
+
+    if (serviceBarbers.length === 0) {
+      // No barbers, show base price
+      return `$${(basePriceCents / 100).toFixed(2)}`;
+    }
+
+    // Collect all barber-specific prices for this service
+    const barberPrices = serviceBarbers
+      .map(barber => barber.ServiceTeamMember?.price_amount || basePriceCents)
+      .filter((price, index, self) => self.indexOf(price) === index) // Unique prices only
+      .sort((a, b) => a - b); // Sort ascending
+
+    if (barberPrices.length === 1) {
+      // All barbers have same price
+      return `$${(barberPrices[0] / 100).toFixed(2)}`;
+    } else if (barberPrices.length > 1) {
+      // Different prices - show range
+      const minPrice = barberPrices[0];
+      const maxPrice = barberPrices[barberPrices.length - 1];
+      return `$${(minPrice / 100).toFixed(2)} - $${(maxPrice / 100).toFixed(2)}`;
+    }
+
+    return `$${(basePriceCents / 100).toFixed(2)}`;
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-white flex items-center justify-center px-4">
@@ -270,7 +299,7 @@ function ServiceSelectionContent() {
                               />
                             </svg>
                             <span className="font-semibold text-gray-900">
-                              ${((service.base_price_cents || service.price_amount || 0) / 100).toFixed(2)}
+                              {getServicePriceDisplay(service)}
                             </span>
                           </div>
 

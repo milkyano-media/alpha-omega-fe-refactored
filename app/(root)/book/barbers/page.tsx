@@ -146,7 +146,54 @@ function BarberSelectionContent() {
     preloadBarberImages();
   }, [isAuthenticated, router, searchParams]);
 
-  const handleSelectBarber = (barber: TeamMember) => {
+  const handleSelectBarber = async (barber: TeamMember) => {
+    console.log('🔍 Barber selected:', barber.first_name, 'ID:', barber.id);
+
+    // Fetch barber-specific pricing for all selected services
+    try {
+      const servicesWithBarberPricing = await Promise.all(
+        selectedServices.map(async (service) => {
+          try {
+            // Fetch barbers for this service to get pricing info
+            const serviceBarbersWithPricing = await BookingService.getBarbersForService(service.id);
+
+            // Find the selected barber in the results
+            const barberWithPricing = serviceBarbersWithPricing.find(b => b.id === barber.id);
+
+            if (barberWithPricing?.ServiceTeamMember?.price_amount) {
+              console.log(`💰 Found barber-specific pricing for ${service.name}:`, {
+                base_price: service.base_price_cents,
+                barber_price: barberWithPricing.ServiceTeamMember.price_amount,
+                barber: barber.first_name
+              });
+
+              // Return service with barber-specific pricing
+              return {
+                ...service,
+                price_amount: barberWithPricing.ServiceTeamMember.price_amount,
+                base_price_cents: barberWithPricing.ServiceTeamMember.price_amount
+              };
+            } else {
+              console.log(`ℹ️ No custom pricing for ${service.name}, using base price ${service.base_price_cents}`);
+              return service;
+            }
+          } catch (error) {
+            console.error(`❌ Error fetching pricing for service ${service.id}:`, error);
+            return service; // Return original service if fetch fails
+          }
+        })
+      );
+
+      // Update selected services with barber-specific pricing
+      setSelectedServices(servicesWithBarberPricing);
+
+      // Also update localStorage so appointment page has correct pricing
+      localStorage.setItem('selectedServices', JSON.stringify(servicesWithBarberPricing));
+    } catch (error) {
+      console.error('❌ Error updating service pricing:', error);
+      // Continue with original prices if fetch fails
+    }
+
     setSelectedBarber(barber);
     setShowTermsModal(true);
   };
@@ -166,6 +213,39 @@ function BarberSelectionContent() {
           "Setting selected barber and time slot:",
           closestTimeResult,
         );
+
+        // Fetch barber-specific pricing before showing modal
+        const selectedBarberForPricing = closestTimeResult.barber;
+
+        try {
+          const servicesWithBarberPricing = await Promise.all(
+            selectedServices.map(async (service) => {
+              try {
+                const serviceBarbersWithPricing = await BookingService.getBarbersForService(service.id);
+                const barberWithPricing = serviceBarbersWithPricing.find(b => b.id === selectedBarberForPricing.id);
+
+                if (barberWithPricing?.ServiceTeamMember?.price_amount) {
+                  console.log(`💰 Random barber has custom pricing for ${service.name}: ${barberWithPricing.ServiceTeamMember.price_amount}`);
+                  return {
+                    ...service,
+                    price_amount: barberWithPricing.ServiceTeamMember.price_amount,
+                    base_price_cents: barberWithPricing.ServiceTeamMember.price_amount
+                  };
+                }
+                return service;
+              } catch (error) {
+                console.error(`❌ Error fetching pricing for service ${service.id}:`, error);
+                return service;
+              }
+            })
+          );
+
+          setSelectedServices(servicesWithBarberPricing);
+          localStorage.setItem('selectedServices', JSON.stringify(servicesWithBarberPricing));
+        } catch (error) {
+          console.error('❌ Error updating service pricing for random barber:', error);
+        }
+
         setSelectedBarber(closestTimeResult.barber);
         setSelectedTimeSlot(closestTimeResult.timeSlot);
         setShowTermsModal(true);

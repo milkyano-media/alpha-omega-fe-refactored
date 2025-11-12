@@ -27,6 +27,7 @@ import {
   ChevronDown
 } from "lucide-react"
 import { RescheduleBookingDialog } from "@/components/admin/dialogs/reschedule-booking-dialog"
+import { RefundBookingDialog } from "@/components/admin/dialogs/refund-booking-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
@@ -74,6 +75,12 @@ interface Booking {
       price_cents: number
     }>
   }
+  payment_data?: {
+    stripe_payment_intent_id?: string
+    stripe_charge_id?: string
+    stripe_receipt_url?: string
+    payment_verified_at?: string
+  }
   user?: {
     id: number
     name: string
@@ -109,6 +116,8 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
   const [barberComboboxOpen, setBarberComboboxOpen] = useState(false)
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false)
   const [bookingToReschedule, setBookingToReschedule] = useState<Booking | null>(null)
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false)
+  const [bookingToRefund, setBookingToRefund] = useState<Booking | null>(null)
 
   // Fetch bookings for the current month
   const fetchBookings = async () => {
@@ -1005,6 +1014,53 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
                       ${(((selectedBooking.price_cents || 0) - (selectedBooking.deposit_paid_cents || 0)) / 100).toFixed(2)}
                     </span>
                   </div>
+
+                  {/* Stripe Payment Details */}
+                  {selectedBooking.payment_data?.stripe_payment_intent_id && (
+                    <>
+                      <div className="pt-3 border-t mt-3">
+                        <div className="text-xs text-gray-500 mb-2">Stripe Payment Information</div>
+                        <div className="space-y-1.5 text-xs bg-gray-50 p-2 rounded">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-gray-600">Payment ID:</span>
+                            <span className="font-mono text-right break-all">
+                              {selectedBooking.payment_data.stripe_payment_intent_id.substring(0, 20)}...
+                            </span>
+                          </div>
+                          {selectedBooking.payment_data.stripe_receipt_url && (
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-gray-600">Receipt:</span>
+                              <a
+                                href={selectedBooking.payment_data.stripe_receipt_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View Receipt
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Refund Button */}
+                      {(selectedBooking.payment_status === 'deposit_paid' || selectedBooking.payment_status === 'fully_paid') && (
+                        <div className="pt-3">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              setBookingToRefund(selectedBooking)
+                              setRefundDialogOpen(true)
+                            }}
+                          >
+                            Process Refund
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -1035,6 +1091,19 @@ export function BookingsSection({ activeSection }: BookingsSectionProps) {
         setRescheduleDialogOpen(false)
         setBookingToReschedule(null)
         fetchBookings() // Refresh bookings after successful reschedule
+      }}
+    />
+
+    {/* Refund Dialog - Rendered outside Card for proper z-index layering */}
+    <RefundBookingDialog
+      open={refundDialogOpen}
+      onOpenChange={setRefundDialogOpen}
+      booking={bookingToRefund}
+      onSuccess={() => {
+        setRefundDialogOpen(false)
+        setBookingToRefund(null)
+        setSelectedBooking(null) // Close the booking details dialog
+        fetchBookings() // Refresh bookings after successful refund
       }}
     />
     </>

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import BookingService, { Service, TimeSlot, SelfManagedSegmentBookingRequest } from "@/lib/booking-service";
 import { useAuth } from "@/lib/auth-context";
 import { calculateBookingPricing } from "@/lib/pricing-utils";
+import PaymentService from "@/lib/payment-service";
+import StripePaymentForm from "./StripePaymentForm";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -41,6 +43,16 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
   const [rescheduleBookingId, setRescheduleBookingId] = useState<number | null>(null);
   const [isRescheduleMode, setIsRescheduleMode] = useState(false);
 
+  // Payment states
+  const [showPayment, setShowPayment] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+
+  // Booking-first flow: Store booking info created before payment
+  const [createdBookingId, setCreatedBookingId] = useState<number | null>(null);
+  const [createdBookingReference, setCreatedBookingReference] = useState<string | null>(null);
+
   // Check if we're in reschedule mode
   useEffect(() => {
     const rescheduleId = localStorage.getItem('rescheduleBookingId');
@@ -59,7 +71,136 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
     0
   );
 
-  const handleCreateBooking = async () => {
+  // Booking-first flow: Create booking, then Payment Intent
+  const handleProceedToPayment = async () => {
+    if (!selectedTime || !user) {
+      setBookingError("Missing booking information");
+      return;
+    }
+
+    try {
+      setIsCreatingIntent(true);
+      setCreatingBooking(true);
+      setBookingError(null);
+      onBookingStateChange?.(true);
+
+      // STEP 1: Create booking with pending payment status
+      console.log("📝 Creating booking with pending payment status...");
+
+      const appointmentSegments = selectedServices.map((service, index) => {
+        const teamMemberId = selectedTime.appointment_segments[0]?.team_member_id;
+
+        // Calculate start time for each segment (sequential booking)
+        let segmentStartTime = selectedTime.start_at;
+        if (index > 0) {
+          const previousDuration = selectedServices.slice(0, index)
+            .reduce((total, prevService) => total + (prevService.duration_minutes || prevService.duration || 0), 0);
+          const startDate = new Date(selectedTime.start_at);
+          if (isNaN(startDate.getTime())) {
+            console.error('Invalid date from selectedTime.start_at:', selectedTime.start_at);
+            throw new Error('Invalid booking start time');
+          }
+          startDate.setMinutes(startDate.getMinutes() + previousDuration);
+          segmentStartTime = startDate.toISOString();
+        }
+
+        return {
+          service_id: service.id,
+          team_member_id: parseInt(teamMemberId || "1"),
+          duration_minutes: service.duration_minutes || service.duration,
+          start_at: segmentStartTime,
+        };
+      });
+
+      const bookingRequest: SelfManagedSegmentBookingRequest = {
+        start_at: selectedTime.start_at,
+        appointment_segments: appointmentSegments,
+        customer_note: customerNote.trim() || undefined,
+        idempotencyKey: `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        // Don't include payment_info - booking will have payment_status: 'pending'
+      };
+
+      console.log("📤 Sending booking request:", bookingRequest);
+
+      const bookingResponse = await BookingService.createBookingWithSegments(bookingRequest);
+
+      if (!bookingResponse || !bookingResponse.success || bookingResponse.error) {
+        const errorMessage = bookingResponse?.details || bookingResponse?.message || "Failed to create booking";
+        throw new Error(errorMessage);
+      }
+
+      const bookingData = bookingResponse.booking;
+      if (!bookingData || !bookingData.id || !bookingData.booking_reference) {
+        throw new Error("Invalid booking data received");
+      }
+
+      console.log("✅ Booking created successfully:", bookingData);
+      console.log("  - Booking ID:", bookingData.id);
+      console.log("  - Booking Reference:", bookingData.booking_reference);
+
+      // Store booking info
+      setCreatedBookingId(bookingData.id);
+      setCreatedBookingReference(bookingData.booking_reference);
+
+      // STEP 2: Create Payment Intent with booking metadata
+      console.log("💳 Creating Payment Intent for deposit:", pricing.depositCents);
+
+      const response = await PaymentService.createPaymentIntent({
+        amount: pricing.depositCents,
+        currency: 'aud',
+        metadata: {
+          booking_id: bookingData.id.toString(),
+          booking_reference: bookingData.booking_reference,
+          services: selectedServices.map(s => s.id).join(','),
+          start_at: selectedTime.start_at,
+          customer_note: customerNote.trim() || ''
+        }
+      });
+
+      console.log("✅ Payment Intent created:", response.paymentIntentId);
+      console.log("  - With booking metadata:", {
+        booking_id: bookingData.id,
+        booking_reference: bookingData.booking_reference
+      });
+
+      setClientSecret(response.clientSecret);
+      setPaymentIntentId(response.paymentIntentId);
+      setShowPayment(true);
+
+      // Save booking to localStorage in case payment fails
+      localStorage.setItem('lastBooking', JSON.stringify(bookingData));
+      console.log("💾 Saved pending booking to localStorage");
+
+    } catch (error: any) {
+      console.error("❌ Failed to create booking or Payment Intent:", error);
+      setBookingError(error.message || "Failed to initialize booking and payment. Please try again.");
+    } finally {
+      setIsCreatingIntent(false);
+      setCreatingBooking(false);
+      onBookingStateChange?.(false);
+    }
+  };
+
+  // Handle successful payment - booking already exists, webhook will update status
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
+    console.log("✅ Payment succeeded for Payment Intent:", paymentIntentId);
+    console.log("  - Booking ID:", createdBookingId);
+    console.log("  - Booking Reference:", createdBookingReference);
+    console.log("  - Webhook will update booking payment status to 'deposit_paid'");
+
+    // Booking already exists with payment_status: 'pending'
+    // Stripe webhook will update it to 'deposit_paid' when it receives payment_intent.succeeded event
+    // Just complete the flow
+    onBookingComplete();
+  };
+
+  // Handle payment error
+  const handlePaymentError = (error: string) => {
+    console.error("❌ Payment failed:", error);
+    setBookingError(error);
+  };
+
+  const handleCreateBooking = async (stripePaymentIntentId?: string) => {
     if (!selectedTime || !user) {
       setBookingError("Missing booking information");
       return;
@@ -138,6 +279,12 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         appointment_segments: appointmentSegments,
         customer_note: customerNote.trim() || undefined,
         idempotencyKey: `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        // Include payment info if payment was made
+        ...(stripePaymentIntentId && {
+          payment_info: {
+            stripe_payment_intent_id: stripePaymentIntentId
+          }
+        })
       };
 
       console.log("📤 Sending booking request:", bookingRequest);
@@ -163,7 +310,8 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
       } else {
         // Handle error cases - check multiple possible error message locations
         const errorMessage =
-          bookingResponse?.error ||
+          bookingResponse?.details ||
+          bookingResponse?.message ||
           "Failed to create booking";
         throw new Error(errorMessage);
       }
@@ -345,31 +493,62 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex space-x-4">
-        <Button
-          onClick={onCancel}
-          variant="outline"
-          className="flex-1"
-          disabled={creatingBooking}
-        >
-          Back
-        </Button>
-        <Button
-          onClick={handleCreateBooking}
-          className="flex-1 bg-gray-900 hover:bg-gray-800"
-          disabled={creatingBooking}
-        >
-          {creatingBooking ? (
-            <div className="flex items-center">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              {isRescheduleMode ? 'Updating...' : 'Creating...'}
-            </div>
-          ) : (
-            isRescheduleMode ? 'Update Booking' : 'Confirm Booking'
-          )}
-        </Button>
-      </div>
+      {/* Payment Form or Action Buttons */}
+      {showPayment && clientSecret && !isRescheduleMode ? (
+        <div className="space-y-4">
+          <div className="border-t pt-4">
+            <h4 className="font-semibold text-gray-900 mb-4">Payment Details</h4>
+            <StripePaymentForm
+              clientSecret={clientSecret}
+              amount={pricing.depositCents}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+            />
+          </div>
+          <Button
+            onClick={() => {
+              setShowPayment(false);
+              setClientSecret(null);
+              setPaymentIntentId(null);
+            }}
+            variant="outline"
+            className="w-full"
+            disabled={creatingBooking}
+          >
+            Back to Booking Details
+          </Button>
+        </div>
+      ) : (
+        <div className="flex space-x-4">
+          <Button
+            onClick={onCancel}
+            variant="outline"
+            className="flex-1"
+            disabled={creatingBooking || isCreatingIntent}
+          >
+            Back
+          </Button>
+          <Button
+            onClick={isRescheduleMode ? () => handleCreateBooking() : handleProceedToPayment}
+            className="flex-1 bg-gray-900 hover:bg-gray-800"
+            disabled={creatingBooking || isCreatingIntent}
+          >
+            {creatingBooking ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                {isRescheduleMode ? 'Updating...' : 'Creating...'}
+              </div>
+            ) : isCreatingIntent ? (
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Preparing Payment...
+              </div>
+            ) : (
+              isRescheduleMode ? 'Update Booking' : 'Proceed to Payment'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

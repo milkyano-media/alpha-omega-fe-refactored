@@ -96,12 +96,73 @@ function CleanAppointmentPageContent() {
 
     // Load selected services
     const servicesData = localStorage.getItem("selectedServices");
+    const selectedBarberId = localStorage.getItem("selectedBarberId");
+
     if (servicesData) {
       try {
         const services = JSON.parse(servicesData);
         console.log("Loading selected services:", services);
-        setSelectedServices(services);
-        setSelectedService(services[0] || null);
+
+        // Fetch barber-specific pricing for each service
+        if (selectedBarberId) {
+          const barberId = parseInt(selectedBarberId);
+          console.log(`🔍 Fetching pricing for barber ${barberId} and ${services.length} services`);
+
+          Promise.all(
+            services.map(async (service: Service) => {
+              try {
+                console.log(`📞 Fetching barbers for service ${service.id} (${service.name})`);
+                // Fetch barbers for this service (includes pricing)
+                const barbers = await BookingService.getBarbersForService(service.id);
+                console.log(`📊 Got ${barbers.length} barbers for ${service.name}:`, barbers.map(b => ({
+                  id: b.id,
+                  name: `${b.first_name} ${b.last_name}`,
+                  has_pricing: !!b.ServiceTeamMember?.price_amount,
+                  price: b.ServiceTeamMember?.price_amount
+                })));
+
+                // Find the selected barber's pricing
+                const selectedBarberData = barbers.find(b => b.id === barberId);
+
+                if (selectedBarberData?.ServiceTeamMember?.price_amount) {
+                  console.log(`💰 Found barber-specific pricing for ${service.name}:`, {
+                    base_price_cents: service.base_price_cents,
+                    barber_price_cents: selectedBarberData.ServiceTeamMember.price_amount,
+                    barber_name: `${selectedBarberData.first_name} ${selectedBarberData.last_name}`
+                  });
+
+                  // Update service with barber-specific pricing
+                  return {
+                    ...service,
+                    // Use barber-specific price if available, otherwise base price
+                    price_amount: selectedBarberData.ServiceTeamMember.price_amount,
+                    base_price_cents: selectedBarberData.ServiceTeamMember.price_amount
+                  };
+                } else {
+                  console.log(`ℹ️ No custom pricing for ${service.name}, using base price ${service.base_price_cents}`);
+                  return service;
+                }
+              } catch (error) {
+                console.error(`❌ Error fetching barber pricing for service ${service.id} (${service.name}):`, error);
+                return service; // Return original service if fetch fails
+              }
+            })
+          ).then(servicesWithPricing => {
+            console.log("✅ Services with barber-specific pricing:", servicesWithPricing);
+            setSelectedServices(servicesWithPricing);
+            setSelectedService(servicesWithPricing[0] || null);
+          }).catch(error => {
+            console.error("❌ Promise.all failed:", error);
+            // Fallback: use original services
+            setSelectedServices(services);
+            setSelectedService(services[0] || null);
+          });
+        } else {
+          console.log("⚠️ No barber selected, using base pricing");
+          // No barber selected yet, use base pricing
+          setSelectedServices(services);
+          setSelectedService(services[0] || null);
+        }
       } catch (err) {
         console.error("Error parsing selected services:", err);
         router.push("/book/services");
@@ -115,7 +176,6 @@ function CleanAppointmentPageContent() {
 
     // Check for auto-selected time from closest-time barber selection
     const autoSelectedTimeFlag = localStorage.getItem("autoSelectedTime");
-    const selectedBarberId = localStorage.getItem("selectedBarberId");
     const rescheduleBookingId = localStorage.getItem("rescheduleBookingId");
 
     // Load selected barber information
@@ -919,13 +979,14 @@ function CleanAppointmentPageContent() {
                   Your Barber
                 </p>
                 <div className="flex items-center gap-3">
-                  {selectedBarber.profile_image_url && (
+                  {/* Barber image hidden per request */}
+                  {/* {selectedBarber.profile_image_url && (
                     <img
                       src={selectedBarber.profile_image_url}
                       alt={`${selectedBarber.first_name} ${selectedBarber.last_name}`}
                       className="w-10 h-10 rounded-full object-cover"
                     />
-                  )}
+                  )} */}
                   <div>
                     <p className="font-semibold text-gray-900">
                       {selectedBarber.first_name} {selectedBarber.last_name}
@@ -967,7 +1028,7 @@ function CleanAppointmentPageContent() {
                   selectedTime={selectedTime}
                   error={error}
                   onProceedToPayment={handleShowPaymentForm}
-                  onBookWithoutPayment={handleBookWithoutPayment}
+                  // onBookWithoutPayment={handleBookWithoutPayment} // Hidden per request - test button
                   showPaymentForm={showPaymentForm}
                   selectedServices={[
                     ...selectedServices,

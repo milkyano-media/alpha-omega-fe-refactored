@@ -292,6 +292,11 @@ export default function ThankYou() {
   const depositPaid = bookingData.deposit_paid_cents / 100;
   const balanceDue = totalPrice - depositPaid;
 
+  // Calculate GST breakdown (10% Australian GST)
+  // Total price includes GST, so we need to extract it
+  const subtotal = totalPrice / 1.10;
+  const gst = totalPrice - subtotal;
+
   const isMultiService = bookingData.booking_data?.appointmentSegments && bookingData.booking_data.appointmentSegments.length > 1;
 
   return (
@@ -390,13 +395,23 @@ export default function ThankYou() {
               {/* Pricing */}
               <div className='border-t pt-3 space-y-2'>
                 <div className='grid grid-cols-2 gap-2'>
-                  <p className='text-gray-600'>Total Price:</p>
-                  <p className='font-semibold'>${totalPrice.toFixed(2)} AUD</p>
+                  <p className='text-gray-600'>Subtotal:</p>
+                  <p className='font-semibold'>${subtotal.toFixed(2)} AUD</p>
+                </div>
+
+                <div className='grid grid-cols-2 gap-2'>
+                  <p className='text-gray-600'>GST (10%):</p>
+                  <p className='font-semibold'>${gst.toFixed(2)} AUD</p>
+                </div>
+
+                <div className='grid grid-cols-2 gap-2 border-t pt-2'>
+                  <p className='text-gray-600 font-medium'>Total Price:</p>
+                  <p className='font-bold'>${totalPrice.toFixed(2)} AUD</p>
                 </div>
 
                 {depositPaid > 0 && (
                   <>
-                    <div className='grid grid-cols-2 gap-2'>
+                    <div className='grid grid-cols-2 gap-2 border-t pt-2'>
                       <p className='text-gray-600'>Deposit Paid:</p>
                       <p className='font-semibold text-green-600'>${depositPaid.toFixed(2)} AUD</p>
                     </div>
@@ -408,7 +423,7 @@ export default function ThankYou() {
                   </>
                 )}
 
-                <div className='grid grid-cols-2 gap-2'>
+                <div className='grid grid-cols-2 gap-2 border-t pt-2'>
                   <p className='text-gray-600'>Payment Status:</p>
                   <p className='font-medium capitalize'>
                     {bookingData.payment_status?.replace(/_/g, ' ') || 'Unknown'}

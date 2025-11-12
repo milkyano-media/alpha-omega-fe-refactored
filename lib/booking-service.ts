@@ -31,10 +31,7 @@ export interface SelfManagedSegmentBookingRequest {
   payment_status?: 'unpaid' | 'deposit_paid' | 'fully_paid';
   payment_data?: any;
   payment_info?: {
-    paymentId: string;
-    amount: string;
-    currency: string;
-    receiptUrl?: string;
+    stripe_payment_intent_id: string;
   };
 }
 
@@ -80,6 +77,11 @@ export interface TeamMember {
   specialties?: string[];
   square_up_id?: string;
   phone_number?: string;
+  // ServicePricing data (barber-specific pricing for a service)
+  ServiceTeamMember?: {
+    price_amount: number;  // Price in cents for this barber-service combination
+    is_available: boolean;
+  };
 }
 
 export interface Service {

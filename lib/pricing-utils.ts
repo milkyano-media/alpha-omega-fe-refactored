@@ -41,6 +41,14 @@ export interface BookingPricing {
  */
 export function calculateBookingPricing(services: Service[]): BookingPricing {
   // Calculate subtotal from all services
+  console.log(`💰 FRONTEND PRICING CALCULATION - Services:`, services.map((s: any) => ({
+    name: s.name,
+    base_price_cents: s.base_price_cents,
+    price_amount: s.price_amount,
+    price_used: s.base_price_cents ?? s.price_amount ?? 0,
+    price_dollars: ((s.base_price_cents ?? s.price_amount ?? 0) / 100).toFixed(2)
+  })));
+
   const subtotalCents = services.reduce((total, service) => {
     const priceCents = service.base_price_cents ?? service.price_amount ?? 0;
     return total + priceCents;
@@ -55,6 +63,17 @@ export function calculateBookingPricing(services: Service[]): BookingPricing {
   // Deposit = 50% of services + full tax
   const halfSubtotal = Math.round(subtotalCents * DEPOSIT_PERCENTAGE);
   const depositCents = halfSubtotal + taxCents;
+
+  console.log(`💰 FRONTEND DEPOSIT RESULT:`, {
+    subtotal_cents: subtotalCents,
+    subtotal_dollars: (subtotalCents / 100).toFixed(2),
+    tax_cents: taxCents,
+    tax_dollars: (taxCents / 100).toFixed(2),
+    deposit_cents: depositCents,
+    deposit_dollars: (depositCents / 100).toFixed(2),
+    total_cents: totalCents,
+    total_dollars: (totalCents / 100).toFixed(2)
+  });
 
   // Balance = remaining 50% of services (no tax, already paid in deposit)
   const balanceCents = Math.round(subtotalCents * DEPOSIT_PERCENTAGE);
