@@ -339,7 +339,7 @@ function CleanAppointmentPageContent() {
         console.log("Raw date inputs:", { selectedYear, selectedMonth });
 
         // Create dates in UTC to avoid timezone conversion issues
-        // But ensure startDate is not in the past - Square only allows future bookings
+        // Ensure startDate is not in the past - only allow future bookings
         const today = new Date();
         const todayUTC = new Date(
           Date.UTC(

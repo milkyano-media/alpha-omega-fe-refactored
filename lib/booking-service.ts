@@ -1,7 +1,7 @@
 // lib/booking-service.ts
 import { API } from './api-client';
 
-// Self-managed booking interfaces (no Square dependencies)
+// Self-managed booking interfaces
 export interface SelfManagedBookingRequest {
   service_id: number;
   team_member_id: number;
@@ -65,7 +65,7 @@ export interface UpdateBookingRequest {
   version: number;
 }
 
-// Updated interfaces (removed Square dependencies)
+// Team member interface
 export interface TeamMember {
   id: number;
   first_name: string;
@@ -75,7 +75,6 @@ export interface TeamMember {
   is_owner?: boolean;
   profile_image_url?: string;
   specialties?: string[];
-  square_up_id?: string;
   phone_number?: string;
   // ServicePricing data (barber-specific pricing for a service)
   ServiceTeamMember?: {
@@ -253,10 +252,10 @@ export class BookingService {
       // Check if data is nested or direct
       if (response.data && response.data.data && response.data.data.availability) {
         // Convert from self-managed format to existing UI-compatible format
-        return this.convertSelfManagedToSquareFormat(response.data.data, searchRequest.service_id);
+        return this.convertToUIFormat(response.data.data, searchRequest.service_id);
       } else if (response.data && response.data.availability) {
         // Convert from self-managed format to existing UI-compatible format (if not nested)
-        return this.convertSelfManagedToSquareFormat(response.data, searchRequest.service_id);
+        return this.convertToUIFormat(response.data, searchRequest.service_id);
       } else {
         // Already in expected format
         return response.data;
@@ -271,7 +270,7 @@ export class BookingService {
    * Convert self-managed availability format to UI-compatible format
    * This ensures existing DateTimeSelector component continues to work
    */
-  convertSelfManagedToSquareFormat(selfManagedResponse: SelfManagedAvailabilityResponse, serviceId: number): AvailabilityResponse {
+  convertToUIFormat(selfManagedResponse: SelfManagedAvailabilityResponse, serviceId: number): AvailabilityResponse {
     const availabilities_by_date: Record<string, TimeSlot[]> = {};
 
     console.log('🔄 Converting self-managed availability:', selfManagedResponse);

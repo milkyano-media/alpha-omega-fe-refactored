@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-// NOTE: Square SDK removed during Phase 4 cleanup
-// TODO: Implement alternative payment processing (Stripe, PayPal, etc.)
-// import { Client, Environment } from 'square';
-
-// NOTE: Square payment processing temporarily disabled during Phase 4 cleanup
-// The booking system now works without payment processing
-// Payment integration will be re-implemented with alternative provider
+// NOTE: This endpoint is deprecated - payment processing now handled by Stripe
+// Payment processing is fully functional through Stripe integration
 
 export async function POST(request: NextRequest) {
   try {
