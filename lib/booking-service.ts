@@ -117,15 +117,36 @@ export interface AvailabilityResponse {
 }
 
 export interface BookingResponse {
-  data: {
+  id: number;
+  booking_reference: string;
+  user_id: number;
+  team_member_id: number;
+  service_id: number;
+  service_name: string;
+  start_at: string;
+  end_at: string;
+  duration_minutes: number;
+  price_cents: number;
+  deposit_paid_cents: number;
+  status: string;
+  customer_note?: string;
+  booking_source?: string;
+  payment_status?: string;
+  booking_data?: any;
+  created_at?: string;
+  updated_at?: string;
+  user?: {
     id: number;
-    service_name: string;
-    start_at: string;
-    end_at: string;
-    status: string;
+    name: string;
+    email: string;
+    phone_number?: string;
   };
-  status_code: number;
-  message: string;
+  team_member?: {
+    id: number;
+    name: string;
+    phone?: string;
+  };
+  payments?: any[];
 }
 
 export interface SingleBookingResponse {

@@ -125,7 +125,7 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
       const bookingResponse = await BookingService.createBookingWithSegments(bookingRequest);
 
       if (!bookingResponse || !bookingResponse.success || bookingResponse.error) {
-        const errorMessage = bookingResponse?.details || bookingResponse?.message || "Failed to create booking";
+        const errorMessage = bookingResponse?.error || "Failed to create booking";
         throw new Error(errorMessage);
       }
 
@@ -308,11 +308,8 @@ export const SimpleBookingForm: React.FC<SimpleBookingFormProps> = ({
 
         onBookingComplete();
       } else {
-        // Handle error cases - check multiple possible error message locations
-        const errorMessage =
-          bookingResponse?.details ||
-          bookingResponse?.message ||
-          "Failed to create booking";
+        // Handle error cases
+        const errorMessage = bookingResponse?.error || "Failed to create booking";
         throw new Error(errorMessage);
       }
     } catch (error: any) {

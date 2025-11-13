@@ -324,11 +324,10 @@ function BarberSelectionContent() {
               );
 
               if (teamMemberId) {
-                // Try both string and number matching
+                // Match by database ID
                 const matchingBarber = barbers.find(
                   (b) =>
-                    b.id.toString() === teamMemberId.toString() ||
-                    b.square_up_id === teamMemberId.toString(),
+                    b.id.toString() === teamMemberId.toString(),
                 );
 
                 if (matchingBarber) {

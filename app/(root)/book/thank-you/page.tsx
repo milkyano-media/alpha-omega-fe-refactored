@@ -409,19 +409,19 @@ export default function ThankYou() {
                   <p className='font-bold'>${totalPrice.toFixed(2)} AUD</p>
                 </div>
 
-                {depositPaid > 0 && (
-                  <>
-                    <div className='grid grid-cols-2 gap-2 border-t pt-2'>
-                      <p className='text-gray-600'>Deposit Paid:</p>
-                      <p className='font-semibold text-green-600'>${depositPaid.toFixed(2)} AUD</p>
-                    </div>
+                <div className='grid grid-cols-2 gap-2 border-t pt-2'>
+                  <p className='text-gray-600'>Deposit Paid:</p>
+                  <p className={`font-semibold ${depositPaid > 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                    ${depositPaid.toFixed(2)} AUD
+                  </p>
+                </div>
 
-                    <div className='grid grid-cols-2 gap-2'>
-                      <p className='text-gray-600'>Balance Due:</p>
-                      <p className='font-bold text-orange-600'>${balanceDue.toFixed(2)} AUD</p>
-                    </div>
-                  </>
-                )}
+                <div className='grid grid-cols-2 gap-2'>
+                  <p className='text-gray-600'>Balance Due:</p>
+                  <p className={`font-bold ${balanceDue > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+                    ${balanceDue.toFixed(2)} AUD
+                  </p>
+                </div>
 
                 <div className='grid grid-cols-2 gap-2 border-t pt-2'>
                   <p className='text-gray-600'>Payment Status:</p>
