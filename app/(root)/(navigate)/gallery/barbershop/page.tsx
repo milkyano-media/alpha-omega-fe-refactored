@@ -12,26 +12,24 @@ export default function BarbershopGallery() {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
   const galleryImages = [
-    "/assets/ao-barbershop-1.png",
     "/assets/ao-barbershop-2.png",
-    "/assets/ao-barbershop-7.png",
+    "/assets/ao-barbershop-3.png",
+    "/assets/ao-barbershop-9.png",
+    "/assets/ao-barbershop-20.png",
+    "/assets/ao-barbershop-10.png",
+    "/assets/ao-barbershop-19.png",
+    "/assets/ao-barbershop-1.png",
     "/assets/ao-barbershop-4.png",
+    "/assets/ao-barbershop-8.png",
     "/assets/ao-barbershop-13.png",
-    // "/assets/ao-barbershop-14.png",
     "/assets/ao-barbershop-17.png",
     "/assets/ao-barbershop-18.png",
+    "/assets/ao-barbershop-12.png",
+    "/assets/ao-barbershop-7.png",
+    "/assets/ao-barbershop-16.png",
+    "/assets/ao-barbershop-11.png",
     "/assets/ao-barbershop-5.png",
     "/assets/ao-barbershop-6.png",
-    "/assets/ao-barbershop-3.png",
-    "/assets/ao-barbershop-8.png",
-    "/assets/ao-barbershop-9.png",
-    "/assets/ao-barbershop-10.png",
-    "/assets/ao-barbershop-11.png",
-    "/assets/ao-barbershop-12.png",
-    // "/assets/ao-barbershop-15.png",
-    "/assets/ao-barbershop-16.png",
-    "/assets/ao-barbershop-20.png",
-    "/assets/ao-barbershop-19.png",
   ];
 
   const openLightbox = (image: string, index: number) => {
