@@ -45,14 +45,14 @@ export default function HaircutsGallery() {
         </p>
 
         {/* Video Gallery */}
-        <div className="w-full flex overflow-x-auto gap-6 snap-x snap-mandatory scrollbar-hide py-6">
+        <div className="w-full flex overflow-x-auto gap-6 snap-x snap-mandatory scrollbar-hide py-6 px-4 -mx-4 touch-pan-x">
           {instaPosts.map((post) => (
             <Link
               key={post.id}
               href={post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="snap-center flex-shrink-0"
+              className="snap-center flex-shrink-0 first:ml-0 last:mr-4"
             >
               <video
                 src={post.src}
@@ -61,7 +61,8 @@ export default function HaircutsGallery() {
                 autoPlay
                 loop
                 playsInline
-                className="w-64 h-96 object-cover rounded-xl shadow-lg hover:scale-105 transition-transform duration-300"
+                preload="metadata"
+                className="w-64 h-auto object-contain rounded-xl shadow-lg hover:scale-105 transition-transform duration-300"
               />
             </Link>
           ))}
